@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, Clock, RefreshCw, ChevronUp, ChevronDown } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
+import SelectableData from './SelectableData';
 
 export default function LiveMarketBrackets({ citySlug, cityName, className = '' }) {
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow
@@ -145,16 +146,37 @@ export default function LiveMarketBrackets({ citySlug, cityName, className = '' 
                       {bracket.label}
                     </span>
                     <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold tabular-nums">
-                        {bracket.yesPrice}%
-                      </span>
+                      <SelectableData
+                        value={`${bracket.yesPrice}%`}
+                        label={`${bracket.label} (${dayLabel})`}
+                        source={`Kalshi ${cityName}`}
+                        type="market"
+                      >
+                        <span className="text-lg font-bold tabular-nums">
+                          {bracket.yesPrice}%
+                        </span>
+                      </SelectableData>
                       <div className="flex rounded-lg overflow-hidden text-xs font-medium">
-                        <span className="px-2.5 py-1.5 bg-purple-500/20 text-purple-400">
-                          Yes {bracket.yesPrice}¢
-                        </span>
-                        <span className="px-2.5 py-1.5 bg-gray-500/20 text-gray-400">
-                          No {bracket.noPrice}¢
-                        </span>
+                        <SelectableData
+                          value={`Yes ${bracket.yesPrice}¢`}
+                          label={`${bracket.label} Yes (${dayLabel})`}
+                          source={`Kalshi ${cityName}`}
+                          type="market"
+                        >
+                          <span className="px-2.5 py-1.5 bg-purple-500/20 text-purple-400">
+                            Yes {bracket.yesPrice}¢
+                          </span>
+                        </SelectableData>
+                        <SelectableData
+                          value={`No ${bracket.noPrice}¢`}
+                          label={`${bracket.label} No (${dayLabel})`}
+                          source={`Kalshi ${cityName}`}
+                          type="market"
+                        >
+                          <span className="px-2.5 py-1.5 bg-gray-500/20 text-gray-400">
+                            No {bracket.noPrice}¢
+                          </span>
+                        </SelectableData>
                       </div>
                     </div>
                   </div>
@@ -164,9 +186,16 @@ export default function LiveMarketBrackets({ citySlug, cityName, className = '' 
               {/* Volume footer */}
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-border)] text-sm">
                 <span className="text-[var(--color-text-muted)]">Total Volume</span>
-                <span className="font-semibold text-[var(--color-text-primary)]">
-                  {formatVolume(totalVolume)}
-                </span>
+                <SelectableData
+                  value={formatVolume(totalVolume)}
+                  label={`${dayLabel} Market Volume`}
+                  source={`Kalshi ${cityName}`}
+                  type="market"
+                >
+                  <span className="font-semibold text-[var(--color-text-primary)]">
+                    {formatVolume(totalVolume)}
+                  </span>
+                </SelectableData>
               </div>
             </>
           )}

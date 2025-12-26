@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, RefreshCw, Star, AlertTriangle, TrendingUp, ExternalLink } from 'lucide-react';
 import { useMultiModelForecast, CITY_COORDS } from '../../../hooks/useMultiModelForecast';
+import SelectableData from '../SelectableData';
 
 export default function ForecastModels({ citySlug, className = '' }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -89,6 +90,7 @@ export default function ForecastModels({ citySlug, className = '' }) {
                 const spread = Math.max(...dayHighs) - Math.min(...dayHighs);
                 const avg = Math.round(dayHighs.reduce((a, b) => a + b, 0) / dayHighs.length);
                 const uncertainty = getUncertaintyLevel(spread);
+                const dayLabel = getDayLabel(selectedDay);
 
                 return (
                   <div className="mb-4 p-3 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a]">
@@ -96,8 +98,22 @@ export default function ForecastModels({ citySlug, className = '' }) {
                       <div>
                         <span className="text-xs text-gray-500 uppercase tracking-wide">Model Consensus</span>
                         <div className="flex items-baseline gap-2 mt-0.5">
-                          <span className="text-2xl font-bold text-gray-900 dark:text-white">{avg}°F</span>
-                          <span className="text-sm text-gray-500">({Math.min(...dayHighs)}° – {Math.max(...dayHighs)}°)</span>
+                          <SelectableData
+                            value={`${avg}°F`}
+                            label={`${dayLabel} Consensus High`}
+                            source={`${forecasts.models.length} Models`}
+                            type="forecast"
+                          >
+                            <span className="text-2xl font-bold text-gray-900 dark:text-white">{avg}°F</span>
+                          </SelectableData>
+                          <SelectableData
+                            value={`${Math.min(...dayHighs)}°–${Math.max(...dayHighs)}°F`}
+                            label={`${dayLabel} Model Range`}
+                            source={`${forecasts.models.length} Models`}
+                            type="forecast"
+                          >
+                            <span className="text-sm text-gray-500">({Math.min(...dayHighs)}° – {Math.max(...dayHighs)}°)</span>
+                          </SelectableData>
                         </div>
                       </div>
                       <div className={`px-3 py-1.5 rounded-lg ${uncertainty.bg}`}>
@@ -139,11 +155,18 @@ export default function ForecastModels({ citySlug, className = '' }) {
                         <span className="text-xs text-gray-500">{model.name}</span>
                         <span className="text-[10px] text-gray-400">{model.resolution}</span>
                       </div>
-                      <span className={`text-lg font-bold ${
-                        isHighest ? 'text-red-600 dark:text-red-400'
-                          : isLowest ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-gray-900 dark:text-white'
-                      }`}>{dayData.high}°F</span>
+                      <SelectableData
+                        value={`${dayData.high}°F`}
+                        label={`${getDayLabel(selectedDay)} High`}
+                        source={model.name}
+                        type="forecast"
+                      >
+                        <span className={`text-lg font-bold ${
+                          isHighest ? 'text-red-600 dark:text-red-400'
+                            : isLowest ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-gray-900 dark:text-white'
+                        }`}>{dayData.high}°F</span>
+                      </SelectableData>
                     </div>
                   );
                 })}

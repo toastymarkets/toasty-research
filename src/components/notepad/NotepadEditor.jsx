@@ -2,11 +2,14 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useNotepad } from '../../context/NotepadContext';
+import { useDataChip } from '../../context/DataChipContext';
+import { DataChipNode } from './extensions/DataChipNode';
 import { useEffect } from 'react';
 import '../../styles/notepad.css';
 
 export default function NotepadEditor() {
   const { document, saveDocument } = useNotepad();
+  const { editorRef } = useDataChip();
 
   const editor = useEditor({
     extensions: [
@@ -23,6 +26,7 @@ export default function NotepadEditor() {
           keepAttributes: false,
         },
       }),
+      DataChipNode,
       Placeholder.configure({
         placeholder: ({ node }) => {
           if (node.type.name === 'heading') {
@@ -43,6 +47,18 @@ export default function NotepadEditor() {
       saveDocument(json);
     },
   });
+
+  // Connect editor to DataChipContext ref for external insertions
+  useEffect(() => {
+    if (editorRef && editor) {
+      editorRef.current = editor;
+    }
+    return () => {
+      if (editorRef) {
+        editorRef.current = null;
+      }
+    };
+  }, [editor, editorRef]);
 
   // Update editor content when document changes externally (e.g., after clear)
   useEffect(() => {

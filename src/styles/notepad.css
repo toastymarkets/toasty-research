@@ -209,3 +209,71 @@
 .dark .notepad-editor code {
   background: var(--color-orange-light);
 }
+
+/* ===== DATA CHIP STYLES ===== */
+
+/* Chip wrapper (from TipTap NodeViewWrapper) */
+.data-chip-wrapper {
+  display: inline;
+}
+
+/* Data chip inline element */
+.data-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  vertical-align: baseline;
+  line-height: 1.4;
+}
+
+.data-chip-value {
+  font-weight: 600;
+}
+
+.data-chip-meta {
+  opacity: 0.7;
+  font-size: 0.75rem;
+}
+
+/* ===== SELECTABLE DATA WRAPPER ===== */
+
+.selectable-data {
+  position: relative;
+  display: inline;
+  cursor: default;
+}
+
+.selectable-data-btn {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.5rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-orange-main);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.selectable-data-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.selectable-data-btn:active {
+  transform: scale(1);
+}

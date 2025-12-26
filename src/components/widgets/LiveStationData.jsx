@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronUp, ChevronDown, X, ExternalLink, Wind as WindIcon, MapPin } from 'lucide-react';
+import { ChevronUp, ChevronDown, X, ExternalLink, Wind as WindIcon, MapPin, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
+import SelectableData from './SelectableData';
+import { useDataChip } from '../../context/DataChipContext';
 
 /**
  * Nearby stations for each primary station
@@ -22,6 +24,144 @@ const NEARBY_STATIONS = {
   'KDTW': ['KDET', 'KYIP', 'KARB', 'KPTK'],
   'KSLC': ['KPVU', 'KOGD', 'KLGU', 'KU42'],
 };
+
+/**
+ * ObservationRow Component
+ * Individual row with hover state for row-level data selection
+ */
+function ObservationRow({
+  obs,
+  timeStr,
+  stationName,
+  sourceWithTime,
+  fullRowValue,
+  cityName,
+  showNearby,
+  stationId,
+  useMetric,
+  getTempColorClass,
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const { insertDataChip, isAvailable } = useDataChip();
+
+  const handleRowInsert = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const timestamp = new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+
+    insertDataChip({
+      value: fullRowValue,
+      label: 'Weather Observation',
+      source: sourceWithTime,
+      timestamp,
+      type: 'default',
+    });
+  };
+
+  return (
+    <tr
+      className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <td className="py-2 pr-1 w-6">
+        {isAvailable && isHovered && (
+          <button
+            onClick={handleRowInsert}
+            className="w-5 h-5 flex items-center justify-center rounded-full bg-[var(--color-orange-main)] text-white hover:scale-110 transition-transform"
+            title={`Add full observation to notes`}
+            type="button"
+          >
+            <Plus size={12} strokeWidth={3} />
+          </button>
+        )}
+      </td>
+      {showNearby && (
+        <td className="py-2 pr-2">
+          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+            obs.station === stationId
+              ? 'bg-orange-500/20 text-orange-500'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+          }`}>
+            {obs.station?.replace('K', '')}
+          </span>
+        </td>
+      )}
+      <td className="py-2 pr-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+        {timeStr}
+      </td>
+      <td className="py-2 px-2">
+        {obs.tempF != null ? (
+          <SelectableData
+            value={useMetric ? `${obs.tempC}°C` : `${obs.tempF}°F`}
+            label="Temperature"
+            source={sourceWithTime}
+            type="temperature"
+          >
+            <span className={`px-2 py-0.5 rounded text-white font-medium tabular-nums ${getTempColorClass(obs.tempF)}`}>
+              {useMetric ? `${obs.tempC}°C` : `${obs.tempF}°F`}
+            </span>
+          </SelectableData>
+        ) : '--'}
+      </td>
+      <td className="py-2 px-2 text-gray-600 dark:text-gray-400 tabular-nums">
+        {obs.dewpointF != null ? (
+          <SelectableData
+            value={useMetric ? `${obs.dewpointC}°C` : `${obs.dewpointF}°F`}
+            label="Dewpoint"
+            source={sourceWithTime}
+            type="humidity"
+          >
+            <span>{useMetric ? `${obs.dewpointC}°C` : `${obs.dewpointF}°F`}</span>
+          </SelectableData>
+        ) : '--'}
+      </td>
+      <td className="py-2 px-2 text-gray-600 dark:text-gray-400 tabular-nums">
+        {obs.humidity != null ? (
+          <SelectableData
+            value={`${obs.humidity}%`}
+            label="Humidity"
+            source={sourceWithTime}
+            type="humidity"
+          >
+            <span>{obs.humidity}%</span>
+          </SelectableData>
+        ) : '--'}
+      </td>
+      <td className="py-2 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+        {obs.windSpeedMph != null ? (
+          <SelectableData
+            value={`${obs.windDirection || ''} ${useMetric ? obs.windSpeedKmh + 'km/h' : obs.windSpeedMph + 'mph'}`.trim()}
+            label="Wind"
+            source={sourceWithTime}
+            type="wind"
+          >
+            <span>{`${obs.windDirection || ''} ${useMetric ? obs.windSpeedKmh + 'km/h' : obs.windSpeedMph + 'mph'}`}</span>
+          </SelectableData>
+        ) : '--'}
+      </td>
+      <td className="py-2 px-2 text-gray-600 dark:text-gray-400 truncate max-w-[100px]" title={obs.conditions || ''}>
+        {obs.conditions || 'N/A'}
+      </td>
+      <td className="py-2 pl-2 text-gray-600 dark:text-gray-400 tabular-nums">
+        {obs.pressureInHg != null ? (
+          <SelectableData
+            value={useMetric ? `${obs.pressureMb}mb` : `${obs.pressureInHg}"`}
+            label="Pressure"
+            source={sourceWithTime}
+            type="pressure"
+          >
+            <span>{useMetric ? `${obs.pressureMb}mb` : `${obs.pressureInHg}"`}</span>
+          </SelectableData>
+        ) : '--'}
+      </td>
+    </tr>
+  );
+}
 
 /**
  * LiveStationData Widget
@@ -234,9 +374,16 @@ export default function LiveStationData({ stationId, cityName, onRemove }) {
             <span className="text-xs text-gray-500">{formatTimeAgo(lastUpdate)}</span>
           )}
           {current?.tempF != null && (
-            <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
-              {useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
-            </span>
+            <SelectableData
+              value={useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
+              label="Current Temperature"
+              source={`${cityName} (${stationId})`}
+              type="temperature"
+            >
+              <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+                {useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
+              </span>
+            </SelectableData>
           )}
         </div>
       </div>
@@ -305,26 +452,53 @@ export default function LiveStationData({ stationId, cityName, onRemove }) {
               <div className="grid grid-cols-4 gap-4 mb-6">
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Current Temp</div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
-                    {useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
-                  </div>
+                  <SelectableData
+                    value={useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
+                    label="Current Temperature"
+                    source={`${cityName} (${stationId})`}
+                    type="temperature"
+                  >
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+                      {useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
+                    </div>
+                  </SelectableData>
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Trend (1h)</div>
-                  <div className={`text-lg font-semibold ${
-                    trend === 'Stable' ? 'text-gray-500' :
-                    trend?.startsWith('+') ? 'text-orange-500' : 'text-blue-500'
-                  }`}>
-                    {trend || '--'}
-                  </div>
+                  {trend && trend !== '--' ? (
+                    <SelectableData
+                      value={trend}
+                      label="1-Hour Trend"
+                      source={`${cityName} (${stationId})`}
+                      type="temperature"
+                    >
+                      <div className={`text-lg font-semibold ${
+                        trend === 'Stable' ? 'text-gray-500' :
+                        trend?.startsWith('+') ? 'text-orange-500' : 'text-blue-500'
+                      }`}>
+                        {trend}
+                      </div>
+                    </SelectableData>
+                  ) : (
+                    <div className="text-lg font-semibold text-gray-500">--</div>
+                  )}
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Wind</div>
-                  <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {current.windSpeedMph != null
-                      ? `${current.windDirection || ''} ${useMetric ? current.windSpeedKmh + 'km/h' : current.windSpeedMph + 'mph'}`
-                      : '--'}
-                  </div>
+                  {current.windSpeedMph != null ? (
+                    <SelectableData
+                      value={`${current.windDirection || ''} ${useMetric ? current.windSpeedKmh + 'km/h' : current.windSpeedMph + 'mph'}`.trim()}
+                      label="Wind"
+                      source={`${cityName} (${stationId})`}
+                      type="wind"
+                    >
+                      <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {`${current.windDirection || ''} ${useMetric ? current.windSpeedKmh + 'km/h' : current.windSpeedMph + 'mph'}`}
+                      </div>
+                    </SelectableData>
+                  ) : (
+                    <div className="text-lg font-semibold text-gray-900 dark:text-white">--</div>
+                  )}
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Conditions</div>
@@ -386,6 +560,7 @@ export default function LiveStationData({ stationId, cityName, onRemove }) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-xs text-gray-500 uppercase tracking-wide">
+                      <th className="w-6"></th>
                       {showNearby && <th className="text-left py-2 pr-2">Station</th>}
                       <th className="text-left py-2 pr-2">Time</th>
                       <th className="text-left py-2 px-2">Temp</th>
@@ -397,46 +572,36 @@ export default function LiveStationData({ stationId, cityName, onRemove }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {displayedObs.map((obs, i) => (
-                      <tr key={i} className="border-t border-gray-100 dark:border-gray-800">
-                        {showNearby && (
-                          <td className="py-2 pr-2">
-                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                              obs.station === stationId
-                                ? 'bg-orange-500/20 text-orange-500'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                            }`}>
-                              {obs.station?.replace('K', '')}
-                            </span>
-                          </td>
-                        )}
-                        <td className="py-2 pr-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                          {obs.timestamp?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                        </td>
-                        <td className="py-2 px-2">
-                          <span className={`px-2 py-0.5 rounded text-white font-medium tabular-nums ${getTempColorClass(obs.tempF)}`}>
-                            {useMetric ? `${obs.tempC}°C` : `${obs.tempF}°F`}
-                          </span>
-                        </td>
-                        <td className="py-2 px-2 text-gray-600 dark:text-gray-400 tabular-nums">
-                          {obs.dewpointF != null ? (useMetric ? `${obs.dewpointC}°C` : `${obs.dewpointF}°F`) : '--'}
-                        </td>
-                        <td className="py-2 px-2 text-gray-600 dark:text-gray-400 tabular-nums">
-                          {obs.humidity != null ? `${obs.humidity}%` : '--'}
-                        </td>
-                        <td className="py-2 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                          {obs.windSpeedMph != null
-                            ? `${obs.windDirection || ''} ${useMetric ? obs.windSpeedKmh + 'km/h' : obs.windSpeedMph + 'mph'}`
-                            : '--'}
-                        </td>
-                        <td className="py-2 px-2 text-gray-600 dark:text-gray-400 truncate max-w-[100px]" title={obs.conditions || ''}>
-                          {obs.conditions || 'N/A'}
-                        </td>
-                        <td className="py-2 pl-2 text-gray-600 dark:text-gray-400 tabular-nums">
-                          {obs.pressureInHg != null ? (useMetric ? `${obs.pressureMb}mb` : `${obs.pressureInHg}"`) : '--'}
-                        </td>
-                      </tr>
-                    ))}
+                    {displayedObs.map((obs, i) => {
+                      const timeStr = obs.timestamp?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                      const stationName = showNearby ? obs.station : stationId;
+                      const sourceWithTime = `${cityName} (${stationName}) @ ${timeStr}`;
+
+                      // Build full row value string
+                      const rowValues = [];
+                      if (obs.tempF != null) rowValues.push(useMetric ? `${obs.tempC}°C` : `${obs.tempF}°F`);
+                      if (obs.dewpointF != null) rowValues.push(`Dew ${useMetric ? obs.dewpointC + '°C' : obs.dewpointF + '°F'}`);
+                      if (obs.humidity != null) rowValues.push(`${obs.humidity}% RH`);
+                      if (obs.windSpeedMph != null) rowValues.push(`${obs.windDirection || ''} ${useMetric ? obs.windSpeedKmh + 'km/h' : obs.windSpeedMph + 'mph'}`.trim());
+                      if (obs.pressureInHg != null) rowValues.push(useMetric ? `${obs.pressureMb}mb` : `${obs.pressureInHg}"`);
+                      const fullRowValue = rowValues.join(', ');
+
+                      return (
+                        <ObservationRow
+                          key={i}
+                          obs={obs}
+                          timeStr={timeStr}
+                          stationName={stationName}
+                          sourceWithTime={sourceWithTime}
+                          fullRowValue={fullRowValue}
+                          cityName={cityName}
+                          showNearby={showNearby}
+                          stationId={stationId}
+                          useMetric={useMetric}
+                          getTempColorClass={getTempColorClass}
+                        />
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

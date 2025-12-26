@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, RefreshCw, ChevronUp, ChevronDown, Thermometer, Calendar } from 'lucide-react';
+import SelectableData from './SelectableData';
 
 /**
  * Map city slugs to IEM network and station IDs
@@ -221,22 +222,66 @@ export default function DailySummary({ citySlug, cityName, className = '' }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-xs text-[var(--color-text-muted)] mb-1">High</div>
-                    <div className="text-2xl font-bold text-red-500">{formatTemp(data.max_tmpf)}</div>
+                    {data.max_tmpf != null ? (
+                      <SelectableData
+                        value={formatTemp(data.max_tmpf)}
+                        label={`${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} High`}
+                        source={`IEM ${config?.station || ''}`}
+                        type="temperature"
+                      >
+                        <div className="text-2xl font-bold text-red-500">{formatTemp(data.max_tmpf)}</div>
+                      </SelectableData>
+                    ) : (
+                      <div className="text-2xl font-bold text-red-500">--</div>
+                    )}
                   </div>
                   <div>
                     <div className="text-xs text-[var(--color-text-muted)] mb-1">Low</div>
-                    <div className="text-2xl font-bold text-blue-500">{formatTemp(data.min_tmpf)}</div>
+                    {data.min_tmpf != null ? (
+                      <SelectableData
+                        value={formatTemp(data.min_tmpf)}
+                        label={`${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} Low`}
+                        source={`IEM ${config?.station || ''}`}
+                        type="temperature"
+                      >
+                        <div className="text-2xl font-bold text-blue-500">{formatTemp(data.min_tmpf)}</div>
+                      </SelectableData>
+                    ) : (
+                      <div className="text-2xl font-bold text-blue-500">--</div>
+                    )}
                   </div>
                 </div>
                 {(data.max_feel != null || data.min_feel != null) && (
                   <div className="mt-3 pt-3 border-t border-[var(--color-border)] grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-[var(--color-text-muted)]">Feels High: </span>
-                      <span className="font-medium">{formatTemp(data.max_feel)}</span>
+                      {data.max_feel != null ? (
+                        <SelectableData
+                          value={formatTemp(data.max_feel)}
+                          label={`${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} Feels High`}
+                          source={`IEM ${config?.station || ''}`}
+                          type="temperature"
+                        >
+                          <span className="font-medium">{formatTemp(data.max_feel)}</span>
+                        </SelectableData>
+                      ) : (
+                        <span className="font-medium">--</span>
+                      )}
                     </div>
                     <div>
                       <span className="text-[var(--color-text-muted)]">Feels Low: </span>
-                      <span className="font-medium">{formatTemp(data.min_feel)}</span>
+                      {data.min_feel != null ? (
+                        <SelectableData
+                          value={formatTemp(data.min_feel)}
+                          label={`${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} Feels Low`}
+                          source={`IEM ${config?.station || ''}`}
+                          type="temperature"
+                        >
+                          <span className="font-medium">{formatTemp(data.min_feel)}</span>
+                        </SelectableData>
+                      ) : (
+                        <span className="font-medium">--</span>
+                      )}
                     </div>
                   </div>
                 )}

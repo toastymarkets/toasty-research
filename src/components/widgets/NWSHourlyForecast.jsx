@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import { ChevronDown, ChevronUp, RefreshCw, AlertTriangle, Thermometer, TrendingUp, TrendingDown } from 'lucide-react';
 import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
+import SelectableData from './SelectableData';
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload || !payload.length) return null;
@@ -157,12 +158,28 @@ export default function NWSHourlyForecast({ citySlug, className = '' }) {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5">
                       <TrendingUp size={14} className="text-red-500" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">High: <span className="font-semibold text-gray-900 dark:text-white">{viewStats.high}°F</span></span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">High: </span>
+                      <SelectableData
+                        value={`${viewStats.high}°F`}
+                        label={`${viewMode === 'today' ? 'Today' : viewMode === 'tomorrow' ? 'Tomorrow' : '48h'} Forecast High`}
+                        source="NWS Hourly"
+                        type="forecast"
+                      >
+                        <span className="font-semibold text-gray-900 dark:text-white">{viewStats.high}°F</span>
+                      </SelectableData>
                       <span className="text-xs text-gray-500">{viewStats.highTime}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <TrendingDown size={14} className="text-blue-500" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">Low: <span className="font-semibold text-gray-900 dark:text-white">{viewStats.low}°F</span></span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">Low: </span>
+                      <SelectableData
+                        value={`${viewStats.low}°F`}
+                        label={`${viewMode === 'today' ? 'Today' : viewMode === 'tomorrow' ? 'Tomorrow' : '48h'} Forecast Low`}
+                        source="NWS Hourly"
+                        type="forecast"
+                      >
+                        <span className="font-semibold text-gray-900 dark:text-white">{viewStats.low}°F</span>
+                      </SelectableData>
                       <span className="text-xs text-gray-500">{viewStats.lowTime}</span>
                     </div>
                   </div>

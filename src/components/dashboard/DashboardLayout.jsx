@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { DataChipProvider } from '../../context/DataChipContext';
 
 // Context to signal panel resize to children
 const PanelResizeContext = createContext(0);
@@ -58,96 +59,100 @@ export default function DashboardLayout({
   // Mobile layout: full-screen overlay
   if (isMobile) {
     return (
-      <div className="relative min-h-screen">
-        {/* Main content */}
-        <div className="h-full">
-          {children}
-        </div>
+      <DataChipProvider>
+        <div className="relative min-h-screen">
+          {/* Main content */}
+          <div className="h-full">
+            {children}
+          </div>
 
-        {/* Floating toggle button */}
-        <button
-          onClick={toggleNotepad}
-          className="fixed bottom-24 right-4 z-40 p-3 rounded-full bg-[var(--color-orange-main)] text-white shadow-lg hover:bg-[var(--color-orange-hover)] transition-colors"
-          aria-label={isNotepadOpen ? 'Close notepad' : 'Open notepad'}
-        >
-          {isNotepadOpen ? <PanelRightClose size={24} /> : <PanelRightOpen size={24} />}
-        </button>
+          {/* Floating toggle button */}
+          <button
+            onClick={toggleNotepad}
+            className="fixed bottom-24 right-4 z-40 p-3 rounded-full bg-[var(--color-orange-main)] text-white shadow-lg hover:bg-[var(--color-orange-hover)] transition-colors"
+            aria-label={isNotepadOpen ? 'Close notepad' : 'Open notepad'}
+          >
+            {isNotepadOpen ? <PanelRightClose size={24} /> : <PanelRightOpen size={24} />}
+          </button>
 
-        {/* Full-screen notepad overlay */}
-        {isNotepadOpen && (
-          <div className="fixed inset-0 z-50 bg-[var(--color-bg)]">
-            <div className="h-full flex flex-col">
-              {/* Close button for mobile */}
-              <div className="flex justify-end p-2 border-b border-[var(--color-border)]">
-                <button
-                  onClick={toggleNotepad}
-                  className="p-2 rounded-lg hover:bg-[var(--color-card-elevated)] transition-colors"
-                >
-                  <PanelRightClose size={20} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                {notepadSlot}
+          {/* Full-screen notepad overlay */}
+          {isNotepadOpen && (
+            <div className="fixed inset-0 z-50 bg-[var(--color-bg)]">
+              <div className="h-full flex flex-col">
+                {/* Close button for mobile */}
+                <div className="flex justify-end p-2 border-b border-[var(--color-border)]">
+                  <button
+                    onClick={toggleNotepad}
+                    className="p-2 rounded-lg hover:bg-[var(--color-card-elevated)] transition-colors"
+                  >
+                    <PanelRightClose size={20} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  {notepadSlot}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </DataChipProvider>
     );
   }
 
   // Desktop layout: split panes
   return (
-    <div className="h-[calc(100vh-64px)] flex">
-      <PanelGroup
-        direction="horizontal"
-        autoSaveId={storageKey}
-        onLayout={() => {
-          setResizeCounter(n => n + 1);
-        }}
-      >
-        {/* Widgets Panel */}
-        <Panel
-          defaultSize={isNotepadOpen ? 60 : 100}
-          minSize={40}
-          onResize={handlePanelResize}
+    <DataChipProvider>
+      <div className="h-[calc(100vh-64px)] flex">
+        <PanelGroup
+          direction="horizontal"
+          autoSaveId={storageKey}
+          onLayout={() => {
+            setResizeCounter(n => n + 1);
+          }}
         >
-          <div className="h-full overflow-y-auto overflow-x-hidden">
-            <PanelResizeContext.Provider value={resizeCounter}>
-              {children}
-            </PanelResizeContext.Provider>
-          </div>
-        </Panel>
-
-        {/* Resize Handle */}
-        {isNotepadOpen && (
-          <PanelResizeHandle className="w-1.5 bg-[var(--color-border)] hover:bg-[var(--color-orange-main)] transition-colors cursor-col-resize group relative">
-            <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-[var(--color-orange-main)]/10" />
-          </PanelResizeHandle>
-        )}
-
-        {/* Notepad Panel */}
-        {isNotepadOpen && (
+          {/* Widgets Panel */}
           <Panel
-            defaultSize={40}
-            minSize={25}
-            maxSize={60}
-            className="overflow-hidden"
+            defaultSize={isNotepadOpen ? 60 : 100}
+            minSize={40}
+            onResize={handlePanelResize}
           >
-            {notepadSlot}
+            <div className="h-full overflow-y-auto overflow-x-hidden">
+              <PanelResizeContext.Provider value={resizeCounter}>
+                {children}
+              </PanelResizeContext.Provider>
+            </div>
           </Panel>
-        )}
-      </PanelGroup>
 
-      {/* Toggle Button */}
-      <button
-        onClick={toggleNotepad}
-        className="fixed right-4 top-20 z-30 p-2 rounded-lg bg-[var(--color-card-elevated)] border border-[var(--color-border)] hover:border-[var(--color-orange-main)] transition-colors shadow-sm"
-        aria-label={isNotepadOpen ? 'Close notepad' : 'Open notepad'}
-        title={isNotepadOpen ? 'Close notepad' : 'Open notepad'}
-      >
-        {isNotepadOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
-      </button>
-    </div>
+          {/* Resize Handle */}
+          {isNotepadOpen && (
+            <PanelResizeHandle className="w-1.5 bg-[var(--color-border)] hover:bg-[var(--color-orange-main)] transition-colors cursor-col-resize group relative">
+              <div className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-[var(--color-orange-main)]/10" />
+            </PanelResizeHandle>
+          )}
+
+          {/* Notepad Panel */}
+          {isNotepadOpen && (
+            <Panel
+              defaultSize={40}
+              minSize={25}
+              maxSize={60}
+              className="overflow-hidden"
+            >
+              {notepadSlot}
+            </Panel>
+          )}
+        </PanelGroup>
+
+        {/* Toggle Button */}
+        <button
+          onClick={toggleNotepad}
+          className="fixed right-4 top-20 z-30 p-2 rounded-lg bg-[var(--color-card-elevated)] border border-[var(--color-border)] hover:border-[var(--color-orange-main)] transition-colors shadow-sm"
+          aria-label={isNotepadOpen ? 'Close notepad' : 'Open notepad'}
+          title={isNotepadOpen ? 'Close notepad' : 'Open notepad'}
+        >
+          {isNotepadOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+        </button>
+      </div>
+    </DataChipProvider>
   );
 }
