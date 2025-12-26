@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, FileText, ArrowRight } from 'lucide-react';
 import { MARKET_CITIES } from '../../config/cities';
 import { getWorkspaceList } from '../../stores/workspaceStore';
+import { getRecentResearchNotes } from '../../utils/researchLogUtils';
 import { KalshiMarketsProvider } from '../../hooks/useAllKalshiMarkets.jsx';
 import CityCard from './CityCard';
 import WorkspaceCard from './WorkspaceCard';
@@ -9,11 +11,13 @@ import CreateWorkspaceModal from './CreateWorkspaceModal';
 
 export default function HomePage() {
   const [workspaces, setWorkspaces] = useState([]);
+  const [recentNotes, setRecentNotes] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Load workspaces on mount and when modal closes
+  // Load workspaces and research notes on mount and when modal closes
   useEffect(() => {
     setWorkspaces(getWorkspaceList());
+    setRecentNotes(getRecentResearchNotes(3));
   }, [showCreateModal]);
 
   return (
@@ -37,6 +41,56 @@ export default function HomePage() {
           </div>
         </section>
       </KalshiMarketsProvider>
+
+      {/* Your Research Section */}
+      <section className="mb-12">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-heading font-semibold">Your Research</h2>
+          <Link
+            to="/research"
+            className="flex items-center gap-1 text-orange-500 hover:text-orange-600 text-sm font-medium transition-colors"
+          >
+            View all <ArrowRight size={14} />
+          </Link>
+        </div>
+        {recentNotes.length === 0 ? (
+          <div className="card-elevated p-8 text-center">
+            <div className="w-12 h-12 rounded-full bg-[var(--color-card-elevated)] mx-auto mb-3 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-[var(--color-text-muted)]" />
+            </div>
+            <p className="text-[var(--color-text-secondary)] mb-3">
+              No research notes yet
+            </p>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Start taking notes on any city dashboard
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentNotes.map(note => (
+              <Link
+                key={note.id}
+                to={`/research/${note.type}/${note.slug}`}
+                className="card-elevated p-4 hover:border-orange-500/50 transition-all group"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-orange-500 transition-colors line-clamp-1">
+                    {note.topic}
+                  </h3>
+                  <span className="text-xs text-[var(--color-text-muted)] whitespace-nowrap ml-2">
+                    {note.lastSaved.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                  <span>{note.location}</span>
+                  <span className="text-[var(--color-text-muted)]">•</span>
+                  <span className="text-[var(--color-text-muted)]">{note.weatherType}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Workspaces Grid */}
       <section>
