@@ -6,6 +6,7 @@ import { ArrowLeft, Edit2, Thermometer, Cloud, Snowflake, Wind, HelpCircle, Cale
 import { CITY_BY_SLUG } from '../../config/cities';
 import { getWorkspaceList } from '../../stores/workspaceStore';
 import { extractResearchTopic, detectWeatherType } from '../../utils/researchLogUtils';
+import { DataChipNode } from '../notepad/extensions/DataChipNode';
 import '../../styles/notepad.css';
 
 // Key patterns for localStorage
@@ -48,6 +49,7 @@ function ReadOnlyEditor({ content }) {
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
+      DataChipNode,
     ],
     content,
     editable: false,
