@@ -293,6 +293,7 @@ html {
 /* Dashboard grid container */
 .dashboard-grid {
   min-height: 600px;
+  width: 100%;
 }
 
 /* Smooth transitions for grid items */

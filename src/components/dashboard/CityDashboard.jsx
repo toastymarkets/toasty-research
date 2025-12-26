@@ -9,6 +9,8 @@ import { DashboardProvider, useDashboard } from '../../context/DashboardContext'
 import { useNWSWeather } from '../../hooks/useNWSWeather';
 import WidgetRenderer from './WidgetRenderer';
 import AddWidgetPanel from './AddWidgetPanel';
+import DashboardLayout, { usePanelResize } from './DashboardLayout';
+import ResearchNotepad from '../notepad/ResearchNotepad';
 
 /**
  * Hook to get the current local time for a timezone
@@ -40,34 +42,63 @@ function useLocalTime(timezone) {
   return time;
 }
 
-// Hook to measure container width
-function useContainerWidth(ref) {
-  const [width, setWidth] = useState(1200);
+// Hook to measure container width with dynamic updates
+function useContainerWidth(ref, resizeSignal) {
+  const [width, setWidth] = useState(null);
 
+  // Re-measure when resize signal changes
   useEffect(() => {
-    if (!ref.current) return;
+    const element = ref.current;
+    if (!element) return;
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setWidth(entry.contentRect.width);
+    const measureWidth = () => {
+      const newWidth = element.offsetWidth;
+      if (newWidth > 0) {
+        setWidth(newWidth);
       }
+    };
+
+    // Measure after a small delay to ensure DOM has updated
+    const timeoutId = setTimeout(measureWidth, 16);
+    return () => clearTimeout(timeoutId);
+  }, [resizeSignal]);
+
+  // Initial measurement with delay and ResizeObserver
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const measureWidth = () => {
+      const newWidth = element.offsetWidth;
+      if (newWidth > 0) {
+        setWidth(newWidth);
+      }
+    };
+
+    // Initial measurement with delay to ensure layout is complete
+    const initialTimeout = setTimeout(measureWidth, 100);
+
+    const resizeObserver = new ResizeObserver(() => {
+      measureWidth();
     });
+    resizeObserver.observe(element);
 
-    resizeObserver.observe(ref.current);
-    // Initial measurement
-    setWidth(ref.current.offsetWidth);
+    return () => {
+      clearTimeout(initialTimeout);
+      resizeObserver.disconnect();
+    };
+  }, []);
 
-    return () => resizeObserver.disconnect();
-  }, [ref]);
-
-  return width;
+  // Return measured width or fallback
+  return width || ref.current?.offsetWidth || 800;
 }
 
 function DashboardContent({ city, citySlug }) {
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [replaceWidgetId, setReplaceWidgetId] = useState(null);
   const containerRef = useRef(null);
-  const width = useContainerWidth(containerRef);
+  const resizeSignal = usePanelResize();
+  const width = useContainerWidth(containerRef, resizeSignal);
 
   const {
     isLoading,
@@ -120,9 +151,14 @@ function DashboardContent({ city, citySlug }) {
   const widgets = getWidgets();
   const gridLayout = getGridLayout();
 
+  const notepadStorageKey = `toasty_research_notes_v1_city_${citySlug}`;
+
   return (
-    <>
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <DashboardLayout
+      storageKey={`toasty_city_layout_${citySlug}`}
+      notepadSlot={<ResearchNotepad storageKey={notepadStorageKey} />}
+    >
+      <div className="w-full px-4 sm:px-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -175,14 +211,12 @@ function DashboardContent({ city, citySlug }) {
             cols={12}
             rowHeight={80}
             width={width || 1200}
-            onLayoutChange={onLayoutChange}
-            draggableHandle=".widget-drag-handle"
-            resizeHandles={['se', 'e', 's']}
+            isDraggable={false}
+            isResizable={false}
             margin={[12, 12]}
             containerPadding={[0, 0]}
             useCSSTransforms={true}
             compactType="vertical"
-            preventCollision={false}
           >
             {widgets.map(widget => (
               <div key={widget.id} className="widget-grid-item">
@@ -209,7 +243,7 @@ function DashboardContent({ city, citySlug }) {
           isReplacing={!!replaceWidgetId}
         />
       )}
-    </>
+    </DashboardLayout>
   );
 }
 

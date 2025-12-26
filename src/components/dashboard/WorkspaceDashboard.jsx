@@ -9,27 +9,55 @@ import { CITY_BY_SLUG } from '../../config/cities';
 import { deleteWorkspace } from '../../stores/workspaceStore';
 import WidgetRenderer from './WidgetRenderer';
 import AddWorkspaceWidgetPanel from './AddWorkspaceWidgetPanel';
+import DashboardLayout, { usePanelResize } from './DashboardLayout';
+import ResearchNotepad from '../notepad/ResearchNotepad';
 
-// Hook to measure container width
-function useContainerWidth(ref) {
-  const [width, setWidth] = useState(1200);
+// Hook to measure container width with dynamic updates
+function useContainerWidth(ref, resizeSignal) {
+  const [width, setWidth] = useState(null);
 
+  // Re-measure when resize signal changes
   useEffect(() => {
-    if (!ref.current) return;
+    const element = ref.current;
+    if (!element) return;
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setWidth(entry.contentRect.width);
+    const measureWidth = () => {
+      const newWidth = element.offsetWidth;
+      if (newWidth > 0) {
+        setWidth(newWidth);
       }
+    };
+
+    const timeoutId = setTimeout(measureWidth, 16);
+    return () => clearTimeout(timeoutId);
+  }, [resizeSignal]);
+
+  // Initial measurement with delay and ResizeObserver
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const measureWidth = () => {
+      const newWidth = element.offsetWidth;
+      if (newWidth > 0) {
+        setWidth(newWidth);
+      }
+    };
+
+    const initialTimeout = setTimeout(measureWidth, 100);
+
+    const resizeObserver = new ResizeObserver(() => {
+      measureWidth();
     });
+    resizeObserver.observe(element);
 
-    resizeObserver.observe(ref.current);
-    setWidth(ref.current.offsetWidth);
+    return () => {
+      clearTimeout(initialTimeout);
+      resizeObserver.disconnect();
+    };
+  }, []);
 
-    return () => resizeObserver.disconnect();
-  }, [ref]);
-
-  return width;
+  return width || ref.current?.offsetWidth || 800;
 }
 
 function WorkspaceDashboardContent() {
@@ -41,7 +69,8 @@ function WorkspaceDashboardContent() {
   const [editedName, setEditedName] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const containerRef = useRef(null);
-  const width = useContainerWidth(containerRef);
+  const resizeSignal = usePanelResize();
+  const width = useContainerWidth(containerRef, resizeSignal);
 
   const {
     workspace,
@@ -122,9 +151,14 @@ function WorkspaceDashboardContent() {
   // Get city names for display
   const cityNames = workspace.cities.map(slug => CITY_BY_SLUG[slug]?.name).filter(Boolean);
 
+  const notepadStorageKey = `toasty_research_notes_v1_workspace_${workspace.id}`;
+
   return (
-    <>
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <DashboardLayout
+      storageKey={`toasty_workspace_layout_${workspace.id}`}
+      notepadSlot={<ResearchNotepad storageKey={notepadStorageKey} />}
+    >
+      <div className="w-full px-4 sm:px-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -203,14 +237,12 @@ function WorkspaceDashboardContent() {
             cols={12}
             rowHeight={80}
             width={width || 1200}
-            onLayoutChange={onLayoutChange}
-            draggableHandle=".widget-drag-handle"
-            resizeHandles={['se', 'e', 's']}
+            isDraggable={false}
+            isResizable={false}
             margin={[12, 12]}
             containerPadding={[0, 0]}
             useCSSTransforms={true}
             compactType="vertical"
-            preventCollision={false}
           >
             {widgets.map(widget => (
               <div key={widget.id} className="widget-grid-item relative">
@@ -269,7 +301,7 @@ function WorkspaceDashboardContent() {
           </div>
         </div>
       )}
-    </>
+    </DashboardLayout>
   );
 }
 
