@@ -2,11 +2,9 @@ import { useState, useEffect, useCallback, createContext, useContext } from 'rea
 
 /**
  * Kalshi API base URL
- * Uses proxy in development to bypass CORS
+ * Uses proxy to bypass CORS in both dev and production
  */
-const KALSHI_API = import.meta.env.DEV
-  ? '/api/kalshi/trade-api/v2'
-  : 'https://api.elections.kalshi.com/trade-api/v2';
+const KALSHI_API = '/api/kalshi/trade-api/v2';
 
 /**
  * Map city slugs to Kalshi series tickers
