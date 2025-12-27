@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CloudRain } from 'lucide-react';
+import { MapPin, CloudRain, Cloud, CloudSnow, Sun } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MARKET_CITIES } from '../../config/cities';
@@ -86,8 +86,23 @@ const createCityMarker = (isHovered = false) => {
     className: 'city-marker-icon',
     iconSize: [size + 40, size + 40],
     iconAnchor: [(size + 40) / 2, (size + 40) / 2],
-    popupAnchor: [0, 0]
+    tooltipAnchor: [0, 0]
   });
+};
+
+// Helper to get weather icon based on description
+const getWeatherIcon = (description) => {
+  const desc = description.toLowerCase();
+  if (desc.includes('rain') || desc.includes('shower') || desc.includes('drizzle')) {
+    return CloudRain;
+  }
+  if (desc.includes('snow') || desc.includes('flurr')) {
+    return CloudSnow;
+  }
+  if (desc.includes('cloud') || desc.includes('overcast')) {
+    return Cloud;
+  }
+  return Sun; // Default to sun for clear/fair/etc
 };
 
 export default function InteractiveMarketsMap() {
@@ -145,6 +160,9 @@ export default function InteractiveMarketsMap() {
         // Get most recent temperature (in Celsius)
         const currentTemp = props?.temperature?.value;
 
+        // Get weather description
+        const weatherDescription = props?.textDescription || '';
+
         // Get 24-hour max or 6-hour max (both in Celsius)
         let highTempC = props?.maxTemperatureLast24Hours?.value;
 
@@ -158,7 +176,7 @@ export default function InteractiveMarketsMap() {
           ? (highTempC * 9/5) + 32
           : null;
 
-        return { currentTemp, highTemp };
+        return { currentTemp, highTemp, weatherDescription };
       } catch (error) {
         console.error(`Failed to fetch weather for ${city.name}:`, error);
         return null;
@@ -231,20 +249,26 @@ export default function InteractiveMarketsMap() {
             >
               <Tooltip
                 direction="top"
-                offset={[0, -30]}
+                offset={[0, -60]}
                 opacity={1}
                 className="map-tooltip-animated"
                 permanent={false}
               >
-                <div className="text-center px-4 py-3">
-                  <div className="text-xs font-semibold mb-1">{city.id}</div>
-                  {cityWeather[city.slug]?.currentTemp !== null && cityWeather[city.slug]?.currentTemp !== undefined ? (
-                    <div className="text-xl font-bold text-orange-500">
-                      {Math.round((cityWeather[city.slug].currentTemp * 9/5) + 32)}°
-                    </div>
-                  ) : (
-                    <div className="text-xs">...</div>
-                  )}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  {cityWeather[city.slug]?.weatherDescription && (() => {
+                    const WeatherIcon = getWeatherIcon(cityWeather[city.slug].weatherDescription);
+                    return <WeatherIcon className="w-6 h-6 flex-shrink-0" />;
+                  })()}
+                  <div className="text-center">
+                    <div className="text-xs font-semibold mb-1">{city.id}</div>
+                    {cityWeather[city.slug]?.currentTemp !== null && cityWeather[city.slug]?.currentTemp !== undefined ? (
+                      <div className="text-xl font-bold text-orange-500">
+                        {Math.round((cityWeather[city.slug].currentTemp * 9/5) + 32)}°
+                      </div>
+                    ) : (
+                      <div className="text-xs">...</div>
+                    )}
+                  </div>
                 </div>
               </Tooltip>
             </Marker>
