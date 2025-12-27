@@ -8,6 +8,7 @@ import { KalshiMarketsProvider } from '../../hooks/useAllKalshiMarkets.jsx';
 import CityCard from './CityCard';
 import WorkspaceCard from './WorkspaceCard';
 import CreateWorkspaceModal from './CreateWorkspaceModal';
+import InteractiveMarketsMap from './InteractiveMarketsMap';
 
 export default function HomePage() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -29,6 +30,9 @@ export default function HomePage() {
           Real-time NWS data and forecast models for weather prediction markets
         </p>
       </div>
+
+      {/* Interactive Markets Map */}
+      <InteractiveMarketsMap />
 
       {/* Markets Grid */}
       <KalshiMarketsProvider>
