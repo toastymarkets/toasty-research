@@ -58,7 +58,7 @@ export default function InteractiveMarketsMap() {
   const handleMarkerClick = (citySlug) => navigate(`/city/${citySlug}`);
 
   return (
-    <section className="mb-12">
+    <>
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <MapPin className="w-5 h-5 text-orange-500" />
@@ -114,6 +114,6 @@ export default function InteractiveMarketsMap() {
           ))}
         </MapContainer>
       </div>
-    </section>
+    </>
   );
 }
