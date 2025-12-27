@@ -81,8 +81,8 @@ export default function InteractiveMarketsMap() {
           minZoom={3}
         >
           <TileLayer
-            attribution='&copy; OpenStreetMap'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
           />
           <FitBoundsToMarkets />
 
