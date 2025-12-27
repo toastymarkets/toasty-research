@@ -1,9 +1,9 @@
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import NotepadEditor from './NotepadEditor';
-import { FileText, Clock, Trash2 } from 'lucide-react';
+import { FileText, Clock, Trash2, FilePlus } from 'lucide-react';
 
 function NotepadContent() {
-  const { isLoading, lastSaved, isSaving, clearDocument } = useNotepad();
+  const { isLoading, lastSaved, isSaving, createNewNote, clearDocument } = useNotepad();
 
   const formatLastSaved = (date) => {
     if (!date) return 'Not saved';
@@ -23,7 +23,7 @@ function NotepadContent() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[var(--color-card-bg)] border-l border-[var(--color-border)]">
+    <div className="h-full flex flex-col bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] shrink-0">
         <div className="flex items-center gap-2">
@@ -35,6 +35,17 @@ function NotepadContent() {
             <Clock size={12} />
             {isSaving ? 'Saving...' : formatLastSaved(lastSaved)}
           </span>
+          <button
+            onClick={() => {
+              if (window.confirm('Create a new note? Current note will be saved to history.')) {
+                createNewNote();
+              }
+            }}
+            className="p-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 text-[var(--color-text-muted)] hover:text-orange-500 transition-colors"
+            title="New note"
+          >
+            <FilePlus size={14} />
+          </button>
           <button
             onClick={() => {
               if (window.confirm('Clear all notes? This cannot be undone.')) {
