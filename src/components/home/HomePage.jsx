@@ -23,14 +23,6 @@ export default function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-2">Weather Research Dashboard</h1>
-        <p className="text-[var(--color-text-secondary)]">
-          Real-time NWS data and forecast models for weather prediction markets
-        </p>
-      </div>
-
       {/* Interactive Markets Map */}
       <InteractiveMarketsMap />
 
