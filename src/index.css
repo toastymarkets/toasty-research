@@ -354,3 +354,58 @@ html {
   background: var(--color-orange-light);
   color: var(--color-orange-main);
 }
+
+/* Animated Map Tooltip Styles - Glassmorphism */
+.map-tooltip-animated.leaflet-tooltip {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 50% !important;
+  box-shadow:
+    0 8px 32px rgba(31, 38, 135, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  color: var(--color-text-primary) !important;
+  padding: 0 !important;
+  position: relative;
+  width: 80px !important;
+  height: 80px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.map-tooltip-animated.leaflet-tooltip::before {
+  display: none !important;
+}
+
+.map-tooltip-animated.leaflet-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 0;
+  background: linear-gradient(to bottom, var(--color-orange-main), transparent);
+  animation: lineGrow 0.3s ease-out forwards;
+}
+
+@keyframes lineGrow {
+  from {
+    height: 0;
+  }
+  to {
+    height: 30px;
+  }
+}
+
+.dark .map-tooltip-animated.leaflet-tooltip {
+  background: rgba(18, 18, 18, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}

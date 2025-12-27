@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, CloudRain } from 'lucide-react';
 import L from 'leaflet';
@@ -62,41 +62,39 @@ const WeatherRadar = ({ isVisible, currentFrame, opacity = 0.6 }) => {
 };
 
 const createCityMarker = (isHovered = false) => {
-  const size = isHovered ? 44 : 36;
-  const isDark = document.documentElement.classList.contains('dark');
-  const borderColor = isDark ? '#27272A' : 'white';
+  const size = isHovered ? 16 : 12;
+  const glowIntensity = isHovered ? 1 : 0.5;
 
   const html = `
     <div style="
-      width: ${size}px; height: ${size}px;
-      background: var(--color-orange-main);
-      border: 4px solid ${borderColor};
+      width: ${size}px;
+      height: ${size}px;
+      background: #F18F01;
+      border: 2px solid white;
       border-radius: 50%;
-      box-shadow: 0 4px 12px rgba(241, 143, 1, 0.4), 0 2px 6px rgba(0,0,0,0.3);
-      display: flex; align-items: center; justify-content: center;
+      box-shadow:
+        0 0 0 1px rgba(241, 143, 1, 0.2),
+        0 0 ${isHovered ? 20 : 8}px ${isHovered ? 6 : 2}px rgba(241, 143, 1, ${glowIntensity}),
+        0 0 ${isHovered ? 30 : 12}px ${isHovered ? 8 : 3}px rgba(241, 143, 1, ${glowIntensity * 0.6});
       cursor: pointer;
-    ">
-      <div style="width: 10px; height: 10px; background: white; border-radius: 50%;"></div>
-    </div>
+      transition: all 0.3s ease;
+    "></div>
   `;
 
   return L.divIcon({
     html,
     className: 'city-marker-icon',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2 - 8]
+    iconSize: [size + 40, size + 40],
+    iconAnchor: [(size + 40) / 2, (size + 40) / 2],
+    popupAnchor: [0, 0]
   });
 };
 
 export default function InteractiveMarketsMap() {
   const navigate = useNavigate();
   const [hoveredCity, setHoveredCity] = useState(null);
+  const [cityWeather, setCityWeather] = useState({});
   const isMobile = window.innerWidth < 768;
-
-  // OpenWeatherMap API key (set this to enable cloud and temperature layers)
-  // Get a free API key at: https://openweathermap.org/api
-  const OWM_API_KEY = ''; // TODO: Add your API key here
 
   // Weather layer state
   const [radarVisible, setRadarVisible] = useState(false);
@@ -129,6 +127,61 @@ export default function InteractiveMarketsMap() {
   const toggleRadar = () => {
     setRadarVisible(!radarVisible);
   };
+
+  // Fetch weather data for all cities
+  useEffect(() => {
+    const fetchCityWeather = async (city) => {
+      try {
+        // Fetch latest observation with 24-hour max
+        const obsResponse = await fetch(
+          `https://api.weather.gov/stations/${city.stationId}/observations/latest`,
+          { headers: { 'User-Agent': 'Toasty Research App' } }
+        );
+
+        if (!obsResponse.ok) return null;
+        const obsData = await obsResponse.json();
+        const props = obsData.properties;
+
+        // Get most recent temperature (in Celsius)
+        const currentTemp = props?.temperature?.value;
+
+        // Get 24-hour max or 6-hour max (both in Celsius)
+        let highTempC = props?.maxTemperatureLast24Hours?.value;
+
+        // Fallback to 6-hour max if 24-hour not available
+        if (!highTempC) {
+          highTempC = props?.maxTemperatureLast6Hours?.value;
+        }
+
+        // Convert high to Fahrenheit
+        const highTemp = highTempC !== null && highTempC !== undefined
+          ? (highTempC * 9/5) + 32
+          : null;
+
+        return { currentTemp, highTemp };
+      } catch (error) {
+        console.error(`Failed to fetch weather for ${city.name}:`, error);
+        return null;
+      }
+    };
+
+    const fetchAllWeather = async () => {
+      const weatherData = {};
+      await Promise.all(
+        MARKET_CITIES.map(async (city) => {
+          const weather = await fetchCityWeather(city);
+          if (weather) {
+            weatherData[city.slug] = weather;
+          }
+        })
+      );
+      setCityWeather(weatherData);
+    };
+
+    fetchAllWeather();
+    const interval = setInterval(fetchAllWeather, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
@@ -176,19 +229,24 @@ export default function InteractiveMarketsMap() {
                 mouseout: () => !isMobile && setHoveredCity(null)
               }}
             >
-              <Popup closeButton={false}>
-                <div className="min-w-[180px] p-2">
-                  <h3 className="font-heading font-semibold text-base mb-1">
-                    {city.name}
-                  </h3>
-                  <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-                    Click to view dashboard
-                  </p>
-                  <div className="text-xs text-[var(--color-text-muted)]">
-                    Station: {city.stationId}
-                  </div>
+              <Tooltip
+                direction="top"
+                offset={[0, -30]}
+                opacity={1}
+                className="map-tooltip-animated"
+                permanent={false}
+              >
+                <div className="text-center px-4 py-3">
+                  <div className="text-xs font-semibold mb-1">{city.id}</div>
+                  {cityWeather[city.slug]?.currentTemp !== null && cityWeather[city.slug]?.currentTemp !== undefined ? (
+                    <div className="text-xl font-bold text-orange-500">
+                      {Math.round((cityWeather[city.slug].currentTemp * 9/5) + 32)}°
+                    </div>
+                  ) : (
+                    <div className="text-xs">...</div>
+                  )}
                 </div>
-              </Popup>
+              </Tooltip>
             </Marker>
           ))}
         </MapContainer>
