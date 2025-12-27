@@ -8,9 +8,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'heading': ['"Roboto"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        'body': ['"Nunito"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        'numeric': ['"Nunito"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'heading': ['"Ubuntu"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'body': ['"Open Sans"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'numeric': ['"Open Sans"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       colors: {
         'research': {
