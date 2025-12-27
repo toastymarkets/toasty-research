@@ -14,7 +14,7 @@ import { DataChipProvider } from '../../context/DataChipContext';
 export default function HomePage() {
   const [workspaces, setWorkspaces] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [splitPercentage, setSplitPercentage] = useState(40); // Map takes 40% by default
+  const [splitPercentage, setSplitPercentage] = useState(70); // Map takes 70% by default
   const [isDragging, setIsDragging] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const containerRef = useRef(null);
