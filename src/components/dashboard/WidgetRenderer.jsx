@@ -60,16 +60,10 @@ export default function WidgetRenderer({
 
   return (
     <div
-      className={`widget-drag-handle relative h-full bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing ${className}`}
+      className={`relative h-full bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-2xl overflow-hidden flex flex-col ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Drag indicator - show on hover */}
-      {isHovered && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <GripVertical size={14} className="text-[var(--color-text-muted)] opacity-50" />
-        </div>
-      )}
 
       {/* Widget controls - show on hover */}
       {isHovered && (

@@ -262,6 +262,7 @@ export function DashboardProvider({ citySlug, children }) {
           h: w.h,
           minW: 1,  // Allow widgets to shrink on small screens
           minH: 2,
+          static: true,  // Make widgets non-draggable and non-resizable
         };
       });
   }, [layout]);
