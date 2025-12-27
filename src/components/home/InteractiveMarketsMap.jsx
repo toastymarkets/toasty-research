@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { MapPin, CloudRain } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MARKET_CITIES } from '../../config/cities';
@@ -18,6 +18,45 @@ const FitBoundsToMarkets = () => {
       map.fitBounds(bounds, { padding, maxZoom: 6 });
     }
   }, [map]);
+
+  return null;
+};
+
+// Weather Radar Component using RainViewer API
+const WeatherRadar = ({ isVisible, currentFrame, opacity = 0.6 }) => {
+  const map = useMap();
+  const layerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isVisible || !currentFrame) {
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+      return;
+    }
+
+    // Remove existing layer
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
+    }
+
+    // Add new radar layer
+    const radarUrl = `https://tilecache.rainviewer.com/v2/radar/${currentFrame}/256/{z}/{x}/{y}/2/1_1.png`;
+    layerRef.current = L.tileLayer(radarUrl, {
+      opacity: opacity,
+      zIndex: 10,
+      attribution: 'RainViewer'
+    });
+    layerRef.current.addTo(map);
+
+    return () => {
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    };
+  }, [map, isVisible, currentFrame, opacity]);
 
   return null;
 };
@@ -55,7 +94,41 @@ export default function InteractiveMarketsMap() {
   const [hoveredCity, setHoveredCity] = useState(null);
   const isMobile = window.innerWidth < 768;
 
+  // OpenWeatherMap API key (set this to enable cloud and temperature layers)
+  // Get a free API key at: https://openweathermap.org/api
+  const OWM_API_KEY = ''; // TODO: Add your API key here
+
+  // Weather layer state
+  const [radarVisible, setRadarVisible] = useState(false);
+  const [currentRadarFrame, setCurrentRadarFrame] = useState(null);
+
   const handleMarkerClick = (citySlug) => navigate(`/city/${citySlug}`);
+
+  // Fetch current radar frame from RainViewer API
+  useEffect(() => {
+    const fetchRadarFrame = async () => {
+      try {
+        const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+        const data = await response.json();
+        if (data && data.radar && data.radar.past && data.radar.past.length > 0) {
+          // Get the most recent frame
+          const latestFrame = data.radar.past[data.radar.past.length - 1];
+          setCurrentRadarFrame(latestFrame.path);
+        }
+      } catch (error) {
+        console.error('Failed to fetch radar data:', error);
+      }
+    };
+
+    fetchRadarFrame();
+    // Refresh radar data every 10 minutes
+    const interval = setInterval(fetchRadarFrame, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const toggleRadar = () => {
+    setRadarVisible(!radarVisible);
+  };
 
   return (
     <>
@@ -70,7 +143,7 @@ export default function InteractiveMarketsMap() {
       </div>
 
       <div className="h-[450px] md:h-[400px] sm:h-[350px] rounded-2xl overflow-hidden
-                      border border-[var(--color-border)] shadow-lg markets-map-container">
+                      border border-[var(--color-border)] shadow-lg markets-map-container relative">
         <MapContainer
           center={[39.8283, -98.5795]}
           zoom={4}
@@ -85,6 +158,12 @@ export default function InteractiveMarketsMap() {
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
           />
           <FitBoundsToMarkets />
+
+          {/* Weather Layers */}
+          <WeatherRadar
+            isVisible={radarVisible}
+            currentFrame={currentRadarFrame}
+          />
 
           {MARKET_CITIES.map(city => (
             <Marker
@@ -113,6 +192,22 @@ export default function InteractiveMarketsMap() {
             </Marker>
           ))}
         </MapContainer>
+
+        {/* Weather Layer Controls */}
+        <div className="absolute top-3 right-3 z-[1000]">
+          {/* Precipitation Radar Toggle */}
+          <button
+            onClick={toggleRadar}
+            className={`p-2.5 rounded-lg shadow-lg transition-all ${
+              radarVisible
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : 'bg-white dark:bg-[var(--color-card-bg)] text-[var(--color-text-primary)] hover:bg-gray-100 dark:hover:bg-[var(--color-card-elevated)]'
+            } border border-[var(--color-border)]`}
+            title={radarVisible ? 'Hide precipitation radar' : 'Show precipitation radar'}
+          >
+            <CloudRain size={18} />
+          </button>
+        </div>
       </div>
     </>
   );
