@@ -9,7 +9,6 @@ import WorkspaceCard from './WorkspaceCard';
 import CreateWorkspaceModal from './CreateWorkspaceModal';
 import InteractiveMarketsMap from './InteractiveMarketsMap';
 import ResearchNotepad from '../notepad/ResearchNotepad';
-import { NotepadProvider } from '../../context/NotepadContext';
 import { DataChipProvider } from '../../context/DataChipContext';
 
 export default function HomePage() {
@@ -25,18 +24,16 @@ export default function HomePage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8">
       {/* Map and Daily Summary Notepad - Side by side on desktop */}
       <section className="mb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
           {/* Map */}
-          <div>
+          <div className="flex flex-col">
             <InteractiveMarketsMap />
           </div>
 
           {/* Daily Summary Notepad */}
-          <div className="h-[450px] md:h-[400px] sm:h-[350px]">
+          <div className="min-h-[400px] lg:min-h-0">
             <DataChipProvider>
-              <NotepadProvider storageKey="toasty_research_notes_v1_daily_summary">
-                <ResearchNotepad storageKey="toasty_research_notes_v1_daily_summary" />
-              </NotepadProvider>
+              <ResearchNotepad storageKey="toasty_research_notes_v1_daily_summary" />
             </DataChipProvider>
           </div>
         </div>
