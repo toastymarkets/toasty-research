@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/kalshi/:path*",
+      "destination": "/api/kalshi/:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 
 /**
- * Kalshi API base URL
- * Uses proxy to bypass CORS in both dev and production
+ * Kalshi API - uses proxy to bypass CORS
  */
-const KALSHI_API = '/api/kalshi/trade-api/v2';
+const KALSHI_PROXY = '/api/kalshi';
+const KALSHI_PATH = 'trade-api/v2';
 
 /**
  * Map city slugs to Kalshi series tickers
@@ -55,7 +55,7 @@ function parseMarketToBracket(market) {
  * Fetch markets for a single series with rate limiting
  */
 async function fetchSeriesMarkets(seriesTicker) {
-  const url = `${KALSHI_API}/markets?series_ticker=${seriesTicker}&limit=50`;
+  const url = `${KALSHI_PROXY}?path=${KALSHI_PATH}/markets&series_ticker=${seriesTicker}&limit=50`;
   const response = await fetch(url);
 
   if (!response.ok) {
