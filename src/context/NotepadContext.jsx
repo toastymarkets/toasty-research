@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { CITY_BY_SLUG } from '../config/cities';
 
 const NotepadContext = createContext(null);
 
@@ -33,7 +34,42 @@ const createEmptyDocument = (storageKey = '') => {
     };
   }
 
-  // Default for other notepads (city/workspace)
+  // Special default for city notes
+  if (storageKey.startsWith('toasty_research_notes_v1_city_')) {
+    const citySlug = storageKey.replace('toasty_research_notes_v1_city_', '');
+    const city = CITY_BY_SLUG[citySlug];
+
+    if (city) {
+      // Format date as "Friday, December 27, 2025"
+      const dateString = new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      return {
+        type: 'doc',
+        content: [
+          {
+            type: 'heading',
+            attrs: { level: 1 },
+            content: [{ type: 'text', text: `${city.name} | ${dateString}` }]
+          },
+          {
+            type: 'heading',
+            attrs: { level: 2 },
+            content: [{ type: 'text', text: 'My forecast:' }]
+          },
+          {
+            type: 'paragraph',
+          }
+        ]
+      };
+    }
+  }
+
+  // Default for other notepads (workspace)
   return {
     type: 'doc',
     content: [
@@ -57,14 +93,43 @@ export function NotepadProvider({ storageKey, children }) {
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef(null);
 
+  // Check if 24 hours have passed
+  const shouldResetDaily = (createdDate) => {
+    if (!createdDate || storageKey !== 'toasty_research_notes_v1_daily_summary') {
+      return false;
+    }
+    const created = new Date(createdDate);
+    const now = new Date();
+    const hoursDiff = (now - created) / (1000 * 60 * 60);
+    return hoursDiff >= 24;
+  };
+
   // Load notes on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        setDocument(parsed.document);
-        setLastSaved(parsed.lastSaved ? new Date(parsed.lastSaved) : null);
+
+        // Check if daily note should be reset
+        if (shouldResetDaily(parsed.createdDate)) {
+          // Auto-reset: create new document with today's date
+          const newDoc = createEmptyDocument(storageKey);
+          setDocument(newDoc);
+          setLastSaved(null);
+
+          // Save the new document immediately
+          const saveData = {
+            document: newDoc,
+            createdDate: new Date().toISOString(),
+            lastSaved: new Date().toISOString(),
+            version: 1,
+          };
+          localStorage.setItem(storageKey, JSON.stringify(saveData));
+        } else {
+          setDocument(parsed.document);
+          setLastSaved(parsed.lastSaved ? new Date(parsed.lastSaved) : null);
+        }
       } else {
         setDocument(createEmptyDocument(storageKey));
       }
@@ -87,8 +152,22 @@ export function NotepadProvider({ storageKey, children }) {
     // Debounce the actual save by 500ms
     saveTimeoutRef.current = setTimeout(() => {
       try {
+        // Get existing createdDate or set new one
+        const existing = localStorage.getItem(storageKey);
+        let createdDate = new Date().toISOString();
+
+        if (existing) {
+          try {
+            const parsed = JSON.parse(existing);
+            createdDate = parsed.createdDate || createdDate;
+          } catch (e) {
+            // Use new date if parsing fails
+          }
+        }
+
         const saveData = {
           document: newDoc,
+          createdDate: createdDate,
           lastSaved: new Date().toISOString(),
           version: 1,
         };
@@ -100,6 +179,22 @@ export function NotepadProvider({ storageKey, children }) {
       }
       setIsSaving(false);
     }, 500);
+  }, [storageKey]);
+
+  // Create new note (manual reset)
+  const createNewNote = useCallback(() => {
+    const newDoc = createEmptyDocument(storageKey);
+    setDocument(newDoc);
+    setLastSaved(null);
+
+    // Save immediately with new createdDate
+    const saveData = {
+      document: newDoc,
+      createdDate: new Date().toISOString(),
+      lastSaved: new Date().toISOString(),
+      version: 1,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(saveData));
   }, [storageKey]);
 
   // Clear notes
@@ -124,6 +219,7 @@ export function NotepadProvider({ storageKey, children }) {
     isSaving,
     lastSaved,
     saveDocument,
+    createNewNote,
     clearDocument,
   };
 

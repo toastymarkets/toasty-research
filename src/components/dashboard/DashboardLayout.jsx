@@ -112,7 +112,7 @@ export default function DashboardLayout({
         >
           {/* Widgets Panel */}
           <Panel
-            defaultSize={isNotepadOpen ? 60 : 100}
+            defaultSize={isNotepadOpen ? 70 : 100}
             minSize={40}
             onResize={handlePanelResize}
           >
@@ -133,12 +133,14 @@ export default function DashboardLayout({
           {/* Notepad Panel */}
           {isNotepadOpen && (
             <Panel
-              defaultSize={40}
+              defaultSize={30}
               minSize={25}
               maxSize={60}
               className="overflow-hidden"
             >
-              {notepadSlot}
+              <div className="h-full p-4">
+                {notepadSlot}
+              </div>
             </Panel>
           )}
         </PanelGroup>
