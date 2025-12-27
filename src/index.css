@@ -209,21 +209,37 @@ html {
   height: 100%;
 }
 
-/* Drag handle styling */
+/* Disable drag handle styling - widgets are fixed */
 .widget-drag-handle {
-  cursor: grab;
-  user-select: none;
+  cursor: default;
+  user-select: text;
 }
 
-.widget-drag-handle:active {
-  cursor: grabbing;
+/* Override react-grid-layout drag cursor - force default cursor */
+.react-grid-item {
+  cursor: default !important;
+  user-select: text !important;
 }
 
-/* Grid item when dragging */
+.react-grid-item * {
+  user-select: text !important;
+}
+
+/* Disable any drag-related classes from react-grid-layout */
+.react-draggable, .react-draggable-dragging {
+  cursor: default !important;
+}
+
+.react-grid-layout > .react-grid-item {
+  cursor: default !important;
+}
+
+/* Grid item when dragging (should never happen, but just in case) */
 .react-grid-item.react-draggable-dragging {
   z-index: 100;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   border-radius: 1rem;
+  cursor: default !important;
 }
 
 .dark .react-grid-item.react-draggable-dragging {
@@ -243,17 +259,13 @@ html {
   border-radius: 1rem !important;
 }
 
-/* Resize handles */
+/* Resize handles - disabled (widgets are fixed) */
 .react-resizable-handle {
-  position: absolute;
-  background-color: var(--color-border-strong);
-  border-radius: 2px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  display: none !important;
 }
 
 .react-grid-item:hover .react-resizable-handle {
-  opacity: 1;
+  display: none !important;
 }
 
 /* Southeast handle (corner) */
