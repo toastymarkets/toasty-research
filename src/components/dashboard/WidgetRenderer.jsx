@@ -48,6 +48,9 @@ export default function WidgetRenderer({
         case 'cityId':
           props.cityId = city.id;
           break;
+        case 'timezone':
+          props.timezone = city.timezone;
+          break;
         default:
           console.warn(`Unknown prop: ${prop}`);
       }

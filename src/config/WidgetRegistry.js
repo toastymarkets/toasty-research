@@ -32,7 +32,7 @@ export const WIDGET_REGISTRY = {
     icon: 'Radio',
     component: LiveStationData,
     category: 'weather',
-    requiredProps: ['stationId', 'cityName'],
+    requiredProps: ['stationId', 'cityName', 'timezone'],
     defaultW: 4,
     defaultH: 5,
     minW: 3,

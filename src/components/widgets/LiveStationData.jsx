@@ -168,7 +168,7 @@ function ObservationRow({
  * Comprehensive real-time weather observations from NWS station
  * with temperature trend chart and observation history table
  */
-export default function LiveStationData({ stationId, cityName, onRemove }) {
+export default function LiveStationData({ stationId, cityName, timezone, onRemove }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [observations, setObservations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -291,7 +291,7 @@ export default function LiveStationData({ stationId, cityName, onRemove }) {
         .map(o => ({
           time: o.timestamp.getTime(),
           temp: useMetric ? o.tempC : o.tempF,
-          label: o.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+          label: o.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timezone }),
         }))
         .reverse();
     }
@@ -313,10 +313,10 @@ export default function LiveStationData({ stationId, cityName, onRemove }) {
       .map(([time, temps]) => ({
         time,
         temp: Math.round(temps.reduce((a, b) => a + b, 0) / temps.length),
-        label: new Date(time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+        label: new Date(time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timezone }),
       }))
       .sort((a, b) => a.time - b.time);
-  }, [observations, useMetric, showNearby]);
+  }, [observations, useMetric, showNearby, timezone]);
 
   // Chart Y-axis domain
   const chartDomain = useMemo(() => {
@@ -341,7 +341,7 @@ export default function LiveStationData({ stationId, cityName, onRemove }) {
     if (mins < 1) return 'just now';
     if (mins === 1) return '1 min ago';
     if (mins < 60) return `${mins} mins ago`;
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timezone });
   };
 
   // Get temp color class based on temperature
@@ -573,7 +573,7 @@ export default function LiveStationData({ stationId, cityName, onRemove }) {
                   </thead>
                   <tbody>
                     {displayedObs.map((obs, i) => {
-                      const timeStr = obs.timestamp?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                      const timeStr = obs.timestamp?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timezone });
                       const stationName = showNearby ? obs.station : stationId;
                       const sourceWithTime = `${cityName} (${stationName}) @ ${timeStr}`;
 
