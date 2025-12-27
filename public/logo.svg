@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Toasty Logo - Clean Vector Sun -->
+
+  <!-- Main sun circle with gradient -->
+  <defs>
+    <linearGradient id="sunGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Center sun circle -->
+  <circle cx="50" cy="50" r="22" fill="url(#sunGradient)"/>
+
+  <!-- Sun rays -->
+  <g fill="#F97316">
+    <!-- Top ray -->
+    <rect x="46" y="8" width="8" height="16" rx="4"/>
+    <!-- Bottom ray -->
+    <rect x="46" y="76" width="8" height="16" rx="4"/>
+    <!-- Left ray -->
+    <rect x="8" y="46" width="16" height="8" rx="4"/>
+    <!-- Right ray -->
+    <rect x="76" y="46" width="16" height="8" rx="4"/>
+
+    <!-- Diagonal rays -->
+    <!-- Top-left -->
+    <rect x="16" y="16" width="8" height="14" rx="4" transform="rotate(-45 20 23)"/>
+    <!-- Top-right -->
+    <rect x="76" y="16" width="8" height="14" rx="4" transform="rotate(45 80 23)"/>
+    <!-- Bottom-left -->
+    <rect x="16" y="70" width="8" height="14" rx="4" transform="rotate(45 20 77)"/>
+    <!-- Bottom-right -->
+    <rect x="76" y="70" width="8" height="14" rx="4" transform="rotate(-45 80 77)"/>
+  </g>
+</svg>

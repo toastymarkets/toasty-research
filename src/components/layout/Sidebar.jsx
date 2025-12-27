@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   MapPin,
-  FileText,
-  Home,
   ChevronLeft,
   ChevronDown,
   X,
@@ -88,12 +86,10 @@ export default function Sidebar() {
           className="flex items-center gap-2"
           onClick={isMobile ? closeMobile : undefined}
         >
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Thermometer className="w-5 h-5 text-white" />
-          </div>
+          <img src="/logo.svg" alt="Toasty" className="w-8 h-8 flex-shrink-0" />
           {(!isCollapsed || isMobile) && (
             <span className="font-heading font-semibold text-lg">
-              Toasty Research
+              Toasty
             </span>
           )}
         </Link>
@@ -101,18 +97,7 @@ export default function Sidebar() {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Home link */}
-        <Link
-          to="/"
-          className={linkClasses(isActive('/'))}
-          onClick={isMobile ? closeMobile : undefined}
-          title={isCollapsed && !isMobile ? 'Home' : undefined}
-        >
-          <Home className="w-5 h-5 flex-shrink-0" />
-          {(!isCollapsed || isMobile) && <span>Home</span>}
-        </Link>
-
-      {/* Markets section */}
+        {/* Markets section */}
       <section>
         {(!isCollapsed || isMobile) && (
           <button
