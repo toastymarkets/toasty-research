@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, FileText, Clock, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, Clock, ExternalLink, Copy, Check } from 'lucide-react';
 import { useNWSForecastDiscussion } from '../../hooks/useNWSWeather';
 
 const formatRelativeTime = (isoString) => {
@@ -18,8 +18,20 @@ const formatRelativeTime = (isoString) => {
 
 export default function ForecastDiscussion({ cityId }) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [showFullText, setShowFullText] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { discussion, loading, error } = useNWSForecastDiscussion(cityId);
+
+  const handleCopy = async () => {
+    if (discussion?.parsed?.rawText) {
+      try {
+        await navigator.clipboard.writeText(discussion.parsed.rawText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy text:', err);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -37,17 +49,17 @@ export default function ForecastDiscussion({ cityId }) {
   const { parsed, summary, issuanceTime, officeName } = discussion;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center gap-3 group">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center gap-2 group">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-blue-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">NWS Forecast Discussion</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white">NWS Forecast Discussion</h2>
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+            <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+            <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
           )}
         </button>
         <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
@@ -57,28 +69,34 @@ export default function ForecastDiscussion({ cityId }) {
       </div>
 
       {isExpanded && (
-        <div className="space-y-4">
-          {summary && (
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{summary}</p>
-          )}
-
-          <div>
+        <div className="flex flex-col flex-1 min-h-0 space-y-3">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowFullText(!showFullText)}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
+              onClick={handleCopy}
+              className="text-xs text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 flex items-center gap-1 transition-colors"
+              title="Copy to clipboard"
             >
-              {showFullText ? 'Hide' : 'Show'} full discussion
-              {showFullText ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {copied ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3" />
+                  <span>Copy</span>
+                </>
+              )}
             </button>
-
-            {showFullText && parsed?.rawText && (
-              <pre className="mt-3 p-3 bg-gray-50 dark:bg-dark-elevated rounded-lg text-xs text-gray-600 dark:text-gray-400 overflow-x-auto whitespace-pre-wrap font-mono max-h-96 overflow-y-auto">
-                {parsed.rawText}
-              </pre>
-            )}
           </div>
 
-          <div className="pt-4 border-t border-gray-100 dark:border-dark-border flex items-center justify-between">
+          {parsed?.rawText && (
+            <pre className="flex-1 p-3 bg-gray-50 dark:bg-dark-elevated rounded-lg text-xs text-gray-600 dark:text-gray-400 overflow-auto whitespace-pre-wrap font-mono select-text">
+              {parsed.rawText}
+            </pre>
+          )}
+
+          <div className="pt-3 border-t border-gray-100 dark:border-dark-border flex items-center justify-between shrink-0">
             <span className="text-xs text-gray-400 dark:text-gray-500">NWS {officeName}</span>
             <a
               href={`https://forecast.weather.gov/product.php?site=${officeName}&issuedby=${officeName}&product=AFD`}
