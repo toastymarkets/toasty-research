@@ -5,9 +5,9 @@
 /* ===== DESIGN TOKENS ===== */
 :root {
   /* Typography */
-  --font-heading: "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-numeric: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: "Roboto", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-numeric: "Nunito", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Colors - Light Mode */
   --color-bg: #FFFDFB;

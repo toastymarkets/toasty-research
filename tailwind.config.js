@@ -8,9 +8,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'heading': ['"Space Grotesk"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        'body': ['"Inter"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        'numeric': ['"Inter"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'heading': ['"Roboto"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'body': ['"Nunito"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'numeric': ['"Nunito"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       colors: {
         'research': {
