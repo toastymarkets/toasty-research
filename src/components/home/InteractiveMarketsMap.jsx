@@ -1,10 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CloudRain, Cloud, CloudSnow, Sun } from 'lucide-react';
+import { MapPin, CloudRain, Cloud, CloudSnow, Sun, Satellite } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MARKET_CITIES } from '../../config/cities';
+
+const SATELLITE_PRODUCTS = {
+  airmass: {
+    name: 'Air Mass',
+    url: 'https://cdn.star.nesdis.noaa.gov/GOES19/ABI/GIFS/GOES19-CONUS-AirMass-625x375.gif',
+  },
+  geocolor: {
+    name: 'GeoColor',
+    url: 'https://cdn.star.nesdis.noaa.gov/GOES19/ABI/GIFS/GOES19-CONUS-GEOCOLOR-625x375.gif',
+  },
+  infrared: {
+    name: 'Infrared',
+    url: 'https://cdn.star.nesdis.noaa.gov/GOES19/ABI/GIFS/GOES19-CONUS-13-625x375.gif',
+  },
+};
 
 const FitBoundsToMarkets = () => {
   const map = useMap();
@@ -111,9 +126,15 @@ export default function InteractiveMarketsMap() {
   const [cityWeather, setCityWeather] = useState({});
   const isMobile = window.innerWidth < 768;
 
+  // View mode state
+  const [viewMode, setViewMode] = useState('markets'); // 'markets' or 'satellite'
+
   // Weather layer state
   const [radarVisible, setRadarVisible] = useState(false);
   const [currentRadarFrame, setCurrentRadarFrame] = useState(null);
+
+  // Satellite state
+  const [satelliteProduct, setSatelliteProduct] = useState('airmass');
 
   const handleMarkerClick = (citySlug) => navigate(`/city/${citySlug}`);
 
@@ -204,93 +225,164 @@ export default function InteractiveMarketsMap() {
   return (
     <>
       <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <MapPin className="w-5 h-5 text-orange-500" />
-          <h2 className="text-xl font-heading font-semibold">Market Locations</h2>
-        </div>
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          Click any city to view its dashboard and market data
-        </p>
-      </div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {viewMode === 'markets' ? (
+              <MapPin className="w-5 h-5 text-orange-500" />
+            ) : (
+              <Satellite className="w-5 h-5 text-orange-500" />
+            )}
+            <h2 className="text-xl font-heading font-semibold">
+              {viewMode === 'markets' ? 'Market Locations' : 'Satellite Imagery'}
+            </h2>
+          </div>
 
-      <div className="h-[450px] md:h-[400px] sm:h-[350px] rounded-2xl overflow-hidden
-                      border border-[var(--color-border)] shadow-lg markets-map-container relative">
-        <MapContainer
-          center={[39.8283, -98.5795]}
-          zoom={4}
-          style={{ height: '100%', width: '100%' }}
-          scrollWheelZoom={false}
-          zoomControl={true}
-          maxZoom={18}
-          minZoom={3}
-        >
-          <TileLayer
-            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-          />
-          <FitBoundsToMarkets />
-
-          {/* Weather Layers */}
-          <WeatherRadar
-            isVisible={radarVisible}
-            currentFrame={currentRadarFrame}
-          />
-
-          {MARKET_CITIES.map(city => (
-            <Marker
-              key={city.id}
-              position={[city.lat, city.lon]}
-              icon={createCityMarker(hoveredCity === city.id)}
-              eventHandlers={{
-                click: () => handleMarkerClick(city.slug),
-                mouseover: () => !isMobile && setHoveredCity(city.id),
-                mouseout: () => !isMobile && setHoveredCity(null)
-              }}
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 p-0.5 bg-[var(--color-card-bg)] rounded-lg border border-[var(--color-border)]">
+            <button
+              onClick={() => setViewMode('markets')}
+              className={`px-3 py-1 text-sm font-medium rounded transition-all ${
+                viewMode === 'markets'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+              }`}
             >
-              <Tooltip
-                direction="top"
-                offset={[0, -60]}
-                opacity={1}
-                className="map-tooltip-animated"
-                permanent={false}
-              >
-                <div className="flex items-center gap-3 px-4 py-3">
-                  {cityWeather[city.slug]?.weatherDescription && (() => {
-                    const WeatherIcon = getWeatherIcon(cityWeather[city.slug].weatherDescription);
-                    return <WeatherIcon className="w-6 h-6 flex-shrink-0" />;
-                  })()}
-                  <div className="text-center">
-                    <div className="text-xs font-semibold mb-1">{city.id}</div>
-                    {cityWeather[city.slug]?.currentTemp !== null && cityWeather[city.slug]?.currentTemp !== undefined ? (
-                      <div className="text-xl font-bold text-orange-500">
-                        {Math.round((cityWeather[city.slug].currentTemp * 9/5) + 32)}°
-                      </div>
-                    ) : (
-                      <div className="text-xs">...</div>
-                    )}
-                  </div>
-                </div>
-              </Tooltip>
-            </Marker>
-          ))}
-        </MapContainer>
-
-        {/* Weather Layer Controls */}
-        <div className="absolute top-3 right-3 z-[1000]">
-          {/* Precipitation Radar Toggle */}
-          <button
-            onClick={toggleRadar}
-            className={`p-2.5 rounded-lg shadow-lg transition-all ${
-              radarVisible
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : 'bg-white dark:bg-[var(--color-card-bg)] text-[var(--color-text-primary)] hover:bg-gray-100 dark:hover:bg-[var(--color-card-elevated)]'
-            } border border-[var(--color-border)]`}
-            title={radarVisible ? 'Hide precipitation radar' : 'Show precipitation radar'}
-          >
-            <CloudRain size={18} />
-          </button>
+              Markets
+            </button>
+            <button
+              onClick={() => setViewMode('satellite')}
+              className={`px-3 py-1 text-sm font-medium rounded transition-all ${
+                viewMode === 'satellite'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
+              Satellite
+            </button>
+          </div>
         </div>
+
+        {viewMode === 'markets' ? (
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            Click any city to view its dashboard and market data
+          </p>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {Object.entries(SATELLITE_PRODUCTS).map(([key, product]) => (
+              <button
+                key={key}
+                onClick={() => setSatelliteProduct(key)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all whitespace-nowrap ${
+                  satelliteProduct === key
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'bg-[var(--color-card-bg)] text-[var(--color-text-secondary)] border border-[var(--color-border)] hover:border-orange-500/50 hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                {product.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Content Area - Map or Satellite */}
+      {viewMode === 'markets' ? (
+        <div className="h-[450px] md:h-[400px] sm:h-[350px] rounded-2xl overflow-hidden
+                        border border-[var(--color-border)] shadow-lg markets-map-container relative">
+          <MapContainer
+            center={[39.8283, -98.5795]}
+            zoom={4}
+            style={{ height: '100%', width: '100%' }}
+            scrollWheelZoom={false}
+            zoomControl={true}
+            maxZoom={18}
+            minZoom={3}
+          >
+            <TileLayer
+              attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+            />
+            <FitBoundsToMarkets />
+
+            {/* Weather Layers */}
+            <WeatherRadar
+              isVisible={radarVisible}
+              currentFrame={currentRadarFrame}
+            />
+
+            {MARKET_CITIES.map(city => (
+              <Marker
+                key={city.id}
+                position={[city.lat, city.lon]}
+                icon={createCityMarker(hoveredCity === city.id)}
+                eventHandlers={{
+                  click: () => handleMarkerClick(city.slug),
+                  mouseover: () => !isMobile && setHoveredCity(city.id),
+                  mouseout: () => !isMobile && setHoveredCity(null)
+                }}
+              >
+                <Tooltip
+                  direction="top"
+                  offset={[0, -60]}
+                  opacity={1}
+                  className="map-tooltip-animated"
+                  permanent={false}
+                >
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    {cityWeather[city.slug]?.weatherDescription && (() => {
+                      const WeatherIcon = getWeatherIcon(cityWeather[city.slug].weatherDescription);
+                      return <WeatherIcon className="w-6 h-6 flex-shrink-0" />;
+                    })()}
+                    <div className="text-center">
+                      <div className="text-xs font-semibold mb-1">{city.id}</div>
+                      {cityWeather[city.slug]?.currentTemp !== null && cityWeather[city.slug]?.currentTemp !== undefined ? (
+                        <div className="text-xl font-bold text-orange-500">
+                          {Math.round((cityWeather[city.slug].currentTemp * 9/5) + 32)}°
+                        </div>
+                      ) : (
+                        <div className="text-xs">...</div>
+                      )}
+                    </div>
+                  </div>
+                </Tooltip>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          {/* Weather Layer Controls */}
+          <div className="absolute top-3 right-3 z-[1000]">
+            {/* Precipitation Radar Toggle */}
+            <button
+              onClick={toggleRadar}
+              className={`p-2.5 rounded-lg shadow-lg transition-all ${
+                radarVisible
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-white dark:bg-[var(--color-card-bg)] text-[var(--color-text-primary)] hover:bg-gray-100 dark:hover:bg-[var(--color-card-elevated)]'
+              } border border-[var(--color-border)]`}
+              title={radarVisible ? 'Hide precipitation radar' : 'Show precipitation radar'}
+            >
+              <CloudRain size={18} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          {/* Satellite Image Loop */}
+          <div className="rounded-2xl overflow-hidden bg-[var(--color-card-bg)] border border-[var(--color-border)] shadow-lg mb-3">
+            <img
+              src={SATELLITE_PRODUCTS[satelliteProduct].url}
+              alt={`${SATELLITE_PRODUCTS[satelliteProduct].name} satellite imagery`}
+              className="w-full h-auto"
+              loading="lazy"
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="text-xs text-[var(--color-text-muted)] text-center px-1">
+            4-hour loop
+          </div>
+        </div>
+      )}
     </>
   );
 }
