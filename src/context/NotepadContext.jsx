@@ -3,20 +3,52 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 const NotepadContext = createContext(null);
 
 // Create an empty TipTap document
-const createEmptyDocument = () => ({
-  type: 'doc',
-  content: [
-    {
-      type: 'heading',
-      attrs: { level: 1 },
-      content: [{ type: 'text', text: 'Research Notes' }]
-    },
-    {
-      type: 'paragraph',
-      content: [{ type: 'text', text: 'Start typing or use / to insert blocks...' }]
-    }
-  ]
-});
+const createEmptyDocument = (storageKey = '') => {
+  // Special default for daily summary notepad
+  if (storageKey === 'toasty_research_notes_v1_daily_summary') {
+    const today = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    return {
+      type: 'doc',
+      content: [
+        {
+          type: 'heading',
+          attrs: { level: 1 },
+          content: [{ type: 'text', text: today }]
+        },
+        {
+          type: 'heading',
+          attrs: { level: 2 },
+          content: [{ type: 'text', text: "Today's Forecasts:" }]
+        },
+        {
+          type: 'paragraph',
+        }
+      ]
+    };
+  }
+
+  // Default for other notepads (city/workspace)
+  return {
+    type: 'doc',
+    content: [
+      {
+        type: 'heading',
+        attrs: { level: 1 },
+        content: [{ type: 'text', text: 'Research Notes' }]
+      },
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text: 'Start typing or use / to insert blocks...' }]
+      }
+    ]
+  };
+};
 
 export function NotepadProvider({ storageKey, children }) {
   const [document, setDocument] = useState(null);
@@ -34,11 +66,11 @@ export function NotepadProvider({ storageKey, children }) {
         setDocument(parsed.document);
         setLastSaved(parsed.lastSaved ? new Date(parsed.lastSaved) : null);
       } else {
-        setDocument(createEmptyDocument());
+        setDocument(createEmptyDocument(storageKey));
       }
     } catch (e) {
       console.error('Failed to load notes:', e);
-      setDocument(createEmptyDocument());
+      setDocument(createEmptyDocument(storageKey));
     }
     setIsLoading(false);
   }, [storageKey]);
@@ -72,7 +104,7 @@ export function NotepadProvider({ storageKey, children }) {
 
   // Clear notes
   const clearDocument = useCallback(() => {
-    setDocument(createEmptyDocument());
+    setDocument(createEmptyDocument(storageKey));
     localStorage.removeItem(storageKey);
     setLastSaved(null);
   }, [storageKey]);

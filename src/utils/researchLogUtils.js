@@ -4,6 +4,7 @@ import { getWorkspaceList } from '../stores/workspaceStore';
 // Key patterns for localStorage
 const CITY_NOTE_PREFIX = 'toasty_research_notes_v1_city_';
 const WORKSPACE_NOTE_PREFIX = 'toasty_research_notes_v1_workspace_';
+const DAILY_SUMMARY_KEY = 'toasty_research_notes_v1_daily_summary';
 
 // Weather type detection keywords
 const WEATHER_KEYWORDS = {
@@ -85,12 +86,18 @@ function hasRealContent(doc) {
   if (!doc || !doc.content) return false;
 
   const text = extractTextFromDoc(doc).trim();
-
-  // Check for default content
-  const defaultContent = 'Research Notes Start typing or use / to insert blocks';
   const normalizedText = text.replace(/\s+/g, ' ');
 
-  return normalizedText.length > 0 && normalizedText !== defaultContent;
+  // Check for old default content
+  const oldDefaultContent = 'Research Notes Start typing or use / to insert blocks';
+  if (normalizedText === oldDefaultContent) return false;
+
+  // Check for new daily summary default (date + "Today's Forecasts:")
+  // Pattern: "[Day, Month DD, YYYY] Today's Forecasts:"
+  const dailyDefaultPattern = /^[A-Za-z]+,\s+[A-Za-z]+\s+\d+,\s+\d{4}\s+Today's Forecasts:$/;
+  if (dailyDefaultPattern.test(normalizedText)) return false;
+
+  return normalizedText.length > 0;
 }
 
 /**
@@ -142,6 +149,23 @@ export function getAllResearchNotes() {
           type: 'workspace',
           slug: workspaceId,
           location: workspace.name,
+          topic: extractResearchTopic(data.document),
+          lastSaved: new Date(data.lastSaved),
+          weatherType: detectWeatherType(data.document),
+          hasContent: true,
+        });
+      }
+
+      // Check for daily summary note
+      if (key === DAILY_SUMMARY_KEY) {
+        const data = JSON.parse(localStorage.getItem(key));
+        if (!data || !hasRealContent(data.document)) continue;
+
+        notes.push({
+          id: key,
+          type: 'daily-summary',
+          slug: 'daily-summary',
+          location: 'Daily Summary',
           topic: extractResearchTopic(data.document),
           lastSaved: new Date(data.lastSaved),
           weatherType: detectWeatherType(data.document),

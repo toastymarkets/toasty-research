@@ -12,6 +12,7 @@ import '../../styles/notepad.css';
 // Key patterns for localStorage
 const CITY_NOTE_PREFIX = 'toasty_research_notes_v1_city_';
 const WORKSPACE_NOTE_PREFIX = 'toasty_research_notes_v1_workspace_';
+const DAILY_SUMMARY_KEY = 'toasty_research_notes_v1_daily_summary';
 
 // Weather type icons and colors
 const WEATHER_CONFIG = {
@@ -109,6 +110,10 @@ export default function ResearchNotePage() {
         }
         location = workspace.name;
         dashboardPath = `/workspace/${slug}`;
+      } else if (noteType === 'daily-summary') {
+        storageKey = DAILY_SUMMARY_KEY;
+        location = 'Daily Summary';
+        dashboardPath = '/';
       } else {
         setError('Invalid note type');
         setIsLoading(false);
