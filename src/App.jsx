@@ -6,7 +6,6 @@ import CityDashboard from './components/dashboard/CityDashboard';
 import WorkspaceDashboard from './components/dashboard/WorkspaceDashboard';
 import ResearchLogPage from './components/research/ResearchLogPage';
 import ResearchNotePage from './components/research/ResearchNotePage';
-import NavBar from './components/layout/NavBar';
 import Sidebar from './components/layout/Sidebar';
 
 function App() {
@@ -15,7 +14,6 @@ function App() {
       <SidebarProvider>
         <Router>
           <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
-            <NavBar />
             <div className="flex">
               <Sidebar />
               <main className="flex-1 ml-0 md:ml-60 transition-all duration-300">

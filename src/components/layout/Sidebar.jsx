@@ -12,10 +12,14 @@ import {
   Snowflake,
   Wind,
   HelpCircle,
+  Sun,
+  Moon,
+  Menu,
 } from 'lucide-react';
 import { MARKET_CITIES } from '../../config/cities';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
 import { useSidebar } from '../../context/SidebarContext';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function Sidebar() {
   const {
@@ -23,7 +27,9 @@ export default function Sidebar() {
     toggleCollapse,
     isMobileOpen,
     closeMobile,
+    toggleMobile,
   } = useSidebar();
+  const { isDark, toggleTheme } = useTheme();
 
   const [notes, setNotes] = useState([]);
   const [isMarketsExpanded, setIsMarketsExpanded] = useState(true);
@@ -74,17 +80,37 @@ export default function Sidebar() {
 
   // Render sidebar content
   const renderSidebarContent = (isMobile = false) => (
-    <div className="h-full overflow-y-auto p-4 space-y-6">
-      {/* Home link */}
-      <Link
-        to="/"
-        className={linkClasses(isActive('/'))}
-        onClick={isMobile ? closeMobile : undefined}
-        title={isCollapsed && !isMobile ? 'Home' : undefined}
-      >
-        <Home className="w-5 h-5 flex-shrink-0" />
-        {(!isCollapsed || isMobile) && <span>Home</span>}
-      </Link>
+    <div className="h-full flex flex-col">
+      {/* Logo header */}
+      <div className="p-4 border-b border-[var(--color-border)]">
+        <Link
+          to="/"
+          className="flex items-center gap-2"
+          onClick={isMobile ? closeMobile : undefined}
+        >
+          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Thermometer className="w-5 h-5 text-white" />
+          </div>
+          {(!isCollapsed || isMobile) && (
+            <span className="font-heading font-semibold text-lg">
+              Toasty Research
+            </span>
+          )}
+        </Link>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Home link */}
+        <Link
+          to="/"
+          className={linkClasses(isActive('/'))}
+          onClick={isMobile ? closeMobile : undefined}
+          title={isCollapsed && !isMobile ? 'Home' : undefined}
+        >
+          <Home className="w-5 h-5 flex-shrink-0" />
+          {(!isCollapsed || isMobile) && <span>Home</span>}
+        </Link>
 
       {/* Markets section */}
       <section>
@@ -173,16 +199,51 @@ export default function Sidebar() {
           </nav>
         )}
       </section>
+      </div>
+
+      {/* Theme toggle footer */}
+      <div className="p-4 border-t border-[var(--color-border)]">
+        <button
+          onClick={toggleTheme}
+          className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg
+                     text-[var(--color-text-secondary)] hover:bg-[var(--color-card-elevated)]
+                     transition-colors ${isCollapsed && !isMobile ? 'justify-center' : ''}`}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={isCollapsed && !isMobile ? (isDark ? 'Light mode' : 'Dark mode') : undefined}
+        >
+          {isDark ? (
+            <Sun className="w-5 h-5 flex-shrink-0" />
+          ) : (
+            <Moon className="w-5 h-5 flex-shrink-0" />
+          )}
+          {(!isCollapsed || isMobile) && (
+            <span className="text-sm">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+          )}
+        </button>
+      </div>
     </div>
   );
 
   return (
     <>
+      {/* Mobile hamburger button - hidden when sidebar is open */}
+      {!isMobileOpen && (
+        <button
+          onClick={toggleMobile}
+          className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg
+                     bg-[var(--color-card-bg)] border border-[var(--color-border)]
+                     hover:bg-[var(--color-card-elevated)] transition-colors shadow-lg"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Desktop Sidebar */}
       <aside
         className={`
           hidden md:block
-          fixed left-0 top-16 h-[calc(100vh-64px)]
+          fixed left-0 top-0 h-screen
           bg-[var(--color-card-bg)] border-r border-[var(--color-border)]
           z-40 transition-all duration-300
           ${isCollapsed ? 'w-16' : 'w-60'}
