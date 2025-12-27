@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronDown,
   X,
+  Thermometer,
   Cloud,
   Snowflake,
   Wind,
