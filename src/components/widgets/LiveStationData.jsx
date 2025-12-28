@@ -94,7 +94,7 @@ function ObservationRow({
           </span>
         </td>
       )}
-      <td className="py-0.5 pr-1 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+      <td className="py-0.5 pr-0.5 text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
         {timeStr}
       </td>
       <td className="py-0.5 px-1">
@@ -497,7 +497,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
                     <tr className="text-xs text-gray-500">
                       <th className="w-6"></th>
                       {showNearby && <th className="text-left py-1 pr-1 text-[10px] uppercase tracking-wide">Station</th>}
-                      <th className="text-center py-1 px-1" title="Time">
+                      <th className="text-center py-1 px-0.5" title="Time">
                         <Clock size={12} className="inline-block" />
                       </th>
                       <th className="text-center py-1 px-1" title="Temperature">
