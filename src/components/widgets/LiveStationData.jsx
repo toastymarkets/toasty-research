@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronUp, ChevronDown, X, ExternalLink, Wind as WindIcon, MapPin, Plus } from 'lucide-react';
+import {
+  ChevronUp, ChevronDown, X, ExternalLink, Wind as WindIcon, MapPin, Plus,
+  Clock, Thermometer, Droplet, Droplets, Cloud, Gauge
+} from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
 import SelectableData from './SelectableData';
 import { useDataChip } from '../../context/DataChipContext';
@@ -491,16 +494,30 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
               <div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-xs text-gray-500 uppercase tracking-wide">
+                    <tr className="text-xs text-gray-500">
                       <th className="w-6"></th>
-                      {showNearby && <th className="text-left py-2 pr-2">Station</th>}
-                      <th className="text-left py-2 pr-2">Time</th>
-                      <th className="text-left py-2 px-2">Temp</th>
-                      <th className="text-left py-2 px-2">Dewpoint</th>
-                      <th className="text-left py-2 px-2">Humidity</th>
-                      <th className="text-left py-2 px-2">Wind</th>
-                      <th className="text-left py-2 px-2">Sky</th>
-                      <th className="text-left py-2 pl-2">Pressure</th>
+                      {showNearby && <th className="text-left py-2 pr-2 text-[10px] uppercase tracking-wide">Station</th>}
+                      <th className="text-center py-2 px-2" title="Time">
+                        <Clock size={14} className="inline-block" />
+                      </th>
+                      <th className="text-center py-2 px-2" title="Temperature">
+                        <Thermometer size={14} className="inline-block" />
+                      </th>
+                      <th className="text-center py-2 px-2" title="Dew Point">
+                        <Droplet size={14} className="inline-block" />
+                      </th>
+                      <th className="text-center py-2 px-2" title="Humidity">
+                        <Droplets size={14} className="inline-block" />
+                      </th>
+                      <th className="text-center py-2 px-2" title="Wind">
+                        <WindIcon size={14} className="inline-block" />
+                      </th>
+                      <th className="text-center py-2 px-2" title="Sky Conditions">
+                        <Cloud size={14} className="inline-block" />
+                      </th>
+                      <th className="text-center py-2 px-2" title="Pressure">
+                        <Gauge size={14} className="inline-block" />
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
