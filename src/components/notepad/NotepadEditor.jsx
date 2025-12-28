@@ -4,6 +4,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { useNotepad } from '../../context/NotepadContext';
 import { useDataChip } from '../../context/DataChipContext';
 import { DataChipNode } from './extensions/DataChipNode';
+import { SlashCommands } from './extensions/SlashCommands';
 import { useEffect } from 'react';
 import '../../styles/notepad.css';
 
@@ -27,6 +28,7 @@ export default function NotepadEditor() {
         },
       }),
       DataChipNode,
+      SlashCommands,
       Placeholder.configure({
         placeholder: ({ node }) => {
           if (node.type.name === 'heading') {
