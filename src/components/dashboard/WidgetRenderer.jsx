@@ -63,7 +63,7 @@ export default function WidgetRenderer({
 
   return (
     <div
-      className={`relative h-full bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-2xl overflow-hidden flex flex-col ${className}`}
+      className={`relative bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-2xl overflow-hidden ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -92,8 +92,8 @@ export default function WidgetRenderer({
         </div>
       )}
 
-      {/* Widget content - scrollable if needed */}
-      <div className="flex-1 overflow-auto px-3 pt-3 pb-0">
+      {/* Widget content */}
+      <div className="px-3 py-3">
         <Suspense
           fallback={
             <div className="py-8 flex items-center justify-center">

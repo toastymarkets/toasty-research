@@ -1,15 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, RotateCcw, Clock } from 'lucide-react';
-import GridLayout from 'react-grid-layout';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import { CITY_BY_SLUG } from '../../config/cities';
 import { DashboardProvider, useDashboard } from '../../context/DashboardContext';
 import { useNWSWeather } from '../../hooks/useNWSWeather';
 import WidgetRenderer from './WidgetRenderer';
 import AddWidgetPanel from './AddWidgetPanel';
-import DashboardLayout, { usePanelResize } from './DashboardLayout';
+import DashboardLayout from './DashboardLayout';
 import ResearchNotepad from '../notepad/ResearchNotepad';
 
 /**
@@ -42,63 +39,9 @@ function useLocalTime(timezone) {
   return time;
 }
 
-// Hook to measure container width with dynamic updates
-function useContainerWidth(ref, resizeSignal) {
-  const [width, setWidth] = useState(null);
-
-  // Re-measure when resize signal changes
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
-    const measureWidth = () => {
-      const newWidth = element.offsetWidth;
-      if (newWidth > 0) {
-        setWidth(newWidth);
-      }
-    };
-
-    // Measure after a small delay to ensure DOM has updated
-    const timeoutId = setTimeout(measureWidth, 16);
-    return () => clearTimeout(timeoutId);
-  }, [resizeSignal]);
-
-  // Initial measurement with delay and ResizeObserver
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
-    const measureWidth = () => {
-      const newWidth = element.offsetWidth;
-      if (newWidth > 0) {
-        setWidth(newWidth);
-      }
-    };
-
-    // Initial measurement with delay to ensure layout is complete
-    const initialTimeout = setTimeout(measureWidth, 100);
-
-    const resizeObserver = new ResizeObserver(() => {
-      measureWidth();
-    });
-    resizeObserver.observe(element);
-
-    return () => {
-      clearTimeout(initialTimeout);
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  // Return measured width or fallback
-  return width || ref.current?.offsetWidth || 800;
-}
-
 function DashboardContent({ city, citySlug }) {
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [replaceWidgetId, setReplaceWidgetId] = useState(null);
-  const containerRef = useRef(null);
-  const resizeSignal = usePanelResize();
-  const width = useContainerWidth(containerRef, resizeSignal);
 
   const {
     isLoading,
@@ -107,8 +50,6 @@ function DashboardContent({ city, citySlug }) {
     replaceWidget,
     resetLayout,
     getWidgets,
-    getGridLayout,
-    onLayoutChange,
   } = useDashboard();
 
   // Get current weather and local time
@@ -149,7 +90,6 @@ function DashboardContent({ city, citySlug }) {
   }
 
   const widgets = getWidgets();
-  const gridLayout = getGridLayout();
 
   const notepadStorageKey = `toasty_research_notes_v1_city_${citySlug}`;
 
@@ -203,32 +143,17 @@ function DashboardContent({ city, citySlug }) {
           </div>
         </div>
 
-        {/* Dashboard grid */}
-        <div ref={containerRef} className="dashboard-grid">
-          <GridLayout
-            className="layout"
-            layout={gridLayout}
-            cols={12}
-            rowHeight={80}
-            width={width || 1200}
-            isDraggable={false}
-            isResizable={false}
-            margin={[12, 12]}
-            containerPadding={[0, 0]}
-            useCSSTransforms={true}
-            compactType="vertical"
-          >
-            {widgets.map(widget => (
-              <div key={widget.id} className="widget-grid-item">
-                <WidgetRenderer
-                  widgetInstance={widget}
-                  citySlug={citySlug}
-                  onRemove={removeWidget}
-                  onReplace={handleReplaceWidget}
-                />
-              </div>
-            ))}
-          </GridLayout>
+        {/* Dashboard grid - CSS Grid with auto-sizing rows */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {widgets.map(widget => (
+            <WidgetRenderer
+              key={widget.id}
+              widgetInstance={widget}
+              citySlug={citySlug}
+              onRemove={removeWidget}
+              onReplace={handleReplaceWidget}
+            />
+          ))}
         </div>
       </div>
 
