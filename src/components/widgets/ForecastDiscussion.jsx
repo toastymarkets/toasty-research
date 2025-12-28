@@ -21,15 +21,36 @@ export default function ForecastDiscussion({ cityId }) {
   const [copied, setCopied] = useState(false);
   const { discussion, loading, error } = useNWSForecastDiscussion(cityId);
 
+  // Clean NWS text by joining hard-wrapped lines while preserving paragraphs
+  const cleanTextForCopy = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/\n(?!\n)/g, ' ')  // Single newline → space (join wrapped lines)
+      .replace(/  +/g, ' ')        // Collapse multiple spaces
+      .trim();
+  };
+
+  // Handle copy button click
   const handleCopy = async () => {
     if (discussion?.parsed?.rawText) {
       try {
-        await navigator.clipboard.writeText(discussion.parsed.rawText);
+        const cleanedText = cleanTextForCopy(discussion.parsed.rawText);
+        await navigator.clipboard.writeText(cleanedText);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
         console.error('Failed to copy text:', err);
       }
+    }
+  };
+
+  // Intercept manual text selection copy (Ctrl/Cmd+C)
+  const handleTextCopy = (e) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString()) {
+      e.preventDefault();
+      const cleanedText = cleanTextForCopy(selection.toString());
+      navigator.clipboard.writeText(cleanedText);
     }
   };
 
@@ -91,7 +112,10 @@ export default function ForecastDiscussion({ cityId }) {
           </div>
 
           {parsed?.rawText && (
-            <pre className="flex-1 min-h-0 p-3 bg-gray-50 dark:bg-dark-elevated rounded-lg text-xs text-gray-600 dark:text-gray-400 overflow-y-auto whitespace-pre-wrap font-mono select-text">
+            <pre
+              className="flex-1 min-h-0 p-3 bg-gray-50 dark:bg-dark-elevated rounded-lg text-xs text-gray-600 dark:text-gray-400 overflow-y-auto whitespace-pre-wrap font-mono select-text"
+              onCopy={handleTextCopy}
+            >
               {parsed.rawText}
             </pre>
           )}
