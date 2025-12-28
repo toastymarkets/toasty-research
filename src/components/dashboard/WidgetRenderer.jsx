@@ -93,7 +93,7 @@ export default function WidgetRenderer({
       )}
 
       {/* Widget content - scrollable if needed */}
-      <div className="flex-1 overflow-auto p-3">
+      <div className="flex-1 overflow-auto px-3 pt-3 pb-0">
         <Suspense
           fallback={
             <div className="py-8 flex items-center justify-center">
