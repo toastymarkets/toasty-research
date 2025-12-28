@@ -6,6 +6,11 @@ const CITY_NOTE_PREFIX = 'toasty_research_notes_v1_city_';
 const WORKSPACE_NOTE_PREFIX = 'toasty_research_notes_v1_workspace_';
 const DAILY_SUMMARY_KEY = 'toasty_research_notes_v1_daily_summary';
 
+// Regex patterns for archived notes (with timestamp suffix)
+const CITY_NOTE_PATTERN = /^toasty_research_notes_v1_city_([a-z-]+)(?:_(\d+))?$/;
+const WORKSPACE_NOTE_PATTERN = /^toasty_research_notes_v1_workspace_([a-zA-Z0-9-]+)(?:_(\d+))?$/;
+const DAILY_SUMMARY_PATTERN = /^toasty_research_notes_v1_daily_summary(?:_(\d+))?$/;
+
 // Weather type detection keywords
 const WEATHER_KEYWORDS = {
   Temperature: ['temp', 'hot', 'cold', 'heat', 'freeze', 'degree', 'warm', 'cool'],
@@ -101,7 +106,7 @@ function hasRealContent(doc) {
 }
 
 /**
- * Get all research notes from localStorage
+ * Get all research notes from localStorage (including archived notes)
  */
 export function getAllResearchNotes() {
   const notes = [];
@@ -114,9 +119,11 @@ export function getAllResearchNotes() {
     if (!key) continue;
 
     try {
-      // Check for city notes
-      if (key.startsWith(CITY_NOTE_PREFIX)) {
-        const citySlug = key.slice(CITY_NOTE_PREFIX.length);
+      // Check for city notes (current and archived)
+      const cityMatch = key.match(CITY_NOTE_PATTERN);
+      if (cityMatch) {
+        const citySlug = cityMatch[1];
+        const archiveTimestamp = cityMatch[2]; // undefined for current, timestamp for archived
         const city = CITY_BY_SLUG[citySlug];
         if (!city) continue;
 
@@ -132,12 +139,16 @@ export function getAllResearchNotes() {
           lastSaved: new Date(data.lastSaved),
           weatherType: detectWeatherType(data.document),
           hasContent: true,
+          isArchived: !!archiveTimestamp,
         });
+        continue;
       }
 
-      // Check for workspace notes
-      if (key.startsWith(WORKSPACE_NOTE_PREFIX)) {
-        const workspaceId = key.slice(WORKSPACE_NOTE_PREFIX.length);
+      // Check for workspace notes (current and archived)
+      const workspaceMatch = key.match(WORKSPACE_NOTE_PATTERN);
+      if (workspaceMatch) {
+        const workspaceId = workspaceMatch[1];
+        const archiveTimestamp = workspaceMatch[2];
         const workspace = workspaceMap.get(workspaceId);
         if (!workspace) continue;
 
@@ -153,11 +164,16 @@ export function getAllResearchNotes() {
           lastSaved: new Date(data.lastSaved),
           weatherType: detectWeatherType(data.document),
           hasContent: true,
+          isArchived: !!archiveTimestamp,
         });
+        continue;
       }
 
-      // Check for daily summary note
-      if (key === DAILY_SUMMARY_KEY) {
+      // Check for daily summary notes (current and archived)
+      const dailyMatch = key.match(DAILY_SUMMARY_PATTERN);
+      if (dailyMatch) {
+        const archiveTimestamp = dailyMatch[1];
+
         const data = JSON.parse(localStorage.getItem(key));
         if (!data || !hasRealContent(data.document)) continue;
 
@@ -170,7 +186,9 @@ export function getAllResearchNotes() {
           lastSaved: new Date(data.lastSaved),
           weatherType: detectWeatherType(data.document),
           hasContent: true,
+          isArchived: !!archiveTimestamp,
         });
+        continue;
       }
     } catch (e) {
       console.error('Failed to parse note:', key, e);

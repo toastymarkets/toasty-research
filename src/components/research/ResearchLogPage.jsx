@@ -1,8 +1,71 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, ArrowLeft, ChevronUp, ChevronDown, Thermometer, Cloud, Snowflake, Wind, HelpCircle } from 'lucide-react';
+import { FileText, ArrowLeft, ChevronUp, ChevronDown, Thermometer, Cloud, Snowflake, Wind, HelpCircle, Trash2, AlertTriangle } from 'lucide-react';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
 import { MARKET_CITIES } from '../../config/cities';
+
+// Delete confirmation popover component
+function DeleteConfirmPopover({ note, onConfirm, onCancel, buttonRef }) {
+  const popoverRef = useRef(null);
+
+  // Close on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target) &&
+          buttonRef.current && !buttonRef.current.contains(e.target)) {
+        onCancel();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onCancel, buttonRef]);
+
+  // Close on escape
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onCancel]);
+
+  return (
+    <div
+      ref={popoverRef}
+      className="absolute right-0 top-full mt-2 z-50 w-64 p-4 rounded-xl shadow-lg border border-[var(--color-border)]
+                 bg-[var(--color-card-bg)] animate-in fade-in slide-in-from-top-2 duration-150"
+      style={{ animationFillMode: 'forwards' }}
+    >
+      <div className="flex items-start gap-3 mb-3">
+        <div className="p-2 rounded-lg bg-red-500/10">
+          <AlertTriangle size={16} className="text-red-500" />
+        </div>
+        <div>
+          <p className="font-medium text-sm text-[var(--color-text-primary)]">Delete note?</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5 line-clamp-1">
+            {note.topic}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onCancel}
+          className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border)]
+                     hover:bg-[var(--color-card-elevated)] transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-red-500 hover:bg-red-600
+                     text-white transition-colors"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Weather type icons and colors
 const WEATHER_ICONS = {
@@ -38,6 +101,8 @@ export default function ResearchLogPage() {
   const [notes, setNotes] = useState([]);
   const [sortField, setSortField] = useState('lastSaved');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [deleteTarget, setDeleteTarget] = useState(null); // note id being deleted
+  const deleteButtonRefs = useRef({});
 
   useEffect(() => {
     setNotes(getAllResearchNotes());
@@ -67,7 +132,31 @@ export default function ResearchLogPage() {
   });
 
   const handleRowClick = (note) => {
-    navigate(`/research/${note.type}/${note.slug}`);
+    // For archived notes, pass the full storage key as a query param
+    if (note.isArchived) {
+      navigate(`/research/${note.type}/${note.slug}?key=${encodeURIComponent(note.id)}`);
+    } else {
+      navigate(`/research/${note.type}/${note.slug}`);
+    }
+  };
+
+  const handleDeleteClick = (e, noteId) => {
+    e.stopPropagation(); // Prevent row click navigation
+    setDeleteTarget(noteId);
+  };
+
+  const confirmDelete = (noteId) => {
+    try {
+      localStorage.removeItem(noteId);
+      setNotes(prev => prev.filter(n => n.id !== noteId));
+    } catch (err) {
+      console.error('Failed to delete note:', err);
+    }
+    setDeleteTarget(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteTarget(null);
   };
 
   const SortIcon = ({ field }) => {
@@ -148,6 +237,7 @@ export default function ResearchLogPage() {
                   Weather Type
                   <SortIcon field="weatherType" />
                 </th>
+                <th className="w-12 px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -158,7 +248,14 @@ export default function ResearchLogPage() {
                   className="border-b border-[var(--color-border)] last:border-b-0 hover:bg-[var(--color-card-elevated)] cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-4">
-                    <div className="font-medium">{note.topic}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{note.topic}</span>
+                      {note.isArchived && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-500">
+                          Archived
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
@@ -175,6 +272,30 @@ export default function ResearchLogPage() {
                   </td>
                   <td className="px-4 py-4">
                     <WeatherTypeBadge type={note.weatherType} />
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="relative">
+                      <button
+                        ref={el => deleteButtonRefs.current[note.id] = el}
+                        onClick={(e) => handleDeleteClick(e, note.id)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          deleteTarget === note.id
+                            ? 'text-red-500 bg-red-500/10'
+                            : 'text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10'
+                        }`}
+                        title="Delete note"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      {deleteTarget === note.id && (
+                        <DeleteConfirmPopover
+                          note={note}
+                          onConfirm={() => confirmDelete(note.id)}
+                          onCancel={cancelDelete}
+                          buttonRef={{ current: deleteButtonRefs.current[note.id] }}
+                        />
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

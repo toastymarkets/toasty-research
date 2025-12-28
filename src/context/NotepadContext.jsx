@@ -86,6 +86,39 @@ const createEmptyDocument = (storageKey = '') => {
   };
 };
 
+// Helper to extract text from TipTap document
+const extractTextFromDoc = (doc) => {
+  if (!doc || !doc.content) return '';
+  const extractText = (node) => {
+    if (node.type === 'text') return node.text || '';
+    if (node.content) return node.content.map(extractText).join(' ');
+    return '';
+  };
+  return doc.content.map(extractText).join(' ');
+};
+
+// Check if document has non-default content worth archiving
+const hasNonDefaultContent = (doc) => {
+  if (!doc || !doc.content) return false;
+
+  const text = extractTextFromDoc(doc).trim().replace(/\s+/g, ' ');
+
+  // Skip if empty
+  if (text.length === 0) return false;
+
+  // Skip default workspace content
+  if (text === 'Research Notes Start typing or use / to insert blocks...') return false;
+
+  // Skip if only contains date header patterns (city/daily defaults)
+  // Pattern: "City Name | Day, Month DD, YYYY My forecast:" or "Day, Month DD, YYYY Today's Forecasts:"
+  const cityDefaultPattern = /^[A-Za-z\s]+ \| [A-Za-z]+, [A-Za-z]+ \d+, \d{4} My forecast:$/;
+  const dailyDefaultPattern = /^[A-Za-z]+, [A-Za-z]+ \d+, \d{4} Today's Forecasts:$/;
+
+  if (cityDefaultPattern.test(text) || dailyDefaultPattern.test(text)) return false;
+
+  return true;
+};
+
 export function NotepadProvider({ storageKey, children }) {
   const [document, setDocument] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -181,8 +214,30 @@ export function NotepadProvider({ storageKey, children }) {
     }, 500);
   }, [storageKey]);
 
-  // Create new note (manual reset)
+  // Archive current note before creating a new one
+  const archiveCurrentNote = useCallback(() => {
+    try {
+      const currentData = localStorage.getItem(storageKey);
+      if (currentData) {
+        const parsed = JSON.parse(currentData);
+        // Only archive if there's real content (not just default template)
+        if (parsed.document && hasNonDefaultContent(parsed.document)) {
+          const archiveKey = `${storageKey}_${Date.now()}`;
+          localStorage.setItem(archiveKey, currentData);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to archive note:', e);
+    }
+    return false;
+  }, [storageKey]);
+
+  // Create new note (archives current note first)
   const createNewNote = useCallback(() => {
+    // Archive the current note before creating new one
+    archiveCurrentNote();
+
     const newDoc = createEmptyDocument(storageKey);
     setDocument(newDoc);
     setLastSaved(null);
@@ -195,7 +250,7 @@ export function NotepadProvider({ storageKey, children }) {
       version: 1,
     };
     localStorage.setItem(storageKey, JSON.stringify(saveData));
-  }, [storageKey]);
+  }, [storageKey, archiveCurrentNote]);
 
   // Clear notes
   const clearDocument = useCallback(() => {

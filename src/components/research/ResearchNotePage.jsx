@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { ArrowLeft, Edit2, Thermometer, Cloud, Snowflake, Wind, HelpCircle, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Edit2, Thermometer, Cloud, Snowflake, Wind, HelpCircle, Calendar, MapPin, Archive } from 'lucide-react';
 import { CITY_BY_SLUG } from '../../config/cities';
 import { getWorkspaceList } from '../../stores/workspaceStore';
 import { extractResearchTopic, detectWeatherType } from '../../utils/researchLogUtils';
@@ -78,19 +78,26 @@ function ReadOnlyEditor({ content }) {
 
 export default function ResearchNotePage() {
   const { noteType, slug } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [noteData, setNoteData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Check for archived note key in query params
+  const archivedKey = searchParams.get('key');
 
   useEffect(() => {
     try {
       let storageKey;
       let location;
       let dashboardPath;
+      let isArchived = false;
 
       if (noteType === 'city') {
-        storageKey = `${CITY_NOTE_PREFIX}${slug}`;
+        // Use archived key if provided, otherwise use current note key
+        storageKey = archivedKey || `${CITY_NOTE_PREFIX}${slug}`;
+        isArchived = !!archivedKey;
         const city = CITY_BY_SLUG[slug];
         if (!city) {
           setError('City not found');
@@ -100,7 +107,8 @@ export default function ResearchNotePage() {
         location = city.name;
         dashboardPath = `/city/${slug}`;
       } else if (noteType === 'workspace') {
-        storageKey = `${WORKSPACE_NOTE_PREFIX}${slug}`;
+        storageKey = archivedKey || `${WORKSPACE_NOTE_PREFIX}${slug}`;
+        isArchived = !!archivedKey;
         const workspaces = getWorkspaceList();
         const workspace = workspaces.find(w => w.id === slug);
         if (!workspace) {
@@ -111,7 +119,8 @@ export default function ResearchNotePage() {
         location = workspace.name;
         dashboardPath = `/workspace/${slug}`;
       } else if (noteType === 'daily-summary') {
-        storageKey = DAILY_SUMMARY_KEY;
+        storageKey = archivedKey || DAILY_SUMMARY_KEY;
+        isArchived = !!archivedKey;
         location = 'Daily Summary';
         dashboardPath = '/';
       } else {
@@ -136,6 +145,7 @@ export default function ResearchNotePage() {
         location,
         dashboardPath,
         noteType,
+        isArchived,
       });
       setIsLoading(false);
     } catch (e) {
@@ -143,7 +153,7 @@ export default function ResearchNotePage() {
       setError('Failed to load note');
       setIsLoading(false);
     }
-  }, [noteType, slug]);
+  }, [noteType, slug, archivedKey]);
 
   if (isLoading) {
     return (
@@ -192,18 +202,35 @@ export default function ResearchNotePage() {
                 {formatDate(noteData.lastSaved)}
               </span>
               <WeatherTypeBadge type={noteData.weatherType} />
+              {noteData.isArchived && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-500/10 text-gray-500">
+                  <Archive size={14} />
+                  Archived
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        <Link
-          to={noteData.dashboardPath}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
-        >
-          <Edit2 size={16} />
-          <span className="hidden sm:inline">Edit in Dashboard</span>
-          <span className="sm:hidden">Edit</span>
-        </Link>
+        {noteData.isArchived ? (
+          <Link
+            to={noteData.dashboardPath}
+            className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border)] hover:border-orange-500 text-[var(--color-text-secondary)] hover:text-orange-500 rounded-lg transition-colors"
+          >
+            <Edit2 size={16} />
+            <span className="hidden sm:inline">View Current</span>
+            <span className="sm:hidden">Current</span>
+          </Link>
+        ) : (
+          <Link
+            to={noteData.dashboardPath}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
+          >
+            <Edit2 size={16} />
+            <span className="hidden sm:inline">Edit in Dashboard</span>
+            <span className="sm:hidden">Edit</span>
+          </Link>
+        )}
       </div>
 
       {/* Note Content */}
