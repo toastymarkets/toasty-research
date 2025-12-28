@@ -390,7 +390,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
 
       {/* Toggle buttons */}
       {isExpanded && (
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-3">
           {/* Nearby stations toggle */}
           {nearbyStations.length > 0 && (
             <button
@@ -449,7 +449,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
           ) : current ? (
             <>
               {/* Current conditions row - compact */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-3 gap-3 mb-3">
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Temp</div>
                   <SelectableData
@@ -556,7 +556,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
               </div>
 
               {/* Footer */}
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <span className="text-xs text-gray-500">
                   {showNearby
                     ? `Data from NWS (${stationId} + ${nearbyStations.length} nearby) • Updates every 5 minutes`
