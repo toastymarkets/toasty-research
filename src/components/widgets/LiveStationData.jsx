@@ -71,21 +71,21 @@ function ObservationRow({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <td className="py-2 pr-1 w-6">
+      <td className="py-0.5 pr-1 w-6">
         {isAvailable && isHovered && (
           <button
             onClick={handleRowInsert}
-            className="w-5 h-5 flex items-center justify-center rounded-full bg-[var(--color-orange-main)] text-white hover:scale-110 transition-transform"
+            className="w-4 h-4 flex items-center justify-center rounded-full bg-[var(--color-orange-main)] text-white hover:scale-110 transition-transform"
             title={`Add full observation to notes`}
             type="button"
           >
-            <Plus size={12} strokeWidth={3} />
+            <Plus size={10} strokeWidth={3} />
           </button>
         )}
       </td>
       {showNearby && (
-        <td className="py-2 pr-2">
-          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+        <td className="py-0.5 pr-1">
+          <span className={`text-[10px] font-medium px-1 py-0.5 rounded ${
             obs.station === stationId
               ? 'bg-orange-500/20 text-orange-500'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
@@ -94,10 +94,10 @@ function ObservationRow({
           </span>
         </td>
       )}
-      <td className="py-2 pr-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+      <td className="py-0.5 pr-1 text-gray-600 dark:text-gray-400 whitespace-nowrap">
         {timeStr}
       </td>
-      <td className="py-2 px-2">
+      <td className="py-0.5 px-1">
         {obs.tempF != null ? (
           <SelectableData
             value={useMetric ? `${obs.tempC}°C` : `${obs.tempF}°F`}
@@ -105,13 +105,13 @@ function ObservationRow({
             source={sourceWithTime}
             type="temperature"
           >
-            <span className={`px-2 py-0.5 rounded text-white font-medium tabular-nums ${getTempColorClass(obs.tempF)}`}>
+            <span className={`px-1.5 py-0.5 rounded text-white font-medium tabular-nums ${getTempColorClass(obs.tempF)}`}>
               {useMetric ? `${obs.tempC}°C` : `${obs.tempF}°F`}
             </span>
           </SelectableData>
         ) : '--'}
       </td>
-      <td className="py-2 px-2 text-gray-600 dark:text-gray-400 tabular-nums">
+      <td className="py-0.5 px-1 text-gray-600 dark:text-gray-400 tabular-nums">
         {obs.dewpointF != null ? (
           <SelectableData
             value={useMetric ? `${obs.dewpointC}°C` : `${obs.dewpointF}°F`}
@@ -123,7 +123,7 @@ function ObservationRow({
           </SelectableData>
         ) : '--'}
       </td>
-      <td className="py-2 px-2 text-gray-600 dark:text-gray-400 tabular-nums">
+      <td className="py-0.5 px-1 text-gray-600 dark:text-gray-400 tabular-nums">
         {obs.humidity != null ? (
           <SelectableData
             value={`${obs.humidity}%`}
@@ -135,7 +135,7 @@ function ObservationRow({
           </SelectableData>
         ) : '--'}
       </td>
-      <td className="py-2 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+      <td className="py-0.5 px-1 text-gray-600 dark:text-gray-400 whitespace-nowrap">
         {obs.windSpeedMph != null ? (
           <SelectableData
             value={`${obs.windDirection || ''} ${useMetric ? obs.windSpeedKmh + 'km/h' : obs.windSpeedMph + 'mph'}`.trim()}
@@ -147,10 +147,10 @@ function ObservationRow({
           </SelectableData>
         ) : '--'}
       </td>
-      <td className="py-2 px-2 text-gray-600 dark:text-gray-400 truncate max-w-[100px]" title={obs.conditions || ''}>
+      <td className="py-0.5 px-1 text-gray-600 dark:text-gray-400 truncate max-w-[80px]" title={obs.conditions || ''}>
         {obs.conditions || 'N/A'}
       </td>
-      <td className="py-2 pl-2 text-gray-600 dark:text-gray-400 tabular-nums">
+      <td className="py-0.5 pl-1 text-gray-600 dark:text-gray-400 tabular-nums">
         {obs.pressureInHg != null ? (
           <SelectableData
             value={useMetric ? `${obs.pressureMb}mb` : `${obs.pressureInHg}"`}
@@ -492,31 +492,31 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
 
               {/* Observation Table - Scrollable */}
               <div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs">
                   <thead>
                     <tr className="text-xs text-gray-500">
                       <th className="w-6"></th>
-                      {showNearby && <th className="text-left py-2 pr-2 text-[10px] uppercase tracking-wide">Station</th>}
-                      <th className="text-center py-2 px-2" title="Time">
-                        <Clock size={14} className="inline-block" />
+                      {showNearby && <th className="text-left py-1 pr-1 text-[10px] uppercase tracking-wide">Station</th>}
+                      <th className="text-center py-1 px-1" title="Time">
+                        <Clock size={12} className="inline-block" />
                       </th>
-                      <th className="text-center py-2 px-2" title="Temperature">
-                        <Thermometer size={14} className="inline-block" />
+                      <th className="text-center py-1 px-1" title="Temperature">
+                        <Thermometer size={12} className="inline-block" />
                       </th>
-                      <th className="text-center py-2 px-2" title="Dew Point">
-                        <Droplet size={14} className="inline-block" />
+                      <th className="text-center py-1 px-1" title="Dew Point">
+                        <Droplet size={12} className="inline-block" />
                       </th>
-                      <th className="text-center py-2 px-2" title="Humidity">
-                        <Droplets size={14} className="inline-block" />
+                      <th className="text-center py-1 px-1" title="Humidity">
+                        <Droplets size={12} className="inline-block" />
                       </th>
-                      <th className="text-center py-2 px-2" title="Wind">
-                        <WindIcon size={14} className="inline-block" />
+                      <th className="text-center py-1 px-1" title="Wind">
+                        <WindIcon size={12} className="inline-block" />
                       </th>
-                      <th className="text-center py-2 px-2" title="Sky Conditions">
-                        <Cloud size={14} className="inline-block" />
+                      <th className="text-center py-1 px-1" title="Sky Conditions">
+                        <Cloud size={12} className="inline-block" />
                       </th>
-                      <th className="text-center py-2 px-2" title="Pressure">
-                        <Gauge size={14} className="inline-block" />
+                      <th className="text-center py-1 px-1" title="Pressure">
+                        <Gauge size={12} className="inline-block" />
                       </th>
                     </tr>
                   </thead>
