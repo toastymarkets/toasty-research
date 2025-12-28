@@ -33,9 +33,9 @@ export const WIDGET_REGISTRY = {
     component: LiveStationData,
     category: 'weather',
     requiredProps: ['stationId', 'cityName', 'timezone'],
-    defaultW: 4,
+    defaultW: 6,  // Half width (6/12 columns)
     defaultH: 5,
-    minW: 3,
+    minW: 4,
     minH: 4,
   },
   'nearby-stations-map': {

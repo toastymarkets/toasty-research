@@ -6,20 +6,20 @@ const DashboardContext = createContext(null);
 const STORAGE_KEY = 'toasty_research_dashboard_v6'; // v6 two-column widget layout
 
 // Default layout with grid positions (12-column grid, 2-column visual layout)
-// Live Station Data full width at top, other widgets in 2-column grid below
+// Live Station Data takes half width at top, other widgets in 2-column grid
 const createDefaultLayout = () => ({
   widgets: [
-    // Full width - Live Station Data
-    { id: 'live-station-data-1', widgetId: 'live-station-data', x: 0, y: 0, w: 12, h: 7, visible: true },
-    // Row 2 - 2 columns (w: 6 each)
-    { id: 'forecast-models-1', widgetId: 'forecast-models', x: 0, y: 7, w: 6, h: 5, visible: true },
-    { id: 'nws-hourly-forecast-1', widgetId: 'nws-hourly-forecast', x: 6, y: 7, w: 6, h: 5, visible: true },
+    // Row 1 - Live Station Data (left) + Forecast Models (right)
+    { id: 'live-station-data-1', widgetId: 'live-station-data', x: 0, y: 0, w: 6, h: 5, visible: true },
+    { id: 'forecast-models-1', widgetId: 'forecast-models', x: 6, y: 0, w: 6, h: 5, visible: true },
+    // Row 2 - 2 columns
+    { id: 'nws-hourly-forecast-1', widgetId: 'nws-hourly-forecast', x: 0, y: 5, w: 6, h: 5, visible: true },
+    { id: 'live-market-brackets-1', widgetId: 'live-market-brackets', x: 6, y: 5, w: 6, h: 5, visible: true },
     // Row 3 - 2 columns
-    { id: 'live-market-brackets-1', widgetId: 'live-market-brackets', x: 0, y: 12, w: 6, h: 5, visible: true },
-    { id: 'forecast-discussion-1', widgetId: 'forecast-discussion', x: 6, y: 12, w: 6, h: 5, visible: true },
-    // Row 4 - 2 columns
-    { id: 'daily-summary-1', widgetId: 'daily-summary', x: 0, y: 17, w: 6, h: 4, visible: true },
-    { id: 'nearby-stations-map-1', widgetId: 'nearby-stations-map', x: 6, y: 17, w: 6, h: 5, visible: true },
+    { id: 'forecast-discussion-1', widgetId: 'forecast-discussion', x: 0, y: 10, w: 6, h: 5, visible: true },
+    { id: 'daily-summary-1', widgetId: 'daily-summary', x: 6, y: 10, w: 6, h: 4, visible: true },
+    // Row 4 - Nearby Stations Map
+    { id: 'nearby-stations-map-1', widgetId: 'nearby-stations-map', x: 0, y: 15, w: 6, h: 5, visible: true },
   ],
 });
 

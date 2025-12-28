@@ -174,7 +174,6 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
-  const [showAllObs, setShowAllObs] = useState(false);
   const [useMetric, setUseMetric] = useState(false);
   const [showNearby, setShowNearby] = useState(false);
 
@@ -357,12 +356,10 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
     return 'bg-blue-600';
   };
 
-  const displayedObs = showAllObs ? observations : observations.slice(0, 10);
-
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           <span className="font-semibold text-gray-900 dark:text-white">Live Station Data</span>
@@ -448,40 +445,20 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
             </div>
           ) : current ? (
             <>
-              {/* Current conditions row */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
+              {/* Current conditions row - compact */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Current Temp</div>
+                  <div className="text-xs text-gray-500 mb-1">Temp</div>
                   <SelectableData
                     value={useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
                     label="Current Temperature"
                     source={`${cityName} (${stationId})`}
                     type="temperature"
                   >
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+                    <div className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">
                       {useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
                     </div>
                   </SelectableData>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">Trend (1h)</div>
-                  {trend && trend !== '--' ? (
-                    <SelectableData
-                      value={trend}
-                      label="1-Hour Trend"
-                      source={`${cityName} (${stationId})`}
-                      type="temperature"
-                    >
-                      <div className={`text-lg font-semibold ${
-                        trend === 'Stable' ? 'text-gray-500' :
-                        trend?.startsWith('+') ? 'text-orange-500' : 'text-blue-500'
-                      }`}>
-                        {trend}
-                      </div>
-                    </SelectableData>
-                  ) : (
-                    <div className="text-lg font-semibold text-gray-500">--</div>
-                  )}
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Wind</div>
@@ -492,18 +469,17 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
                       source={`${cityName} (${stationId})`}
                       type="wind"
                     >
-                      <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <div className="text-base font-semibold text-gray-900 dark:text-white">
                         {`${current.windDirection || ''} ${useMetric ? current.windSpeedKmh + 'km/h' : current.windSpeedMph + 'mph'}`}
                       </div>
                     </SelectableData>
                   ) : (
-                    <div className="text-lg font-semibold text-gray-900 dark:text-white">--</div>
+                    <div className="text-base font-semibold text-gray-900 dark:text-white">--</div>
                   )}
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Conditions</div>
                   <div className="flex items-center gap-2">
-                    <WindIcon size={16} className="text-gray-400" />
                     <span className="text-sm text-gray-900 dark:text-white truncate">
                       {current.conditions || 'N/A'}
                     </span>
@@ -511,52 +487,8 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
                 </div>
               </div>
 
-              {/* Temperature Trend Chart */}
-              {chartData.length > 1 && (
-                <div className="mb-6">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Temperature Trend (Last 6 Hours){showNearby && <span className="text-xs text-gray-500 ml-2">• Avg of {nearbyStations.length + 1} stations</span>}
-                  </div>
-                  <div className="h-32">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                        <XAxis
-                          dataKey="label"
-                          tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                          tickLine={false}
-                          axisLine={false}
-                          interval="preserveStartEnd"
-                        />
-                        <YAxis
-                          domain={chartDomain}
-                          tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                          tickLine={false}
-                          axisLine={false}
-                          tickFormatter={(v) => `${v}°`}
-                        />
-                        {avgTemp && (
-                          <ReferenceLine
-                            y={avgTemp}
-                            stroke="#6B7280"
-                            strokeDasharray="4 4"
-                            strokeWidth={1}
-                          />
-                        )}
-                        <Line
-                          type="monotone"
-                          dataKey="temp"
-                          stroke="#F97316"
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Observation Table */}
-              <div className="overflow-x-auto">
+              {/* Observation Table - Scrollable */}
+              <div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-xs text-gray-500 uppercase tracking-wide">
@@ -572,7 +504,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
                     </tr>
                   </thead>
                   <tbody>
-                    {displayedObs.map((obs, i) => {
+                    {observations.map((obs, i) => {
                       const timeStr = obs.timestamp?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timezone });
                       const stationName = showNearby ? obs.station : stationId;
                       const sourceWithTime = `${cityName} (${stationName}) @ ${timeStr}`;
@@ -605,16 +537,6 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
                   </tbody>
                 </table>
               </div>
-
-              {/* Show all observations toggle */}
-              {observations.length > 10 && (
-                <button
-                  onClick={() => setShowAllObs(!showAllObs)}
-                  className="mt-3 text-sm text-orange-500 hover:text-orange-400 font-medium"
-                >
-                  {showAllObs ? 'Show Less' : `Show All ${observations.length} Observations`}
-                </button>
-              )}
 
               {/* Footer */}
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
