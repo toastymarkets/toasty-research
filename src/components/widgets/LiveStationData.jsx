@@ -106,7 +106,7 @@ function ObservationRow({
             type="temperature"
           >
             <span className={`px-1.5 py-0.5 rounded text-white font-medium tabular-nums ${getTempColorClass(obs.tempF)}`}>
-              {useMetric ? `${obs.tempC}°C` : `${obs.tempF}°F`}
+              {useMetric ? `${obs.tempC}°` : `${obs.tempF}°`}
             </span>
           </SelectableData>
         ) : '--'}
@@ -119,7 +119,7 @@ function ObservationRow({
             source={sourceWithTime}
             type="humidity"
           >
-            <span>{useMetric ? `${obs.dewpointC}°C` : `${obs.dewpointF}°F`}</span>
+            <span>{useMetric ? `${obs.dewpointC}°` : `${obs.dewpointF}°`}</span>
           </SelectableData>
         ) : '--'}
       </td>
@@ -131,7 +131,7 @@ function ObservationRow({
             source={sourceWithTime}
             type="humidity"
           >
-            <span>{obs.humidity}%</span>
+            <span>{obs.humidity}</span>
           </SelectableData>
         ) : '--'}
       </td>
@@ -143,7 +143,7 @@ function ObservationRow({
             source={sourceWithTime}
             type="wind"
           >
-            <span>{`${obs.windDirection || ''} ${useMetric ? obs.windSpeedKmh + 'km/h' : obs.windSpeedMph + 'mph'}`}</span>
+            <span>{obs.windDirection || ''} {useMetric ? obs.windSpeedKmh : obs.windSpeedMph}</span>
           </SelectableData>
         ) : '--'}
       </td>
@@ -158,7 +158,7 @@ function ObservationRow({
             source={sourceWithTime}
             type="pressure"
           >
-            <span>{useMetric ? `${obs.pressureMb}mb` : `${obs.pressureInHg}"`}</span>
+            <span>{useMetric ? obs.pressureMb : obs.pressureInHg}</span>
           </SelectableData>
         ) : '--'}
       </td>
@@ -408,26 +408,26 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
           {nearbyStations.length === 0 && <div />}
 
           {/* Units toggle */}
-          <div className="flex gap-2">
+          <div className="inline-flex rounded-lg bg-gray-200 dark:bg-gray-800 p-0.5">
             <button
               onClick={() => setUseMetric(false)}
-              className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                 !useMetric
-                  ? 'bg-gray-700 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
-              Hourly
+              °F
             </button>
             <button
-              onClick={() => setUseMetric(!useMetric)}
-              className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+              onClick={() => setUseMetric(true)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                 useMetric
-                  ? 'bg-gray-700 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
-              Metric
+              °C
             </button>
           </div>
         </div>
@@ -459,7 +459,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
                     type="temperature"
                   >
                     <div className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">
-                      {useMetric ? `${current.tempC}°C` : `${current.tempF}°F`}
+                      {useMetric ? `${current.tempC}°` : `${current.tempF}°`}
                     </div>
                   </SelectableData>
                 </div>
@@ -473,7 +473,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
                       type="wind"
                     >
                       <div className="text-base font-semibold text-gray-900 dark:text-white">
-                        {`${current.windDirection || ''} ${useMetric ? current.windSpeedKmh + 'km/h' : current.windSpeedMph + 'mph'}`}
+                        {current.windDirection || ''} {useMetric ? current.windSpeedKmh : current.windSpeedMph}
                       </div>
                     </SelectableData>
                   ) : (
