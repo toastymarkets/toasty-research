@@ -1,71 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, ArrowLeft, ChevronUp, ChevronDown, Thermometer, Cloud, Snowflake, Wind, HelpCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { FileText, ArrowLeft, ChevronUp, ChevronDown, Thermometer, Cloud, Snowflake, Wind, HelpCircle, Trash2 } from 'lucide-react';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
 import { MARKET_CITIES } from '../../config/cities';
-
-// Delete confirmation popover component
-function DeleteConfirmPopover({ note, onConfirm, onCancel, buttonRef }) {
-  const popoverRef = useRef(null);
-
-  // Close on click outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target) &&
-          buttonRef.current && !buttonRef.current.contains(e.target)) {
-        onCancel();
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onCancel, buttonRef]);
-
-  // Close on escape
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') onCancel();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [onCancel]);
-
-  return (
-    <div
-      ref={popoverRef}
-      className="absolute right-0 top-full mt-2 z-50 w-64 p-4 rounded-xl shadow-lg border border-[var(--color-border)]
-                 bg-[var(--color-card-bg)] animate-in fade-in slide-in-from-top-2 duration-150"
-      style={{ animationFillMode: 'forwards' }}
-    >
-      <div className="flex items-start gap-3 mb-3">
-        <div className="p-2 rounded-lg bg-red-500/10">
-          <AlertTriangle size={16} className="text-red-500" />
-        </div>
-        <div>
-          <p className="font-medium text-sm text-[var(--color-text-primary)]">Delete note?</p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5 line-clamp-1">
-            {note.topic}
-          </p>
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={onCancel}
-          className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border)]
-                     hover:bg-[var(--color-card-elevated)] transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={onConfirm}
-          className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-red-500 hover:bg-red-600
-                     text-white transition-colors"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  );
-}
+import ConfirmPopover from '../ui/ConfirmPopover';
 
 // Weather type icons and colors
 const WEATHER_ICONS = {
@@ -102,7 +40,6 @@ export default function ResearchLogPage() {
   const [sortField, setSortField] = useState('lastSaved');
   const [sortDirection, setSortDirection] = useState('desc');
   const [deleteTarget, setDeleteTarget] = useState(null); // note id being deleted
-  const deleteButtonRefs = useRef({});
 
   useEffect(() => {
     setNotes(getAllResearchNotes());
@@ -276,7 +213,6 @@ export default function ResearchLogPage() {
                   <td className="px-4 py-4">
                     <div className="relative">
                       <button
-                        ref={el => deleteButtonRefs.current[note.id] = el}
                         onClick={(e) => handleDeleteClick(e, note.id)}
                         className={`p-2 rounded-lg transition-colors ${
                           deleteTarget === note.id
@@ -288,11 +224,14 @@ export default function ResearchLogPage() {
                         <Trash2 size={16} />
                       </button>
                       {deleteTarget === note.id && (
-                        <DeleteConfirmPopover
-                          note={note}
+                        <ConfirmPopover
+                          title="Delete note?"
+                          message={note.topic}
+                          confirmLabel="Delete"
+                          variant="delete"
+                          position="bottom-right"
                           onConfirm={() => confirmDelete(note.id)}
                           onCancel={cancelDelete}
-                          buttonRef={{ current: deleteButtonRefs.current[note.id] }}
                         />
                       )}
                     </div>

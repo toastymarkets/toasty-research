@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import NotepadEditor from './NotepadEditor';
+import ConfirmPopover from '../ui/ConfirmPopover';
 import { FileText, Clock, Trash2, FilePlus } from 'lucide-react';
 
 function NotepadContent() {
   const { isLoading, lastSaved, isSaving, createNewNote, clearDocument } = useNotepad();
+  const [activePopover, setActivePopover] = useState(null); // 'new' | 'clear' | null
 
   const formatLastSaved = (date) => {
     if (!date) return 'Not saved';
@@ -35,28 +38,60 @@ function NotepadContent() {
             <Clock size={12} />
             {isSaving ? 'Saving...' : formatLastSaved(lastSaved)}
           </span>
-          <button
-            onClick={() => {
-              if (window.confirm('Create a new note? Current note will be saved to history.')) {
-                createNewNote();
-              }
-            }}
-            className="p-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 text-[var(--color-text-muted)] hover:text-orange-500 transition-colors"
-            title="New note"
-          >
-            <FilePlus size={14} />
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm('Clear all notes? This cannot be undone.')) {
-                clearDocument();
-              }
-            }}
-            className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
-            title="Clear notes"
-          >
-            <Trash2 size={14} />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setActivePopover(activePopover === 'new' ? null : 'new')}
+              className={`p-1.5 rounded-lg transition-colors ${
+                activePopover === 'new'
+                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-500'
+                  : 'hover:bg-orange-100 dark:hover:bg-orange-900/30 text-[var(--color-text-muted)] hover:text-orange-500'
+              }`}
+              title="New note"
+            >
+              <FilePlus size={14} />
+            </button>
+            {activePopover === 'new' && (
+              <ConfirmPopover
+                title="Create new note?"
+                message="Current note will be saved to history"
+                confirmLabel="Create"
+                variant="create"
+                position="bottom-right"
+                onConfirm={() => {
+                  createNewNote();
+                  setActivePopover(null);
+                }}
+                onCancel={() => setActivePopover(null)}
+              />
+            )}
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setActivePopover(activePopover === 'clear' ? null : 'clear')}
+              className={`p-1.5 rounded-lg transition-colors ${
+                activePopover === 'clear'
+                  ? 'bg-red-100 dark:bg-red-900/30 text-red-500'
+                  : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-[var(--color-text-muted)] hover:text-red-500'
+              }`}
+              title="Clear notes"
+            >
+              <Trash2 size={14} />
+            </button>
+            {activePopover === 'clear' && (
+              <ConfirmPopover
+                title="Clear all notes?"
+                message="This cannot be undone"
+                confirmLabel="Clear"
+                variant="delete"
+                position="bottom-right"
+                onConfirm={() => {
+                  clearDocument();
+                  setActivePopover(null);
+                }}
+                onCancel={() => setActivePopover(null)}
+              />
+            )}
+          </div>
         </div>
       </div>
 

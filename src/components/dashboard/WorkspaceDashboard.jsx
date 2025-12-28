@@ -11,6 +11,7 @@ import WidgetRenderer from './WidgetRenderer';
 import AddWorkspaceWidgetPanel from './AddWorkspaceWidgetPanel';
 import DashboardLayout, { usePanelResize } from './DashboardLayout';
 import ResearchNotepad from '../notepad/ResearchNotepad';
+import ConfirmModal from '../ui/ConfirmModal';
 
 // Hook to measure container width with dynamic updates
 function useContainerWidth(ref, resizeSignal) {
@@ -278,28 +279,14 @@ function WorkspaceDashboardContent() {
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-6">
-            <h3 className="text-lg font-semibold mb-2">Delete Workspace?</h3>
-            <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-              Are you sure you want to delete "{workspace.name}"? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal
+          title="Delete Workspace?"
+          message={`Are you sure you want to delete "${workspace.name}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          variant="delete"
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       )}
     </DashboardLayout>
   );
