@@ -102,7 +102,7 @@ export default function DashboardLayout({
   // Desktop layout: split panes
   return (
     <DataChipProvider>
-      <div className="h-[calc(100vh-64px)] flex">
+      <div className="h-screen flex">
         <PanelGroup
           direction="horizontal"
           autoSaveId={storageKey}
