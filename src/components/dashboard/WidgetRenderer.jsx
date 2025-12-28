@@ -63,7 +63,7 @@ export default function WidgetRenderer({
 
   return (
     <div
-      className={`relative bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-2xl overflow-hidden ${className}`}
+      className={`relative bg-[var(--color-card-bg)] border border-[var(--color-border)] rounded-2xl ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

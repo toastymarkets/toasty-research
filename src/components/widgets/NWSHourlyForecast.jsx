@@ -95,8 +95,8 @@ export default function NWSHourlyForecast({ citySlug, className = '' }) {
   }
 
   return (
-    <div className={className}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={`${className} max-h-[380px] overflow-y-auto`}>
+      <div className="flex items-center justify-between mb-4 sticky top-0 bg-[var(--color-card-bg)] pb-2 z-10">
         <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center gap-2">
           <Thermometer size={18} className="text-blue-500 dark:text-blue-400" />
           <span className="font-semibold text-gray-900 dark:text-white">NWS Hourly Forecast</span>

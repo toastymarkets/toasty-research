@@ -49,8 +49,8 @@ export default function ForecastDiscussion({ cityId }) {
   const { parsed, summary, issuanceTime, officeName } = discussion;
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-3">
+    <div className="flex flex-col max-h-[400px]">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center gap-2 group">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-blue-500" />
@@ -69,8 +69,8 @@ export default function ForecastDiscussion({ cityId }) {
       </div>
 
       {isExpanded && (
-        <div className="flex flex-col flex-1 min-h-0 space-y-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col flex-1 min-h-0 space-y-3 overflow-hidden">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleCopy}
               className="text-xs text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 flex items-center gap-1 transition-colors"
@@ -91,7 +91,7 @@ export default function ForecastDiscussion({ cityId }) {
           </div>
 
           {parsed?.rawText && (
-            <pre className="flex-1 p-3 bg-gray-50 dark:bg-dark-elevated rounded-lg text-xs text-gray-600 dark:text-gray-400 overflow-auto whitespace-pre-wrap font-mono select-text">
+            <pre className="flex-1 min-h-0 p-3 bg-gray-50 dark:bg-dark-elevated rounded-lg text-xs text-gray-600 dark:text-gray-400 overflow-y-auto whitespace-pre-wrap font-mono select-text">
               {parsed.rawText}
             </pre>
           )}

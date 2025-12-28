@@ -3,18 +3,18 @@ import { WIDGET_REGISTRY, getAllWidgets } from '../config/WidgetRegistry';
 
 const DashboardContext = createContext(null);
 
-const STORAGE_KEY = 'toasty_research_dashboard_v7'; // v7 half-width live-station-data
+const STORAGE_KEY = 'toasty_research_dashboard_v9'; // v9 reordered widgets - market brackets at top
 
 // Default layout with grid positions (12-column grid, 2-column visual layout)
 // Live Station Data takes half width at top, other widgets in 2-column grid
 const createDefaultLayout = () => ({
   widgets: [
-    // Row 1 - Live Station Data (left) + Forecast Models (right)
+    // Row 1 - Live Station Data (left) + Live Market Brackets (right)
     { id: 'live-station-data-1', widgetId: 'live-station-data', x: 0, y: 0, w: 6, h: 5, visible: true },
-    { id: 'forecast-models-1', widgetId: 'forecast-models', x: 6, y: 0, w: 6, h: 5, visible: true },
-    // Row 2 - 2 columns
+    { id: 'live-market-brackets-1', widgetId: 'live-market-brackets', x: 6, y: 0, w: 6, h: 5, visible: true },
+    // Row 2 - NWS Hourly Forecast (left) + Forecast Models (right)
     { id: 'nws-hourly-forecast-1', widgetId: 'nws-hourly-forecast', x: 0, y: 5, w: 6, h: 5, visible: true },
-    { id: 'live-market-brackets-1', widgetId: 'live-market-brackets', x: 6, y: 5, w: 6, h: 5, visible: true },
+    { id: 'forecast-models-1', widgetId: 'forecast-models', x: 6, y: 5, w: 6, h: 5, visible: true },
     // Row 3 - 2 columns
     { id: 'forecast-discussion-1', widgetId: 'forecast-discussion', x: 0, y: 10, w: 6, h: 5, visible: true },
     { id: 'daily-summary-1', widgetId: 'daily-summary', x: 6, y: 10, w: 6, h: 4, visible: true },
