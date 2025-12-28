@@ -360,9 +360,9 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
   };
 
   return (
-    <div>
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           <span className="font-semibold text-gray-900 dark:text-white">Live Station Data</span>
@@ -390,7 +390,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
 
       {/* Toggle buttons */}
       {isExpanded && (
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center mb-3 flex-shrink-0">
           {/* Nearby stations toggle */}
           {nearbyStations.length > 0 && (
             <button
@@ -447,9 +447,9 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
               <button onClick={fetchObservations} className="text-xs text-orange-400 underline mt-1">Try again</button>
             </div>
           ) : current ? (
-            <>
+            <div className="flex-1 min-h-0 flex flex-col">
               {/* Current conditions row - compact */}
-              <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="grid grid-cols-3 gap-3 mb-3 flex-shrink-0">
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Temp</div>
                   <SelectableData
@@ -491,7 +491,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
               </div>
 
               {/* Observation Table - Scrollable */}
-              <div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="text-xs text-gray-500">
@@ -556,7 +556,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
               </div>
 
               {/* Footer */}
-              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
                 <span className="text-xs text-gray-500">
                   {showNearby
                     ? `Data from NWS (${stationId} + ${nearbyStations.length} nearby) • Updates every 5 minutes`
@@ -572,7 +572,7 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
                   View on NWS <ExternalLink size={12} />
                 </a>
               </div>
-            </>
+            </div>
           ) : null}
         </>
       )}
