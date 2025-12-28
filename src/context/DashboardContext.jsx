@@ -3,7 +3,7 @@ import { WIDGET_REGISTRY, getAllWidgets } from '../config/WidgetRegistry';
 
 const DashboardContext = createContext(null);
 
-const STORAGE_KEY = 'toasty_research_dashboard_v6'; // v6 two-column widget layout
+const STORAGE_KEY = 'toasty_research_dashboard_v7'; // v7 half-width live-station-data
 
 // Default layout with grid positions (12-column grid, 2-column visual layout)
 // Live Station Data takes half width at top, other widgets in 2-column grid
@@ -129,15 +129,36 @@ export function DashboardProvider({ citySlug, children }) {
   // Load layout from localStorage on mount
   useEffect(() => {
     const storageKey = `${STORAGE_KEY}_${citySlug}`;
+    const oldStorageKey = `toasty_research_dashboard_v6_${citySlug}`;
 
     try {
       // Try current version first
       let saved = localStorage.getItem(storageKey);
+
       if (saved) {
         setLayout(JSON.parse(saved));
       } else {
-        // Start fresh with new default layout
-        setLayout(createDefaultLayout());
+        // Try to migrate from v6
+        const oldSaved = localStorage.getItem(oldStorageKey);
+        if (oldSaved) {
+          const oldLayout = JSON.parse(oldSaved);
+          // Migrate: update live-station-data widgets to half-width
+          const migratedLayout = {
+            ...oldLayout,
+            widgets: oldLayout.widgets.map(w => {
+              if (w.widgetId === 'live-station-data' && w.w === 4) {
+                return { ...w, w: 6 }; // Update to half-width
+              }
+              return w;
+            })
+          };
+          setLayout(migratedLayout);
+          // Clean up old storage
+          localStorage.removeItem(oldStorageKey);
+        } else {
+          // Start fresh with new default layout
+          setLayout(createDefaultLayout());
+        }
       }
     } catch {
       setLayout(createDefaultLayout());
