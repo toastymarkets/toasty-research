@@ -6,11 +6,22 @@ export default defineConfig({
   server: {
     proxy: {
       // Proxy Kalshi API requests to bypass CORS in development
+      // Converts /api/kalshi?path=trade-api/v2/markets&series_ticker=X
+      // to https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=X
       '/api/kalshi': {
         target: 'https://api.elections.kalshi.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/kalshi/, ''),
         secure: true,
+        rewrite: (fullPath) => {
+          // Parse the URL to extract the path query param
+          const url = new URL(fullPath, 'http://localhost');
+          const apiPath = url.searchParams.get('path');
+          url.searchParams.delete('path');
+
+          // Build new path: /trade-api/v2/markets?series_ticker=X
+          const remainingParams = url.searchParams.toString();
+          return apiPath ? `/${apiPath}${remainingParams ? '?' + remainingParams : ''}` : fullPath;
+        },
       },
     },
   },
