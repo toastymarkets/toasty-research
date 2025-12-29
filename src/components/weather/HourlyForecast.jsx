@@ -37,19 +37,6 @@ const formatTime = (date, timezone) => {
   return timeStr.replace(' AM', 'a').replace(' PM', 'p');
 };
 
-// Get temperature color based on value
-const getTempColor = (temp, min, max) => {
-  const range = max - min || 1;
-  const ratio = (temp - min) / range;
-
-  // Apple-style gradient
-  if (ratio < 0.2) return '#64D2FF';  // Blue
-  if (ratio < 0.4) return '#5AC8FA';  // Cyan
-  if (ratio < 0.6) return '#30D158';  // Green
-  if (ratio < 0.8) return '#FFD60A';  // Yellow
-  return '#FF9F0A'; // Orange
-};
-
 // Check if time is daytime (between 6am and 6pm)
 const isDaytime = (date, timezone) => {
   const hour = parseInt(date.toLocaleTimeString('en-US', {
@@ -146,16 +133,6 @@ export default function HourlyForecast({
     return `${diffHours}h ago`;
   }, [lastUpdated]);
 
-  // Calculate temp range for coloring
-  const tempRange = useMemo(() => {
-    if (displayData.length === 0) return { min: 0, max: 100 };
-    const temps = displayData.map(d => d.temperature).filter(t => t != null);
-    return {
-      min: Math.min(...temps),
-      max: Math.max(...temps),
-    };
-  }, [displayData]);
-
   // Get surrounding observations for the modal (5 before, selected, 5 after)
   const getSurroundingObservations = useMemo(() => {
     if (selectedIndex === null || displayData.length === 0) return [];
@@ -206,7 +183,6 @@ export default function HourlyForecast({
           {displayData.map((obs, index) => {
             const isMostRecent = index === 0;
             const Icon = getConditionIcon(obs.description, isDaytime(obs.timestamp, timezone));
-            const tempColor = getTempColor(obs.temperature, tempRange.min, tempRange.max);
 
             return (
               <button
@@ -229,10 +205,7 @@ export default function HourlyForecast({
                 </div>
 
                 {/* Temperature */}
-                <span
-                  className="text-[13px] font-medium"
-                  style={{ color: tempColor }}
-                >
+                <span className={`text-[13px] font-medium ${isMostRecent ? 'text-white' : 'text-white/60'}`}>
                   {formatDisplayTemp(obs.temperature)}°
                 </span>
               </button>

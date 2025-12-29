@@ -1,8 +1,22 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, ExternalLink } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import GlassWidget from './GlassWidget';
+
+/**
+ * Generate Kalshi market URL for a city
+ * Example: https://kalshi.com/markets/kxhighlax/highest-temperature-in-los-angeles
+ */
+const getKalshiUrl = (citySlug, cityName) => {
+  const seriesTicker = CITY_SERIES[citySlug];
+  if (!seriesTicker) return null;
+
+  const tickerLower = seriesTicker.toLowerCase();
+  const citySlugForUrl = `highest-temperature-in-${cityName.toLowerCase().replace(/\s+/g, '-')}`;
+
+  return `https://kalshi.com/markets/${tickerLower}/${citySlugForUrl}`;
+};
 
 /**
  * MarketBrackets - Kalshi temperature market widget
@@ -100,12 +114,12 @@ export default function MarketBrackets({
   // Find the leading bracket (highest probability)
   const leadingBracket = brackets.reduce((max, b) => b.yesPrice > (max?.yesPrice || 0) ? b : max, null);
 
-  // Get color based on probability
+  // Get color based on probability - dark navy blue gradient
   const getProbColor = (prob) => {
-    if (prob >= 80) return '#30D158'; // Green - very likely
-    if (prob >= 50) return '#FFD60A'; // Yellow - likely
-    if (prob >= 20) return '#FF9F0A'; // Orange - possible
-    return '#64D2FF'; // Blue - unlikely
+    if (prob >= 80) return '#60A5FA'; // Brightest navy - very likely
+    if (prob >= 50) return '#3B82F6'; // Medium navy - likely
+    if (prob >= 20) return '#2563EB'; // Dark navy - possible
+    return '#1D4ED8'; // Deepest navy - unlikely
   };
 
   // Condense label: "39° to 40°" -> "39-40°"
@@ -124,12 +138,6 @@ export default function MarketBrackets({
     >
       {/* Header */}
       <div className="px-2.5 pt-2 pb-1">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-medium text-white/40 uppercase tracking-wide">Market Forecast</span>
-          {timeRemaining && timeRemaining !== 'Closed' && (
-            <span className="text-[9px] text-white/40">Closes {timeRemaining}</span>
-          )}
-        </div>
         <h3 className="text-[14px] font-semibold text-white leading-snug">
           Highest temp in {cityName} {dayLabel}?
         </h3>
@@ -178,7 +186,7 @@ export default function MarketBrackets({
                 >
                   {/* Probability bar background */}
                   <div
-                    className="absolute left-0 top-0 bottom-0 rounded-lg opacity-20"
+                    className="absolute left-0 top-0 bottom-0 rounded-lg opacity-30"
                     style={{
                       width: `${bracket.yesPrice}%`,
                       backgroundColor: probColor,
@@ -190,16 +198,29 @@ export default function MarketBrackets({
                     {condenseLabel(bracket.label)}
                   </span>
 
-                  <span
-                    className="relative text-[13px] font-bold tabular-nums"
-                    style={{ color: probColor }}
-                  >
+                  <span className="relative text-[13px] font-bold tabular-nums text-white">
                     {bracket.yesPrice}%
                   </span>
                 </div>
               );
             })}
           </div>
+        )}
+      </div>
+
+      {/* Footer - Kalshi link and timer */}
+      <div className="px-2.5 pt-1 pb-2 flex items-center justify-between border-t border-white/10 mt-1">
+        <a
+          href={getKalshiUrl(citySlug, cityName)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-[10px] font-medium text-white/40 uppercase tracking-wide hover:text-white/60 transition-colors"
+        >
+          Kalshi Odds
+          <ExternalLink className="w-2.5 h-2.5" />
+        </a>
+        {timeRemaining && timeRemaining !== 'Closed' && (
+          <span className="text-[9px] text-white/40">Closes {timeRemaining}</span>
         )}
       </div>
     </GlassWidget>
