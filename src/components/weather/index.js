@@ -7,6 +7,7 @@ export { default as MarketBrackets } from './MarketBrackets';
 export { default as SunriseSunset } from './SunriseSunset';
 export { default as WidgetGrid } from './WidgetGrid';
 export { default as WeatherMap } from './WeatherMap';
+export { default as TemperatureChartModal } from './TemperatureChartModal';
 
 // Small Widgets
 export {
