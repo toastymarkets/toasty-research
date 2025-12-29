@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, FileText } from 'lucide-react';
 import { CITY_BY_SLUG } from '../../config/cities';
 import { useNWSWeather } from '../../hooks/useNWSWeather';
 import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
+import { useNWSObservationHistory } from '../../hooks/useNWSObservationHistory';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 
 // Weather Components
@@ -67,6 +68,7 @@ function CityDashboardContent({ city, citySlug }) {
   // Fetch weather data
   const { weather, loading: weatherLoading } = useNWSWeather(city.stationId);
   const { forecast, loading: forecastLoading } = useNWSHourlyForecast(citySlug);
+  const { observations, loading: observationsLoading } = useNWSObservationHistory(city.stationId, 48);
   const marketData = useKalshiMarketsFromContext(citySlug);
   const localTime = useLocalTime(city.timezone);
 
@@ -190,12 +192,14 @@ function CityDashboardContent({ city, citySlug }) {
         />
       </div>
 
-      {/* Hourly Forecast */}
+      {/* Hourly Forecast - Real NWS observation data */}
       <div className="max-w-5xl mx-auto px-3 mt-2">
         <HourlyForecast
-          periods={forecast?.periods || []}
-          loading={forecastLoading}
+          observations={observations}
+          loading={observationsLoading}
           timezone={city.timezone}
+          cityName={city.name}
+          currentTemp={currentTempF}
         />
       </div>
 
