@@ -42,15 +42,15 @@ export function UVIndexWidget({ value = 0, loading = false }) {
 
   return (
     <GlassWidget title="UV INDEX" icon={Sun} size="small">
-      <div className="flex flex-col items-center justify-center flex-1">
+      <div className="flex flex-col items-start justify-center flex-1">
         {/* Value */}
-        <span className="text-4xl font-light mb-1">{value}</span>
-        <span className="text-lg font-medium mb-3" style={{ color: level.color }}>
+        <span className="text-2xl font-light">{value}</span>
+        <span className="text-[11px] font-medium" style={{ color: level.color }}>
           {level.label}
         </span>
 
         {/* Arc gauge */}
-        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-2">
           <div
             className="h-full rounded-full transition-all"
             style={{
@@ -95,38 +95,20 @@ export function WindWidget({ speed = 0, direction = 0, gusts = null, loading = f
 
   return (
     <GlassWidget title="WIND" icon={Wind} size="small">
-      <div className="flex flex-col items-center justify-center flex-1">
-        {/* Compass */}
-        <div className="relative w-20 h-20 mb-2">
-          {/* Compass circle */}
-          <div className="absolute inset-0 border-2 border-white/20 rounded-full" />
-
-          {/* Direction arrow */}
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ transform: `rotate(${directionDeg}deg)` }}
-          >
-            <div className="w-0.5 h-8 bg-white/80 rounded-full origin-bottom" />
-          </div>
-
-          {/* Center with speed */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl font-medium">{speedMph}</span>
-            <span className="text-xs text-glass-text-muted">mph</span>
-          </div>
-
-          {/* Cardinal directions */}
-          <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 text-xs text-glass-text-muted">N</span>
-          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 text-xs text-glass-text-muted">S</span>
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 text-xs text-glass-text-muted">W</span>
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 text-xs text-glass-text-muted">E</span>
+      <div className="flex flex-col items-start justify-center flex-1">
+        {/* Speed and direction */}
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-light">{speedMph}</span>
+          <span className="text-[11px] text-glass-text-muted">mph</span>
         </div>
-
-        {/* Direction label */}
-        <span className="text-sm text-glass-text-secondary">
+        <span className="text-[11px] text-glass-text-secondary">
           {getWindDirection(directionDeg)}
-          {gustsMph && <span className="ml-2">Gusts {gustsMph} mph</span>}
         </span>
+        {gustsMph && (
+          <span className="text-[10px] text-glass-text-muted mt-1">
+            Gusts {gustsMph} mph
+          </span>
+        )}
       </div>
     </GlassWidget>
   );
@@ -157,24 +139,16 @@ export function HumidityWidget({ value = 0, dewPoint = null, loading = false }) 
 
   return (
     <GlassWidget title="HUMIDITY" icon={Droplets} size="small">
-      <div className="flex flex-col items-center justify-center flex-1">
+      <div className="flex flex-col items-start justify-center flex-1">
         {/* Large percentage */}
-        <span className="text-4xl font-light mb-2">{humidityValue}%</span>
+        <span className="text-2xl font-light">{humidityValue}%</span>
 
         {/* Dew point */}
         {dewPointValue !== null && (
-          <span className="text-sm text-glass-text-secondary">
+          <span className="text-[11px] text-glass-text-secondary">
             Dew point {dewPointValue}°
           </span>
         )}
-
-        {/* Visual bar */}
-        <div className="w-full h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden">
-          <div
-            className="h-full bg-apple-blue rounded-full transition-all"
-            style={{ width: `${humidityValue}%` }}
-          />
-        </div>
       </div>
     </GlassWidget>
   );
@@ -213,15 +187,17 @@ export function PressureWidget({ value = 0, trend = 'steady', loading = false })
 
   return (
     <GlassWidget title="PRESSURE" icon={Gauge} size="small">
-      <div className="flex flex-col items-center justify-center flex-1">
+      <div className="flex flex-col items-start justify-center flex-1">
         {/* Value */}
-        <span className="text-3xl font-light mb-1">{pressureInHg}</span>
-        <span className="text-sm text-glass-text-muted mb-2">inHg</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-light">{pressureInHg}</span>
+          <span className="text-[11px] text-glass-text-muted">inHg</span>
+        </div>
 
         {/* Trend */}
-        <div className="flex items-center gap-1 text-glass-text-secondary">
-          <TrendIcon className="w-4 h-4" />
-          <span className="text-sm capitalize">{trend}</span>
+        <div className="flex items-center gap-1 text-glass-text-secondary mt-0.5">
+          <TrendIcon className="w-3 h-3" />
+          <span className="text-[11px] capitalize">{trend}</span>
         </div>
       </div>
     </GlassWidget>
@@ -253,13 +229,15 @@ export function VisibilityWidget({ value = 10, loading = false }) {
 
   return (
     <GlassWidget title="VISIBILITY" icon={Eye} size="small">
-      <div className="flex flex-col items-center justify-center flex-1">
+      <div className="flex flex-col items-start justify-center flex-1">
         {/* Value */}
-        <span className="text-4xl font-light mb-1">{visibilityMiles}</span>
-        <span className="text-sm text-glass-text-muted">miles</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-light">{visibilityMiles}</span>
+          <span className="text-[11px] text-glass-text-muted">mi</span>
+        </div>
 
         {/* Description */}
-        <span className="text-sm text-glass-text-secondary mt-2">
+        <span className="text-[11px] text-glass-text-secondary">
           {parseFloat(visibilityMiles) >= 10 ? 'Clear' : parseFloat(visibilityMiles) >= 5 ? 'Good' : 'Limited'}
         </span>
       </div>
@@ -291,18 +269,13 @@ export function FeelsLikeWidget({ actual = 0, feelsLike = 0, loading = false }) 
 
   return (
     <GlassWidget title="FEELS LIKE" icon={Thermometer} size="small">
-      <div className="flex flex-col items-center justify-center flex-1">
+      <div className="flex flex-col items-start justify-center flex-1">
         {/* Feels like temp */}
-        <span className="text-4xl font-light mb-2">{feelsLikeF}°</span>
+        <span className="text-2xl font-light">{feelsLikeF}°</span>
 
         {/* Comparison to actual */}
-        <span className="text-sm text-glass-text-secondary">
+        <span className="text-[11px] text-glass-text-secondary">
           {diff === 0 ? 'Same as actual' : diff > 0 ? `${diff}° warmer` : `${Math.abs(diff)}° colder`}
-        </span>
-
-        {/* Actual temp for reference */}
-        <span className="text-xs text-glass-text-muted mt-1">
-          Actual: {actualF}°
         </span>
       </div>
     </GlassWidget>
@@ -359,32 +332,22 @@ export function MarketInsightWidget({ marketData, forecastHigh, loading = false 
 
   return (
     <GlassWidget title="MARKET INSIGHT" icon={BarChart3} size="small">
-      <div className="flex flex-col items-center justify-center flex-1">
+      <div className="flex flex-col items-start justify-center flex-1">
         {/* Market prediction */}
-        <div className="flex items-baseline gap-1 mb-1">
-          <span className="text-3xl font-light">{marketPrediction}°</span>
-          <span className="text-sm text-glass-text-muted">high</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-light">{marketPrediction}°</span>
+          <span className="text-[11px] text-glass-text-muted">high</span>
         </div>
 
-        {/* Confidence bar */}
-        <div className="w-full h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
-          <div
-            className="h-full bg-apple-green rounded-full transition-all"
-            style={{ width: `${confidence}%` }}
-          />
-        </div>
-        <span className="text-xs text-glass-text-muted mt-1">
-          {confidence}% market confidence
+        {/* Confidence */}
+        <span className="text-[11px] text-glass-text-secondary">
+          {confidence}% confidence
         </span>
 
         {/* Comparison to NWS */}
-        {diff !== null && (
-          <span className="text-xs text-glass-text-secondary mt-2">
-            {diff === 0
-              ? 'Matches NWS forecast'
-              : diff > 0
-                ? `${diff}° above NWS`
-                : `${Math.abs(diff)}° below NWS`}
+        {diff !== null && diff !== 0 && (
+          <span className="text-[10px] text-glass-text-muted mt-0.5">
+            {diff > 0 ? `${diff}° above NWS` : `${Math.abs(diff)}° below NWS`}
           </span>
         )}
       </div>

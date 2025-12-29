@@ -76,8 +76,8 @@ export default function TenDayForecast({ days = [], loading = false }) {
   const overallRange = overallMax - overallMin || 1;
 
   return (
-    <GlassWidget title="10-DAY FORECAST" icon={Calendar} size="large">
-      <div className="divide-y divide-white/10">
+    <GlassWidget title="10-DAY FORECAST" icon={Calendar} size="large" className="h-full">
+      <div className="divide-y divide-white/10 overflow-y-auto">
         {days.slice(0, 10).map((day, index) => {
           const Icon = getConditionIcon(day.condition);
 
@@ -94,25 +94,25 @@ export default function TenDayForecast({ days = [], loading = false }) {
           return (
             <div
               key={day.date || index}
-              className="flex items-center gap-2 py-2.5 first:pt-0 last:pb-0"
+              className="flex items-center gap-1.5 py-1.5 first:pt-0 last:pb-0"
             >
               {/* Day name */}
-              <span className="w-12 text-[15px] font-medium text-white shrink-0">
+              <span className="w-10 text-[12px] font-medium text-white shrink-0">
                 {formatDay(day.date, index)}
               </span>
 
               {/* Weather icon */}
-              <div className="w-8 flex justify-center shrink-0">
-                <Icon className="w-5 h-5 text-white/80" />
+              <div className="w-6 flex justify-center shrink-0">
+                <Icon className="w-4 h-4 text-white/80" />
               </div>
 
               {/* Low temp */}
-              <span className="w-10 text-[15px] text-white/50 text-right shrink-0 tabular-nums">
+              <span className="w-8 text-[12px] text-white/50 text-right shrink-0 tabular-nums">
                 {Math.round(day.low)}°
               </span>
 
               {/* Temperature gradient bar */}
-              <div className="flex-1 h-[6px] bg-white/10 rounded-full relative mx-2 overflow-hidden">
+              <div className="flex-1 h-[4px] bg-white/10 rounded-full relative mx-1 overflow-hidden">
                 {/* Gradient segment for this day's range */}
                 <div
                   className="absolute h-full rounded-full"
@@ -130,7 +130,7 @@ export default function TenDayForecast({ days = [], loading = false }) {
                 {/* Current temperature dot (only for today) */}
                 {index === 0 && currentPos != null && (
                   <div
-                    className="absolute top-1/2 -translate-y-1/2 w-[10px] h-[10px] bg-white rounded-full shadow-lg border-2 border-white/50"
+                    className="absolute top-1/2 -translate-y-1/2 w-[8px] h-[8px] bg-white rounded-full shadow-lg border border-white/50"
                     style={{
                       left: `${currentPos}%`,
                       transform: 'translate(-50%, -50%)',
@@ -140,7 +140,7 @@ export default function TenDayForecast({ days = [], loading = false }) {
               </div>
 
               {/* High temp */}
-              <span className="w-10 text-[15px] font-medium text-white text-right shrink-0 tabular-nums">
+              <span className="w-8 text-[12px] font-medium text-white text-right shrink-0 tabular-nums">
                 {Math.round(day.high)}°
               </span>
             </div>

@@ -81,50 +81,37 @@ export default function HourlyForecast({ periods = [], loading = false, timezone
 
   return (
     <GlassWidget title="HOURLY FORECAST" icon={Clock} size="medium">
-      <div className="flex gap-0 overflow-x-auto glass-scroll pb-2 -mx-2 px-2">
+      <div className="flex gap-0 overflow-x-auto glass-scroll pb-1 -mx-1 px-1">
         {hourlyData.map((period, index) => {
           const Icon = getConditionIcon(period.shortForecast, period.isDaytime);
           const isNow = index === 0;
-
-          // Calculate bar height based on temperature position in range
-          const tempRatio = (period.temperature - minTemp) / tempRange;
-          const barHeight = 20 + (tempRatio * 30); // 20px min, 50px max
           const tempColor = getTempColor(period.temperature, minTemp, maxTemp);
 
           return (
             <div
               key={period.time}
               className={`
-                flex flex-col items-center min-w-[54px] py-2 px-1.5 rounded-2xl
+                flex flex-col items-center min-w-[44px] py-1 px-1 rounded-xl
                 ${isNow ? 'bg-white/10' : ''}
               `}
             >
               {/* Time */}
-              <span className={`text-[13px] ${isNow ? 'font-semibold text-white' : 'text-white/60'}`}>
+              <span className={`text-[11px] ${isNow ? 'font-semibold text-white' : 'text-white/60'}`}>
                 {formatHour(period.hour, isNow)}
               </span>
 
               {/* Condition icon */}
-              <div className="my-2">
-                <Icon className="w-6 h-6 text-white/90" />
+              <div className="my-1">
+                <Icon className="w-5 h-5 text-white/90" />
               </div>
 
-              {/* Temperature */}
-              <span className="text-[17px] font-medium text-white">
+              {/* Temperature with color */}
+              <span
+                className="text-[13px] font-medium"
+                style={{ color: tempColor }}
+              >
                 {Math.round(period.temperature)}°
               </span>
-
-              {/* Colored temperature bar */}
-              <div className="mt-2 flex flex-col items-center justify-end h-[50px]">
-                <div
-                  className="w-[4px] rounded-full transition-all"
-                  style={{
-                    height: `${barHeight}px`,
-                    backgroundColor: tempColor,
-                    boxShadow: `0 0 8px ${tempColor}40`,
-                  }}
-                />
-              </div>
             </div>
           );
         })}

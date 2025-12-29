@@ -134,28 +134,28 @@
   box-shadow: var(--glass-shadow-elevated), var(--glass-inner-highlight);
 }
 
-/* Widget header */
+/* Widget header - Apple compact style */
 .widget-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 12px 14px 8px;
+  gap: 4px;
+  padding: 8px 10px 4px;
   color: var(--glass-text-label);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .widget-header svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   opacity: 0.7;
 }
 
-/* Widget content */
+/* Widget content - Apple compact style */
 .widget-content {
-  padding: 0 14px 14px;
+  padding: 0 10px 10px;
   color: var(--glass-text-primary);
 }
 
@@ -322,9 +322,9 @@
   letter-spacing: 0.5px;
 }
 
-/* Hero temperature text */
+/* Hero temperature text - Apple compact style */
 .glass-temp-hero {
-  font-size: 96px;
+  font-size: 64px;
   font-weight: 200;
   line-height: 1;
   color: var(--glass-text-primary);
@@ -332,17 +332,17 @@
   font-feature-settings: "tnum";
 }
 
-/* Location text */
+/* Location text - Apple compact style */
 .glass-location {
-  font-size: 34px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--glass-text-primary);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Condition text */
+/* Condition text - Apple compact style */
 .glass-condition {
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--glass-text-secondary);
 }
@@ -462,11 +462,11 @@
   }
 
   .glass-temp-hero {
-    font-size: 72px;
+    font-size: 56px;
   }
 
   .glass-location {
-    font-size: 28px;
+    font-size: 18px;
   }
 }
 

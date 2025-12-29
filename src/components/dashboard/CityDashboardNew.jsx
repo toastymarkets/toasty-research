@@ -103,9 +103,11 @@ function CityDashboardContent({ city, citySlug }) {
 
   // Get current conditions
   const currentConditions = useMemo(() => {
+    const condition = weather?.textDescription || forecast?.periods?.[0]?.shortForecast || 'Clear';
+
     return {
       temperature: currentTempF,
-      condition: weather?.textDescription || forecast?.periods?.[0]?.shortForecast || 'Clear',
+      condition,
       high: forecast?.todayHigh,
       low: forecast?.todayLow,
     };
@@ -175,8 +177,8 @@ function CityDashboardContent({ city, citySlug }) {
         <FileText className="w-6 h-6" />
       </Link>
 
-      {/* Hero Section */}
-      <div className="max-w-4xl mx-auto px-4 pt-16">
+      {/* Hero Section - compact */}
+      <div className="max-w-5xl mx-auto px-3 pt-12">
         <HeroWeather
           cityName={city.name}
           temperature={currentConditions.temperature}
@@ -188,7 +190,7 @@ function CityDashboardContent({ city, citySlug }) {
       </div>
 
       {/* Hourly Forecast */}
-      <div className="max-w-4xl mx-auto px-4 mt-4">
+      <div className="max-w-5xl mx-auto px-3 mt-2">
         <HourlyForecast
           periods={forecast?.periods || []}
           loading={forecastLoading}
@@ -196,8 +198,8 @@ function CityDashboardContent({ city, citySlug }) {
         />
       </div>
 
-      {/* Widget Grid */}
-      <div className="max-w-4xl mx-auto px-4 mt-4">
+      {/* Widget Grid - compact */}
+      <div className="max-w-5xl mx-auto px-3 mt-2 pb-4">
         <WidgetGrid>
           {/* 10-Day Forecast */}
           <WidgetGrid.Item span={2}>
@@ -217,13 +219,11 @@ function CityDashboardContent({ city, citySlug }) {
           </WidgetGrid.Item>
 
           {/* Sunrise/Sunset */}
-          <WidgetGrid.Item span={2}>
-            <SunriseSunset
-              sunrise={sunTimes.sunrise}
-              sunset={sunTimes.sunset}
-              timezone={city.timezone}
-            />
-          </WidgetGrid.Item>
+          <SunriseSunset
+            sunrise={sunTimes.sunrise}
+            sunset={sunTimes.sunset}
+            timezone={city.timezone}
+          />
 
           {/* UV Index */}
           <UVIndexWidget value={4} loading={isLoading} />

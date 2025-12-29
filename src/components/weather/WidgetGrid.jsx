@@ -8,10 +8,10 @@ export default function WidgetGrid({ children, className = '' }) {
   return (
     <div
       className={`
-        grid gap-3
+        grid gap-2 items-stretch
         grid-cols-2
-        sm:grid-cols-2
-        lg:grid-cols-3
+        sm:grid-cols-3
+        lg:grid-cols-4
         xl:grid-cols-4
         ${className}
       `}
@@ -38,7 +38,7 @@ function WidgetGridItem({ children, span = 1, className = '' }) {
   };
 
   return (
-    <div className={`${spanClasses[span] || ''} ${className}`}>
+    <div className={`${spanClasses[span] || ''} h-full ${className}`}>
       {children}
     </div>
   );

@@ -57,20 +57,19 @@ export default function HeroWeather({
   const displayLow = formatTemp(low);
 
   return (
-    <div className="flex flex-col items-center text-center py-6 md:py-10">
+    <div className="flex flex-col items-center text-center py-2 md:py-4">
       {/* City name */}
-      <h1 className="glass-location mb-2">
+      <h1 className="glass-location mb-0.5">
         {cityName || 'Loading...'}
       </h1>
 
       {/* Large temperature */}
-      <div className="glass-temp-hero mb-1">
+      <div className="glass-temp-hero">
         {displayTemp}°
       </div>
 
-      {/* Condition with icon */}
-      <div className="flex items-center gap-2 mb-3">
-        <WeatherIcon className="w-6 h-6 text-white/80" />
+      {/* Condition with high/low on same line - Apple style */}
+      <div className="flex items-center gap-2 text-white/70">
         <span className="glass-condition">
           {condition || 'Clear'}
         </span>
@@ -78,11 +77,12 @@ export default function HeroWeather({
 
       {/* High/Low */}
       {(high !== undefined || low !== undefined) && (
-        <div className="flex items-center gap-3 text-lg text-white/80">
+        <div className="flex items-center gap-2 text-[13px] text-white/60 mt-0.5">
           <span>H:{displayHigh}°</span>
           <span>L:{displayLow}°</span>
         </div>
       )}
+
     </div>
   );
 }

@@ -86,8 +86,8 @@ export default function SunriseSunset({
       size="medium"
     >
       <div className="flex flex-col flex-1">
-        {/* Arc visualization */}
-        <div className="relative w-full h-24 mb-2">
+        {/* Arc visualization - compact */}
+        <div className="relative w-full h-16 mb-1">
           <svg
             viewBox="0 0 200 100"
             className="w-full h-full"
@@ -126,62 +126,23 @@ export default function SunriseSunset({
             <circle
               cx={sunX}
               cy={sunY}
-              r="8"
+              r="6"
               fill={sunData.isDaytime ? "#FFD60A" : "rgba(255,255,255,0.3)"}
               className="drop-shadow-lg"
-            >
-              {sunData.isDaytime && (
-                <animate
-                  attributeName="opacity"
-                  values="0.8;1;0.8"
-                  dur="2s"
-                  repeatCount="indefinite"
-                />
-              )}
-            </circle>
-
-            {/* Sun glow */}
-            {sunData.isDaytime && (
-              <circle
-                cx={sunX}
-                cy={sunY}
-                r="12"
-                fill="none"
-                stroke="rgba(255,214,10,0.3)"
-                strokeWidth="2"
-              >
-                <animate
-                  attributeName="r"
-                  values="12;16;12"
-                  dur="2s"
-                  repeatCount="indefinite"
-                />
-                <animate
-                  attributeName="opacity"
-                  values="0.3;0.1;0.3"
-                  dur="2s"
-                  repeatCount="indefinite"
-                />
-              </circle>
-            )}
+            />
           </svg>
         </div>
 
-        {/* Times */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Sunrise className="w-4 h-4 text-apple-orange" />
-            <span className="text-sm">{sunData.sunriseFormatted}</span>
+        {/* Times - compact */}
+        <div className="flex justify-between items-center text-[11px]">
+          <div className="flex items-center gap-1">
+            <Sunrise className="w-3 h-3 text-apple-orange" />
+            <span>{sunData.sunriseFormatted}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm">{sunData.sunsetFormatted}</span>
-            <Sunset className="w-4 h-4 text-apple-orange" />
+          <div className="flex items-center gap-1">
+            <span>{sunData.sunsetFormatted}</span>
+            <Sunset className="w-3 h-3 text-apple-orange" />
           </div>
-        </div>
-
-        {/* Daylight duration */}
-        <div className="text-center mt-2 text-sm text-glass-text-secondary">
-          {sunData.daylightDuration} of daylight
         </div>
       </div>
     </GlassWidget>

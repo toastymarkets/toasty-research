@@ -12,11 +12,11 @@ export default function GlassWidget({
   children,
   onClick,
 }) {
-  // Size classes
+  // Size classes - Apple compact style
   const sizeClasses = {
-    small: 'min-h-[164px]',
-    medium: 'min-h-[164px]',
-    large: 'min-h-[344px]',
+    small: 'min-h-[120px]',
+    medium: 'min-h-[120px]',
+    large: 'min-h-[260px]',
   };
 
   return (

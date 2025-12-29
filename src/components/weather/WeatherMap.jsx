@@ -132,13 +132,12 @@ export default function WeatherMap({
   ];
 
   return (
-    <GlassWidget title="WEATHER MAP" icon={Map} size="large" className={className}>
+    <GlassWidget title="WEATHER MAP" icon={Map} size="large" className={`h-full ${className}`}>
       <div className="relative flex-1 -mx-2 -mb-2 rounded-b-xl overflow-hidden">
         {/* Map container */}
         <div
           ref={mapRef}
           className="absolute inset-0 bg-gray-900"
-          style={{ minHeight: '280px' }}
         />
 
         {/* Layer toggle buttons */}
