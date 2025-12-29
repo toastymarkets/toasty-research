@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingUp, ExternalLink } from 'lucide-react';
+import { TrendingUp, ExternalLink, ChevronRight } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import GlassWidget from './GlassWidget';
+import MarketBracketsModal from './MarketBracketsModal';
 
 /**
  * Generate Kalshi market URL for a city
@@ -28,7 +29,8 @@ export default function MarketBrackets({
   loading: externalLoading = false
 }) {
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow
-  const { brackets, closeTime, loading, error } = useKalshiMarkets(citySlug, dayOffset);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { brackets, closeTime, loading, error, seriesTicker } = useKalshiMarkets(citySlug, dayOffset);
 
   const dayLabel = dayOffset === 0 ? 'today' : 'tomorrow';
   const hasSeries = CITY_SERIES[citySlug];
@@ -131,23 +133,20 @@ export default function MarketBrackets({
   };
 
   return (
+    <>
     <GlassWidget
-      title={null}
+      title={`Highest temperature in ${cityName} ${dayLabel}?`}
+      icon={TrendingUp}
       size="large"
-      className="h-full"
+      className="h-full cursor-pointer"
+      onClick={() => setIsModalOpen(true)}
     >
-      {/* Header */}
-      <div className="px-2.5 pt-2 pb-1">
-        <h3 className="text-[14px] font-semibold text-white leading-snug">
-          Highest temp in {cityName} {dayLabel}?
-        </h3>
-      </div>
 
       {/* Day Toggle */}
-      <div className="px-2.5 pb-2">
+      <div className="pb-2">
         <div className="inline-flex bg-white/10 rounded-lg p-0.5">
           <button
-            onClick={() => setDayOffset(0)}
+            onClick={(e) => { e.stopPropagation(); setDayOffset(0); }}
             className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
               dayOffset === 0 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
             }`}
@@ -155,7 +154,7 @@ export default function MarketBrackets({
             Today
           </button>
           <button
-            onClick={() => setDayOffset(1)}
+            onClick={(e) => { e.stopPropagation(); setDayOffset(1); }}
             className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
               dayOffset === 1 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
             }`}
@@ -166,7 +165,7 @@ export default function MarketBrackets({
       </div>
 
       {/* Brackets List */}
-      <div className="px-2 pb-2 overflow-y-auto flex-1">
+      <div className="pb-2 overflow-y-auto flex-1">
         {sortedBrackets.length === 0 ? (
           <div className="flex items-center justify-center h-full text-white/40 text-[11px]">
             No markets for {dayLabel}
@@ -180,7 +179,7 @@ export default function MarketBrackets({
               return (
                 <div
                   key={bracket.ticker || i}
-                  className={`relative flex items-center justify-between py-1.5 px-2 rounded-lg transition-all ${
+                  className={`relative flex items-center justify-between py-1.5 rounded-lg transition-all ${
                     isLeader ? 'bg-white/10' : 'hover:bg-white/5'
                   }`}
                 >
@@ -209,21 +208,39 @@ export default function MarketBrackets({
       </div>
 
       {/* Footer - Kalshi link and timer */}
-      <div className="px-2.5 pt-1 pb-2 flex items-center justify-between border-t border-white/10 mt-1">
+      <div className="pt-1 pb-2 flex items-center justify-between border-t border-white/10 mt-1">
         <a
           href={getKalshiUrl(citySlug, cityName)}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-1 text-[10px] font-medium text-white/40 uppercase tracking-wide hover:text-white/60 transition-colors"
         >
           Kalshi Odds
           <ExternalLink className="w-2.5 h-2.5" />
         </a>
-        {timeRemaining && timeRemaining !== 'Closed' && (
-          <span className="text-[9px] text-white/40">Closes {timeRemaining}</span>
-        )}
+        <div className="flex items-center gap-2">
+          {timeRemaining && timeRemaining !== 'Closed' && (
+            <span className="text-[9px] text-white/40">Closes {timeRemaining}</span>
+          )}
+          <ChevronRight className="w-4 h-4 text-white/30" />
+        </div>
       </div>
     </GlassWidget>
+
+    {/* Detail Modal */}
+    {isModalOpen && (
+      <MarketBracketsModal
+        brackets={brackets}
+        cityName={cityName}
+        seriesTicker={seriesTicker}
+        closeTime={closeTime}
+        dayOffset={dayOffset}
+        onDayChange={setDayOffset}
+        onClose={() => setIsModalOpen(false)}
+      />
+    )}
+    </>
   );
 }
 
