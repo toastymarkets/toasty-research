@@ -13,7 +13,7 @@ import {
   HourlyForecast,
   TenDayForecast,
   MarketBrackets,
-  SunriseSunset,
+  NWSForecastWidget,
   WidgetGrid,
   WeatherMap,
   UVIndexWidget,
@@ -226,10 +226,11 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGrid.Item>
 
-          {/* Sunrise/Sunset */}
-          <SunriseSunset
-            sunrise={sunTimes.sunrise}
-            sunset={sunTimes.sunset}
+          {/* NWS Forecast */}
+          <NWSForecastWidget
+            citySlug={citySlug}
+            lat={city.lat}
+            lon={city.lon}
             timezone={city.timezone}
           />
 
