@@ -6,6 +6,7 @@ import { useDataChip } from '../../context/DataChipContext';
 import { DataChipNode } from './extensions/DataChipNode';
 import { SlashCommands } from './extensions/SlashCommands';
 import { useEffect } from 'react';
+import { subscribeToNoteInsertions } from '../../utils/noteInsertionEvents';
 import '../../styles/notepad.css';
 
 export default function NotepadEditor() {
@@ -74,6 +75,23 @@ export default function NotepadEditor() {
       }
     }
   }, [document, editor]);
+
+  // Subscribe to global note insertion events (from widgets outside the notepad context)
+  useEffect(() => {
+    if (!editor) return;
+
+    const unsubscribe = subscribeToNoteInsertions((detail) => {
+      if (detail.content) {
+        // Move to end of document and insert the content
+        editor.chain()
+          .focus('end')
+          .insertContent(detail.content.content) // Insert the content array from the doc
+          .run();
+      }
+    });
+
+    return unsubscribe;
+  }, [editor]);
 
   if (!editor) {
     return (

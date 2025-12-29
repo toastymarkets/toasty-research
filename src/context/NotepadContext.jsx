@@ -126,15 +126,31 @@ export function NotepadProvider({ storageKey, children }) {
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef(null);
 
-  // Check if 24 hours have passed
+  // Check if it's a new day (notes should reset daily)
   const shouldResetDaily = (createdDate) => {
-    if (!createdDate || storageKey !== 'toasty_research_notes_v1_daily_summary') {
-      return false;
-    }
+    if (!createdDate) return false;
+
+    // Only auto-reset for daily summary and city notes
+    const isDailyOrCity = storageKey === 'toasty_research_notes_v1_daily_summary' ||
+                          storageKey.startsWith('toasty_research_notes_v1_city_');
+    if (!isDailyOrCity) return false;
+
+    // Check if it's a different calendar day
     const created = new Date(createdDate);
     const now = new Date();
-    const hoursDiff = (now - created) / (1000 * 60 * 60);
-    return hoursDiff >= 24;
+
+    const createdDay = created.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+    const today = now.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+
+    return createdDay !== today;
   };
 
   // Load notes on mount
@@ -144,8 +160,14 @@ export function NotepadProvider({ storageKey, children }) {
       if (saved) {
         const parsed = JSON.parse(saved);
 
-        // Check if daily note should be reset
+        // Check if note should be reset (new day)
         if (shouldResetDaily(parsed.createdDate)) {
+          // Archive the old note if it has real content
+          if (parsed.document && hasNonDefaultContent(parsed.document)) {
+            const archiveKey = `${storageKey}_${Date.now()}`;
+            localStorage.setItem(archiveKey, saved);
+          }
+
           // Auto-reset: create new document with today's date
           const newDoc = createEmptyDocument(storageKey);
           setDocument(newDoc);

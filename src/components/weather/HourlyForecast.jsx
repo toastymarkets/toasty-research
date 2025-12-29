@@ -243,6 +243,7 @@ export default function HourlyForecast({
         timezone={timezone}
         useMetric={useMetric}
         onToggleUnits={toggleUnits}
+        cityName={cityName}
       />
     </>
   );

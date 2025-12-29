@@ -1,12 +1,16 @@
-import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2, ChevronDown, Clock } from 'lucide-react';
+import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2, ChevronDown, Clock, X, ExternalLink } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { DataChipProvider } from '../../context/DataChipContext';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 import NotepadEditor from '../notepad/NotepadEditor';
 import ConfirmPopover from '../ui/ConfirmPopover';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
+import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { DataChipNode } from '../notepad/extensions/DataChipNode';
 
 /**
  * Header controls component with save indicator and action buttons
@@ -117,92 +121,243 @@ function NotepadContent() {
 }
 
 /**
- * Notes history section - shows recent research notes
+ * Format relative time helper
  */
-function NotesHistory({ currentStorageKey }) {
+const formatRelativeTime = (date) => {
+  const now = new Date();
+  const diff = now - date;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+/**
+ * Note Preview Modal - Shows saved note content in a popup
+ */
+function NotePreviewModal({ note, onClose }) {
+  const [content, setContent] = useState(null);
+
+  // Load note content from localStorage
+  useEffect(() => {
+    if (!note) return;
+    try {
+      const saved = localStorage.getItem(note.id);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setContent(parsed.document);
+      }
+    } catch (e) {
+      console.error('Failed to load note:', e);
+    }
+  }, [note]);
+
+  // Read-only TipTap editor for displaying content
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
+      DataChipNode,
+    ],
+    content: content,
+    editable: false,
+  }, [content]);
+
+  // Update editor content when it changes
+  useEffect(() => {
+    if (editor && content) {
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
+
+  if (!note) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="fixed inset-4 z-[70] flex items-center justify-center pointer-events-none">
+        <div className="glass-elevated relative w-full max-w-lg max-h-[80vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl pointer-events-auto animate-scale-in">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[15px] font-semibold text-white truncate">
+                {note.topic}
+              </h3>
+              <p className="text-[11px] text-white/50 mt-0.5">
+                {note.location} • {formatRelativeTime(note.lastSaved)}
+                {note.isArchived && ' • archived'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 ml-3">
+              <Link
+                to={`/city/${note.slug}`}
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                title="Go to city"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 notepad-compact">
+            {content ? (
+              <div className="notepad-editor text-white/90">
+                <EditorContent editor={editor} />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-32 text-white/40">
+                Loading...
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Research Log - Full history view of all notes
+ */
+function ResearchLog() {
   const [notes, setNotes] = useState([]);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [filter, setFilter] = useState('all'); // 'all', 'today', 'week'
+  const [selectedNote, setSelectedNote] = useState(null);
   const location = useLocation();
 
-  // Load notes on mount and when location changes
   useEffect(() => {
     setNotes(getAllResearchNotes());
   }, [location.pathname]);
 
-  // Filter out the current note from history
-  const historyNotes = notes.filter(note => note.id !== currentStorageKey);
-
-  if (historyNotes.length === 0) return null;
-
-  // Format relative time
-  const formatTime = (date) => {
+  // Filter notes based on selection
+  const filteredNotes = notes.filter(note => {
+    if (filter === 'all') return true;
     const now = new Date();
-    const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+    const noteDate = new Date(note.lastSaved);
+    if (filter === 'today') {
+      return noteDate.toDateString() === now.toDateString();
+    }
+    if (filter === 'week') {
+      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      return noteDate >= weekAgo;
+    }
+    return true;
+  });
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+  // Group notes by date
+  const groupedNotes = filteredNotes.reduce((groups, note) => {
+    const dateKey = note.lastSaved.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    });
+    if (!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(note);
+    return groups;
+  }, {});
 
   return (
-    <div className="border-t border-white/10">
-      {/* Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <Clock className="w-3.5 h-3.5 text-white/40" />
-          <span className="text-[11px] font-medium text-white/40 uppercase tracking-wide">
-            History
-          </span>
-          <span className="text-[10px] text-white/30">
-            ({historyNotes.length})
-          </span>
-        </div>
-        <ChevronDown
-          className={`w-3.5 h-3.5 text-white/30 transition-transform ${
-            isExpanded ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
+    <div className="h-full flex flex-col">
+      {/* Filter tabs */}
+      <div className="px-3 py-2 flex gap-1">
+        {[
+          { id: 'all', label: 'All' },
+          { id: 'week', label: 'This Week' },
+          { id: 'today', label: 'Today' },
+        ].map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setFilter(id)}
+            className={`
+              px-2.5 py-1 text-[11px] font-medium rounded-lg transition-colors
+              ${filter === id
+                ? 'bg-white/20 text-white'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+              }
+            `}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       {/* Notes list */}
-      {isExpanded && (
-        <div className="px-2 pb-2 space-y-0.5 max-h-48 overflow-y-auto">
-          {historyNotes.slice(0, 10).map(note => (
-            <Link
-              key={note.id}
-              to={`/city/${note.slug}`}
-              className="flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
-            >
-              <FileText className="w-3.5 h-3.5 text-white/30 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="text-[12px] text-white/70 truncate group-hover:text-white">
-                  {note.topic}
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-white/40">
-                  <span>{note.location}</span>
-                  <span>•</span>
-                  <span>{formatTime(note.lastSaved)}</span>
-                </div>
+      <div className="flex-1 overflow-y-auto px-2 pb-2">
+        {filteredNotes.length === 0 ? (
+          <div className="flex items-center justify-center h-32 text-white/40 text-sm">
+            No notes found
+          </div>
+        ) : (
+          Object.entries(groupedNotes).map(([date, dateNotes]) => (
+            <div key={date} className="mb-3">
+              {/* Date header */}
+              <div className="px-2 py-1.5 text-[10px] font-medium text-white/40 uppercase tracking-wide">
+                {date}
               </div>
-            </Link>
-          ))}
-          {historyNotes.length > 10 && (
-            <Link
-              to="/research"
-              className="block text-center text-[11px] text-blue-400 py-1.5 hover:underline"
-            >
-              View all {historyNotes.length} notes
-            </Link>
-          )}
-        </div>
+              {/* Notes for this date */}
+              <div className="space-y-0.5">
+                {dateNotes.map(note => (
+                  <button
+                    key={note.id}
+                    onClick={() => setSelectedNote(note)}
+                    className="w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-white/10 transition-colors group text-left"
+                  >
+                    <FileText className="w-4 h-4 text-white/30 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] text-white/80 group-hover:text-white line-clamp-1">
+                        {note.topic}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-white/40 mt-0.5">
+                        <span>{note.location}</span>
+                        <span>•</span>
+                        <span>{formatRelativeTime(note.lastSaved)}</span>
+                        {note.isArchived && (
+                          <>
+                            <span>•</span>
+                            <span className="text-white/30">archived</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Footer stats */}
+      <div className="px-3 py-2 border-t border-white/10 text-[10px] text-white/30 text-center">
+        {filteredNotes.length} note{filteredNotes.length !== 1 ? 's' : ''} • {notes.length} total
+      </div>
+
+      {/* Note Preview Modal */}
+      {selectedNote && (
+        <NotePreviewModal
+          note={selectedNote}
+          onClose={() => setSelectedNote(null)}
+        />
       )}
     </div>
   );
@@ -213,7 +368,22 @@ function NotesHistory({ currentStorageKey }) {
  * Apple Weather style panel
  */
 export default function NotesSidebar({ storageKey, cityName }) {
-  const { isCollapsed, toggle } = useNotesSidebar();
+  const { isCollapsed, toggle, expand } = useNotesSidebar();
+  const [activeView, setActiveView] = useState('notes'); // 'notes' | 'log'
+
+  // Auto-switch to Notes tab when data is inserted from widgets
+  useEffect(() => {
+    const handleInsertion = () => {
+      setActiveView('notes');
+      // Also expand the sidebar if collapsed
+      if (isCollapsed) {
+        expand();
+      }
+    };
+
+    window.addEventListener(NOTE_INSERTION_EVENT, handleInsertion);
+    return () => window.removeEventListener(NOTE_INSERTION_EVENT, handleInsertion);
+  }, [isCollapsed, expand]);
 
   return (
     <>
@@ -269,18 +439,49 @@ export default function NotesSidebar({ storageKey, cityName }) {
                 </div>
               </div>
 
+              {/* View toggle tabs */}
+              <div className="px-3 py-2 flex gap-1">
+                <button
+                  onClick={() => setActiveView('notes')}
+                  className={`
+                    flex-1 px-3 py-1.5 text-[12px] font-medium rounded-lg transition-colors
+                    ${activeView === 'notes'
+                      ? 'bg-white/15 text-white'
+                      : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+                    }
+                  `}
+                >
+                  Notes
+                </button>
+                <button
+                  onClick={() => setActiveView('log')}
+                  className={`
+                    flex-1 px-3 py-1.5 text-[12px] font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5
+                    ${activeView === 'log'
+                      ? 'bg-white/15 text-white'
+                      : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+                    }
+                  `}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  History
+                </button>
+              </div>
+
               {/* Divider */}
               <div className="h-px bg-white/10 mx-3" />
 
-              {/* Notepad content */}
-              <div className="flex-1 overflow-hidden min-h-0">
-                <div className="h-full overflow-y-auto">
+              {/* Content - Notes editor and Research Log (both mounted, one hidden) */}
+              <div className="flex-1 overflow-hidden min-h-0 relative">
+                {/* Notes editor - always mounted to receive insertion events */}
+                <div className={`h-full overflow-y-auto ${activeView === 'notes' ? '' : 'hidden'}`}>
                   <NotepadContent />
                 </div>
+                {/* Research Log */}
+                <div className={`h-full ${activeView === 'log' ? '' : 'hidden'}`}>
+                  <ResearchLog />
+                </div>
               </div>
-
-              {/* History section */}
-              <NotesHistory currentStorageKey={storageKey} />
             </div>
           </NotepadProvider>
         </DataChipProvider>

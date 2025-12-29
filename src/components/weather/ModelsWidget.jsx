@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Activity, X, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import { useMultiModelForecast, MODELS } from '../../hooks/useMultiModelForecast';
+import { insertModelsToNotes } from '../../utils/noteInsertionEvents';
 
 /**
  * ModelsWidget - Shows multi-model forecast comparison
@@ -97,6 +98,7 @@ ModelsWidget.propTypes = {
  */
 function ModelsDetailModal({ forecasts, onClose }) {
   const [selectedDay, setSelectedDay] = useState(0);
+  const [addedDay, setAddedDay] = useState(null);
   const { models, consensus, dates, city } = forecasts;
 
   // Get forecast for selected day
@@ -126,6 +128,21 @@ function ModelsDetailModal({ forecasts, onClose }) {
   };
 
   const dayConsensus = getDayConsensus(selectedDay);
+
+  // Handle adding model data to notes
+  const handleAddToNotes = () => {
+    const dateLabel = formatDate(dates[selectedDay], selectedDay);
+    insertModelsToNotes({
+      dayConsensus,
+      models,
+      selectedDay,
+      dateLabel,
+    });
+    setAddedDay(selectedDay);
+    setTimeout(() => setAddedDay(null), 1500);
+  };
+
+  const wasAdded = addedDay === selectedDay;
 
   return (
     <>
@@ -191,14 +208,33 @@ function ModelsDetailModal({ forecasts, onClose }) {
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-white/50">Spread</p>
-                <p className={`text-lg font-medium ${
-                  dayConsensus.spread <= 3 ? 'text-green-400' :
-                  dayConsensus.spread <= 6 ? 'text-yellow-400' : 'text-red-400'
-                }`}>
-                  ±{Math.round(dayConsensus.spread / 2)}°
-                </p>
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <p className="text-xs text-white/50">Spread</p>
+                  <p className={`text-lg font-medium ${
+                    dayConsensus.spread <= 3 ? 'text-green-400' :
+                    dayConsensus.spread <= 6 ? 'text-yellow-400' : 'text-red-400'
+                  }`}>
+                    ±{Math.round(dayConsensus.spread / 2)}°
+                  </p>
+                </div>
+                <button
+                  onClick={handleAddToNotes}
+                  className={`
+                    p-1.5 rounded-lg transition-all
+                    ${wasAdded
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'hover:bg-white/10 text-white/40 hover:text-white/70'
+                    }
+                  `}
+                  title="Add to notes"
+                >
+                  {wasAdded ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
