@@ -1,11 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Clock, Sun, Moon, Cloud, CloudRain, CloudSnow, CloudFog, CloudLightning } from 'lucide-react';
 import GlassWidget from './GlassWidget';
-import TemperatureChartModal from './TemperatureChartModal';
+import ObservationDetailModal from './ObservationDetailModal';
+
+// Shared unit preference key (same as modal)
+const UNIT_STORAGE_KEY = 'obs_units_metric';
 
 /**
- * HourlyForecast - Shows real NWS observation data with clickable chart popup
+ * HourlyForecast - Shows real NWS observation data with clickable individual observations
  * Displays recent observations in a horizontal scrolling format
  */
 
@@ -66,7 +69,41 @@ export default function HourlyForecast({
   stationId,
   lastUpdated,
 }) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+
+  // Unit preference - synced with modal via localStorage
+  const [useMetric, setUseMetric] = useState(() => {
+    const saved = localStorage.getItem(UNIT_STORAGE_KEY);
+    return saved === 'true';
+  });
+
+  // Save and sync preference
+  const toggleUnits = () => {
+    const newValue = !useMetric;
+    setUseMetric(newValue);
+    localStorage.setItem(UNIT_STORAGE_KEY, newValue.toString());
+  };
+
+  // Listen for changes from modal
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === UNIT_STORAGE_KEY) {
+        setUseMetric(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // Format temperature based on unit preference
+  const formatDisplayTemp = (tempF) => {
+    if (tempF == null) return '--';
+    if (useMetric) {
+      const tempC = (tempF - 32) * 5 / 9;
+      return Math.round(tempC);
+    }
+    return Math.round(tempF);
+  };
 
   // Ensure all observations have proper Date objects
   const normalizedObservations = useMemo(() => {
@@ -119,6 +156,19 @@ export default function HourlyForecast({
     };
   }, [displayData]);
 
+  // Get surrounding observations for the modal (5 before, selected, 5 after)
+  const getSurroundingObservations = useMemo(() => {
+    if (selectedIndex === null || displayData.length === 0) return [];
+
+    // Get 5 observations before and 5 after the selected one
+    const start = Math.max(0, selectedIndex - 5);
+    const end = Math.min(displayData.length, selectedIndex + 6);
+
+    return displayData.slice(start, end);
+  }, [selectedIndex, displayData]);
+
+  const selectedObservation = selectedIndex !== null ? displayData[selectedIndex] : null;
+
   if (loading) {
     return (
       <GlassWidget title="OBSERVATIONS" icon={Clock} size="medium">
@@ -151,8 +201,6 @@ export default function HourlyForecast({
         title="OBSERVATIONS"
         icon={Clock}
         size="medium"
-        onClick={() => setIsModalOpen(true)}
-        className="cursor-pointer"
       >
         <div className="flex gap-0 overflow-x-auto glass-scroll pb-1 -mx-1 px-1">
           {displayData.map((obs, index) => {
@@ -161,10 +209,12 @@ export default function HourlyForecast({
             const tempColor = getTempColor(obs.temperature, tempRange.min, tempRange.max);
 
             return (
-              <div
+              <button
                 key={obs.time}
+                onClick={() => setSelectedIndex(index)}
                 className={`
                   flex flex-col items-center min-w-[48px] py-1 px-0.5 rounded-xl
+                  transition-all hover:bg-white/10 active:scale-95
                   ${isMostRecent ? 'bg-white/10' : ''}
                 `}
               >
@@ -183,31 +233,43 @@ export default function HourlyForecast({
                   className="text-[13px] font-medium"
                   style={{ color: tempColor }}
                 >
-                  {Math.round(obs.temperature)}°
+                  {formatDisplayTemp(obs.temperature)}°
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
 
-        {/* Station info and tap hint */}
+        {/* Station info, unit toggle, and tap hint */}
         <div className="flex items-center justify-between mt-1 px-1">
           <span className="text-[10px] text-glass-text-muted">
             {stationId ? `Station: ${stationId}` : ''}
             {lastUpdatedText ? ` • ${lastUpdatedText}` : ''}
           </span>
-          <span className="text-[10px] text-glass-text-muted">Tap for details</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleUnits();
+              }}
+              className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 transition-colors text-[10px] font-medium text-white/70"
+            >
+              {useMetric ? '°C' : '°F'}
+            </button>
+            <span className="text-[10px] text-glass-text-muted">Tap for details</span>
+          </div>
         </div>
       </GlassWidget>
 
-      {/* Chart Modal */}
-      <TemperatureChartModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        observations={observations}
-        cityName={cityName}
-        currentTemp={currentTemp}
+      {/* Observation Detail Modal */}
+      <ObservationDetailModal
+        isOpen={selectedIndex !== null}
+        onClose={() => setSelectedIndex(null)}
+        observation={selectedObservation}
+        surroundingObservations={getSurroundingObservations}
         timezone={timezone}
+        useMetric={useMetric}
+        onToggleUnits={toggleUnits}
       />
     </>
   );

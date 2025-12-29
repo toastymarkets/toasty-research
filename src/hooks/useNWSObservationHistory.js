@@ -16,8 +16,8 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
       return;
     }
 
-    // Check cache first
-    const cacheKey = `nws_obs_history_v1_${stationId}_${hoursBack}`;
+    // Check cache first (v2 = fixed wind speed conversion + added visibility/windChill)
+    const cacheKey = `nws_obs_history_v2_${stationId}_${hoursBack}`;
     if (!force) {
       try {
         const cached = localStorage.getItem(cacheKey);
@@ -72,14 +72,33 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
           const props = f.properties;
           const timestamp = new Date(props.timestamp);
 
-          // Convert Celsius to Fahrenheit
+          // Convert Celsius to Fahrenheit helper
+          const celsiusToFahrenheit = (c) => c != null ? (c * 9/5) + 32 : null;
+
+          // Temperature values
           const tempC = props.temperature?.value;
-          const tempF = tempC != null ? (tempC * 9/5) + 32 : null;
+          const tempF = celsiusToFahrenheit(tempC);
 
           const dewpointC = props.dewpoint?.value;
-          const dewpointF = dewpointC != null ? (dewpointC * 9/5) + 32 : null;
+          const dewpointF = celsiusToFahrenheit(dewpointC);
+
+          const windChillC = props.windChill?.value;
+          const windChillF = celsiusToFahrenheit(windChillC);
+
+          const heatIndexC = props.heatIndex?.value;
+          const heatIndexF = celsiusToFahrenheit(heatIndexC);
 
           const humidity = props.relativeHumidity?.value;
+
+          // Wind speed: km/h to mph (divide by 1.60934)
+          const windSpeedKmh = props.windSpeed?.value;
+          const windSpeedMph = windSpeedKmh != null ? windSpeedKmh / 1.60934 : null;
+
+          // Visibility: meters (keep in meters, modal will convert to miles)
+          const visibilityM = props.visibility?.value;
+
+          // Pressure: Pascals (keep in Pa, modal will convert to inHg)
+          const pressurePa = props.barometricPressure?.value;
 
           return {
             timestamp,
@@ -87,9 +106,12 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
             temperature: tempF != null ? Math.round(tempF * 10) / 10 : null,
             dewpoint: dewpointF != null ? Math.round(dewpointF * 10) / 10 : null,
             humidity: humidity != null ? Math.round(humidity) : null,
-            windSpeed: props.windSpeed?.value != null ? Math.round(props.windSpeed.value * 2.237) : null, // m/s to mph
+            windSpeed: windSpeedMph != null ? Math.round(windSpeedMph) : null,
             windDirection: props.windDirection?.value,
-            pressure: props.barometricPressure?.value != null ? (props.barometricPressure.value / 3386.39).toFixed(2) : null,
+            windChill: windChillF != null ? Math.round(windChillF) : null,
+            heatIndex: heatIndexF != null ? Math.round(heatIndexF) : null,
+            visibility: visibilityM, // Keep in meters
+            pressure: pressurePa, // Keep in Pascals
             description: props.textDescription,
           };
         })
