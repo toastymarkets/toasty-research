@@ -147,13 +147,38 @@ export default function DynamicBackground({
       {/* Stars for night */}
       {showCelestial && isNight && <div className="stars" />}
 
-      {/* Cloud layer */}
-      {showClouds && (condition === WEATHER_CONDITIONS.CLOUDY || condition === WEATHER_CONDITIONS.OVERCAST) && (
-        <div className="clouds">
-          <div className="cloud" />
-          <div className="cloud" />
-          <div className="cloud" />
-        </div>
+      {/* Ambient cloud layers - always visible with parallax effect */}
+      {showClouds && (
+        <>
+          {/* Layer 1: Distant wispy clouds - slowest */}
+          <div className="cloud-layer cloud-layer-distant">
+            <div className="cloud-wispy cloud-wispy-1" />
+            <div className="cloud-wispy cloud-wispy-2" />
+            <div className="cloud-wispy cloud-wispy-3" />
+          </div>
+
+          {/* Layer 2: Mid-distance clouds */}
+          <div className="cloud-layer cloud-layer-mid">
+            <div className="cloud-mid cloud-mid-1" />
+            <div className="cloud-mid cloud-mid-2" />
+            <div className="cloud-mid cloud-mid-3" />
+            <div className="cloud-mid cloud-mid-4" />
+          </div>
+
+          {/* Layer 3: Closer clouds - faster */}
+          <div className="cloud-layer cloud-layer-near">
+            <div className="cloud-near cloud-near-1" />
+            <div className="cloud-near cloud-near-2" />
+          </div>
+
+          {/* Layer 4: Foreground accent clouds - fastest (only when cloudy) */}
+          {(condition === WEATHER_CONDITIONS.CLOUDY || condition === WEATHER_CONDITIONS.OVERCAST) && (
+            <div className="cloud-layer cloud-layer-front">
+              <div className="cloud-front cloud-front-1" />
+              <div className="cloud-front cloud-front-2" />
+            </div>
+          )}
+        </>
       )}
 
       {/* Rain animation */}

@@ -378,71 +378,267 @@
   opacity: 0.5;
 }
 
-/* ===== CLOUD LAYERS ===== */
+/* ===== PARALLAX CLOUD SYSTEM ===== */
+/* Apple Weather inspired multi-layer cloud animation */
 
-.weather-background .clouds {
+.weather-background .cloud-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
 }
 
-.weather-background .cloud {
+/* === Layer 1: Distant wispy clouds (slowest) === */
+.weather-background .cloud-layer-distant {
+  opacity: 0.4;
+}
+
+.weather-background .cloud-wispy {
   position: absolute;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 255, 255, 0.8) 0%,
-    rgba(255, 255, 255, 0.4) 40%,
-    transparent 70%
-  );
   border-radius: 50%;
-  filter: blur(10px);
-  animation: cloud-drift 60s linear infinite;
+  filter: blur(30px);
+  animation: cloud-drift-slow linear infinite;
 }
 
-.weather-background .cloud:nth-child(1) {
-  top: 10%;
-  left: -20%;
-  width: 400px;
-  height: 150px;
-  animation-duration: 80s;
+/* Create cloud shape using multiple gradients */
+.weather-background .cloud-wispy::before,
+.weather-background .cloud-wispy::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
 }
 
-.weather-background .cloud:nth-child(2) {
-  top: 25%;
-  left: -30%;
-  width: 300px;
-  height: 100px;
-  animation-duration: 100s;
-  animation-delay: -20s;
-}
-
-.weather-background .cloud:nth-child(3) {
-  top: 5%;
+.weather-background .cloud-wispy-1 {
+  top: 8%;
   left: -25%;
-  width: 350px;
+  width: 500px;
   height: 120px;
-  animation-duration: 90s;
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, rgba(255, 255, 255, 0.6) 0%, transparent 70%);
+  animation-duration: 120s;
+}
+
+.weather-background .cloud-wispy-2 {
+  top: 15%;
+  left: -35%;
+  width: 400px;
+  height: 80px;
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+  animation-duration: 150s;
   animation-delay: -40s;
 }
 
-@keyframes cloud-drift {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(calc(100vw + 400px));
-  }
+.weather-background .cloud-wispy-3 {
+  top: 5%;
+  left: -20%;
+  width: 350px;
+  height: 100px;
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+  animation-duration: 130s;
+  animation-delay: -80s;
 }
 
-/* Hide clouds at night unless overcast */
-.weather-background.time-night .clouds {
-  opacity: 0;
+@keyframes cloud-drift-slow {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100vw + 600px)); }
 }
 
-.weather-background.time-night.condition-cloudy .clouds,
-.weather-background.time-night.condition-overcast .clouds {
+/* === Layer 2: Mid-distance clouds === */
+.weather-background .cloud-layer-mid {
+  opacity: 0.5;
+}
+
+.weather-background .cloud-mid {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(20px);
+  animation: cloud-drift-mid linear infinite;
+}
+
+.weather-background .cloud-mid-1 {
+  top: 10%;
+  left: -30%;
+  width: 400px;
+  height: 150px;
+  background:
+    radial-gradient(ellipse 70% 80% at 30% 50%, rgba(255, 255, 255, 0.7) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 90% at 70% 60%, rgba(255, 255, 255, 0.6) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 70% at 50% 40%, rgba(255, 255, 255, 0.8) 0%, transparent 50%);
+  animation-duration: 90s;
+}
+
+.weather-background .cloud-mid-2 {
+  top: 20%;
+  left: -40%;
+  width: 350px;
+  height: 130px;
+  background:
+    radial-gradient(ellipse 65% 75% at 35% 55%, rgba(255, 255, 255, 0.65) 0%, transparent 55%),
+    radial-gradient(ellipse 75% 85% at 65% 45%, rgba(255, 255, 255, 0.55) 0%, transparent 50%);
+  animation-duration: 100s;
+  animation-delay: -30s;
+}
+
+.weather-background .cloud-mid-3 {
+  top: 6%;
+  left: -25%;
+  width: 300px;
+  height: 110px;
+  background:
+    radial-gradient(ellipse 80% 90% at 40% 50%, rgba(255, 255, 255, 0.6) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 80% at 70% 55%, rgba(255, 255, 255, 0.5) 0%, transparent 55%);
+  animation-duration: 85s;
+  animation-delay: -60s;
+}
+
+.weather-background .cloud-mid-4 {
+  top: 25%;
+  left: -35%;
+  width: 280px;
+  height: 100px;
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, rgba(255, 255, 255, 0.55) 0%, transparent 65%);
+  animation-duration: 95s;
+  animation-delay: -45s;
+}
+
+@keyframes cloud-drift-mid {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100vw + 500px)); }
+}
+
+/* === Layer 3: Near clouds (faster) === */
+.weather-background .cloud-layer-near {
+  opacity: 0.6;
+}
+
+.weather-background .cloud-near {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(15px);
+  animation: cloud-drift-near linear infinite;
+}
+
+.weather-background .cloud-near-1 {
+  top: 12%;
+  left: -35%;
+  width: 450px;
+  height: 180px;
+  background:
+    radial-gradient(ellipse 50% 60% at 20% 60%, rgba(255, 255, 255, 0.75) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 70% at 45% 45%, rgba(255, 255, 255, 0.85) 0%, transparent 45%),
+    radial-gradient(ellipse 55% 65% at 70% 55%, rgba(255, 255, 255, 0.7) 0%, transparent 50%),
+    radial-gradient(ellipse 45% 55% at 85% 50%, rgba(255, 255, 255, 0.6) 0%, transparent 55%);
+  animation-duration: 70s;
+}
+
+.weather-background .cloud-near-2 {
+  top: 5%;
+  left: -30%;
+  width: 380px;
+  height: 150px;
+  background:
+    radial-gradient(ellipse 55% 65% at 25% 55%, rgba(255, 255, 255, 0.7) 0%, transparent 50%),
+    radial-gradient(ellipse 65% 75% at 55% 50%, rgba(255, 255, 255, 0.8) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 60% at 80% 55%, rgba(255, 255, 255, 0.65) 0%, transparent 50%);
+  animation-duration: 65s;
+  animation-delay: -35s;
+}
+
+@keyframes cloud-drift-near {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100vw + 550px)); }
+}
+
+/* === Layer 4: Foreground clouds (fastest, only when cloudy) === */
+.weather-background .cloud-layer-front {
+  opacity: 0.7;
+}
+
+.weather-background .cloud-front {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(10px);
+  animation: cloud-drift-front linear infinite;
+}
+
+.weather-background .cloud-front-1 {
+  top: 8%;
+  left: -40%;
+  width: 500px;
+  height: 200px;
+  background:
+    radial-gradient(ellipse 45% 55% at 15% 60%, rgba(255, 255, 255, 0.8) 0%, transparent 45%),
+    radial-gradient(ellipse 55% 65% at 35% 45%, rgba(255, 255, 255, 0.9) 0%, transparent 40%),
+    radial-gradient(ellipse 50% 60% at 55% 55%, rgba(255, 255, 255, 0.85) 0%, transparent 45%),
+    radial-gradient(ellipse 45% 55% at 75% 50%, rgba(255, 255, 255, 0.75) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 50% at 90% 55%, rgba(255, 255, 255, 0.65) 0%, transparent 55%);
+  animation-duration: 50s;
+}
+
+.weather-background .cloud-front-2 {
+  top: 18%;
+  left: -35%;
+  width: 420px;
+  height: 170px;
+  background:
+    radial-gradient(ellipse 50% 60% at 20% 55%, rgba(255, 255, 255, 0.75) 0%, transparent 45%),
+    radial-gradient(ellipse 60% 70% at 50% 50%, rgba(255, 255, 255, 0.85) 0%, transparent 40%),
+    radial-gradient(ellipse 50% 60% at 80% 55%, rgba(255, 255, 255, 0.7) 0%, transparent 50%);
+  animation-duration: 55s;
+  animation-delay: -25s;
+}
+
+@keyframes cloud-drift-front {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100vw + 600px)); }
+}
+
+/* === Night mode cloud adjustments === */
+.weather-background.time-night .cloud-layer-distant,
+.weather-background.time-night .cloud-layer-mid {
+  opacity: 0.15;
+}
+
+.weather-background.time-night .cloud-layer-near {
+  opacity: 0.2;
+}
+
+.weather-background.time-night .cloud-layer-front {
   opacity: 0.3;
+}
+
+/* Dusk - slightly dimmer */
+.weather-background.time-dusk .cloud-layer-distant {
+  opacity: 0.25;
+}
+
+.weather-background.time-dusk .cloud-layer-mid {
+  opacity: 0.35;
+}
+
+.weather-background.time-dusk .cloud-layer-near {
+  opacity: 0.4;
+}
+
+/* Overcast - more visible clouds */
+.weather-background.condition-overcast .cloud-layer-distant,
+.weather-background.condition-overcast .cloud-layer-mid {
+  opacity: 0.7;
+}
+
+.weather-background.condition-overcast .cloud-layer-near {
+  opacity: 0.8;
+}
+
+/* Cloudy at night - show clouds more */
+.weather-background.time-night.condition-cloudy .cloud-layer-distant,
+.weather-background.time-night.condition-cloudy .cloud-layer-mid {
+  opacity: 0.3;
+}
+
+.weather-background.time-night.condition-cloudy .cloud-layer-near,
+.weather-background.time-night.condition-cloudy .cloud-layer-front {
+  opacity: 0.4;
 }
 
 /* ===== CONTENT OVERLAY GRADIENT ===== */
