@@ -68,6 +68,12 @@ export const getWeatherBackground = (condition, timezone) => {
     : 'linear-gradient(135deg, #1A2A4A 0%, #0A1A3A 50%, #050F2A 100%)';
 };
 
+// Seeded random for consistent positions per index
+const seededRandom = (seed) => {
+  const x = Math.sin(seed * 9999) * 10000;
+  return x - Math.floor(x);
+};
+
 // Weather visual overlay component
 export function WeatherOverlay({ condition, isDay, fullscreen = false }) {
   const cond = (condition || '').toLowerCase();
@@ -77,38 +83,51 @@ export function WeatherOverlay({ condition, isDay, fullscreen = false }) {
 
   // Snow
   if (cond.includes('snow') || cond.includes('flurr') || cond.includes('blizzard')) {
+    const count = Math.round(12 * scale);
     return (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(Math.round(12 * scale))].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1.5 h-1.5 bg-white/60 rounded-full animate-snow"
-            style={{
-              left: `${(i * (100 / (12 * scale)))}%`,
-              animationDelay: `${i * 0.3}s`,
-              animationDuration: `${2 + Math.random()}s`,
-            }}
-          />
-        ))}
+        {[...Array(count)].map((_, i) => {
+          // Use seeded random for consistent but varied positions
+          const startTop = seededRandom(i + 1) * 100;
+          const duration = 2 + seededRandom(i + 100) * 1.5;
+          return (
+            <div
+              key={i}
+              className="absolute w-1.5 h-1.5 bg-white/60 rounded-full animate-snow"
+              style={{
+                left: `${(i * (100 / count)) + seededRandom(i) * 5}%`,
+                top: `${startTop}%`,
+                animationDelay: `-${seededRandom(i + 50) * duration}s`,
+                animationDuration: `${duration}s`,
+              }}
+            />
+          );
+        })}
       </div>
     );
   }
 
   // Rain
   if (cond.includes('rain') || cond.includes('shower') || cond.includes('drizzle')) {
+    const count = Math.round(10 * scale);
     return (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(Math.round(10 * scale))].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-0.5 h-3 bg-white/30 rounded-full animate-rain"
-            style={{
-              left: `${(i * (100 / (10 * scale)))}%`,
-              animationDelay: `${i * 0.15}s`,
-              animationDuration: `${0.6 + Math.random() * 0.3}s`,
-            }}
-          />
-        ))}
+        {[...Array(count)].map((_, i) => {
+          const startTop = seededRandom(i + 1) * 100;
+          const duration = 0.6 + seededRandom(i + 100) * 0.3;
+          return (
+            <div
+              key={i}
+              className="absolute w-0.5 h-3 bg-white/30 rounded-full animate-rain"
+              style={{
+                left: `${(i * (100 / count)) + seededRandom(i) * 5}%`,
+                top: `${startTop}%`,
+                animationDelay: `-${seededRandom(i + 50) * duration}s`,
+                animationDuration: `${duration}s`,
+              }}
+            />
+          );
+        })}
       </div>
     );
   }
@@ -125,7 +144,7 @@ export function WeatherOverlay({ condition, isDay, fullscreen = false }) {
               top: `${20 + i * 18}%`,
               width: '120%',
               left: '-10%',
-              animationDelay: `${i * 2}s`,
+              animationDelay: `-${i * 2}s`,
               animationDuration: `${8 + i * 2}s`,
             }}
           />
@@ -145,8 +164,8 @@ export function WeatherOverlay({ condition, isDay, fullscreen = false }) {
             className="absolute animate-cloud-drift"
             style={{
               top: `${10 + (i * 15) % 60}%`,
-              left: `${30 + (i * 20) % 60}%`,
-              animationDelay: `${i * 3}s`,
+              left: `${seededRandom(i + 10) * 80}%`,
+              animationDelay: `-${seededRandom(i) * 20}s`,
               animationDuration: `${20 + i * 5}s`,
               opacity: fullscreen ? 0.3 : 0.25,
             }}
@@ -168,20 +187,26 @@ export function WeatherOverlay({ condition, isDay, fullscreen = false }) {
 
   // Thunder/Storm
   if (cond.includes('thunder') || cond.includes('storm') || cond.includes('lightning')) {
+    const count = Math.round(8 * scale);
     return (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Rain */}
-        {[...Array(Math.round(8 * scale))].map((_, i) => (
-          <div
-            key={`rain-${i}`}
-            className="absolute w-0.5 h-3 bg-white/20 rounded-full animate-rain"
-            style={{
-              left: `${(i * (100 / (8 * scale)))}%`,
-              animationDelay: `${i * 0.12}s`,
-              animationDuration: `${0.5 + Math.random() * 0.2}s`,
-            }}
-          />
-        ))}
+        {[...Array(count)].map((_, i) => {
+          const startTop = seededRandom(i + 1) * 100;
+          const duration = 0.5 + seededRandom(i + 100) * 0.2;
+          return (
+            <div
+              key={`rain-${i}`}
+              className="absolute w-0.5 h-3 bg-white/20 rounded-full animate-rain"
+              style={{
+                left: `${(i * (100 / count)) + seededRandom(i) * 5}%`,
+                top: `${startTop}%`,
+                animationDelay: `-${seededRandom(i + 50) * duration}s`,
+                animationDuration: `${duration}s`,
+              }}
+            />
+          );
+        })}
         {/* Lightning flash */}
         <div className="absolute inset-0 bg-white/10 animate-lightning" />
       </div>
@@ -207,7 +232,7 @@ export function WeatherOverlay({ condition, isDay, fullscreen = false }) {
             style={{
               top: `${10 + (i * 17) % 70}%`,
               left: `${20 + (i * 23) % 70}%`,
-              animationDelay: `${i * 0.5}s`,
+              animationDelay: `-${seededRandom(i) * 2}s`,
             }}
           />
         ))}
