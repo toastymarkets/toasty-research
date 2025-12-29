@@ -22,14 +22,16 @@ const getConditionIcon = (condition, isDaytime = true) => {
   return isDaytime ? Sun : Moon;
 };
 
-// Format time for display
-const formatTime = (date, timezone, isNow = false) => {
-  if (isNow) return 'Now';
-  return date.toLocaleTimeString('en-US', {
+// Format time for display - show true timestamp with minutes
+const formatTime = (date, timezone) => {
+  const timeStr = date.toLocaleTimeString('en-US', {
     timeZone: timezone,
     hour: 'numeric',
+    minute: '2-digit',
     hour12: true,
   });
+  // Compact format: "8:45 PM" -> "8:45p"
+  return timeStr.replace(' AM', 'a').replace(' PM', 'p');
 };
 
 // Get temperature color based on value
@@ -61,35 +63,51 @@ export default function HourlyForecast({
   timezone = 'America/New_York',
   cityName,
   currentTemp,
+  stationId,
+  lastUpdated,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Get last 24 hours of observations for display (most recent first for the scroll)
-  const displayData = useMemo(() => {
+  // Ensure all observations have proper Date objects
+  const normalizedObservations = useMemo(() => {
     if (!observations || observations.length === 0) return [];
 
-    // Take observations from the last 24 hours, sample every ~1 hour for display
+    return observations.map(obs => ({
+      ...obs,
+      // Ensure timestamp is a Date object
+      timestamp: obs.timestamp instanceof Date ? obs.timestamp : new Date(obs.timestamp),
+    }));
+  }, [observations]);
+
+  // Get last 24 hours of observations for display (most recent first for the scroll)
+  // Show ALL observations with true 5-minute timestamps - no sampling
+  const displayData = useMemo(() => {
+    if (normalizedObservations.length === 0) return [];
+
+    // Take observations from the last 24 hours
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const filtered = observations
+    const filtered = normalizedObservations
       .filter(obs => obs.timestamp >= twentyFourHoursAgo)
       .reverse(); // Most recent first
 
-    // Sample roughly every hour (NWS reports ~every 5-60 minutes depending on station)
-    const sampled = [];
-    let lastHour = -1;
+    // Return all observations (limit to 72 for performance - 6 hours of 5-min data)
+    return filtered.slice(0, 72);
+  }, [normalizedObservations]);
 
-    for (const obs of filtered) {
-      const hour = obs.timestamp.getHours();
-      if (hour !== lastHour) {
-        sampled.push(obs);
-        lastHour = hour;
-      }
-    }
+  // Format last updated time
+  const lastUpdatedText = useMemo(() => {
+    if (!lastUpdated) return null;
+    const date = lastUpdated instanceof Date ? lastUpdated : new Date(lastUpdated);
+    const now = new Date();
+    const diffMinutes = Math.round((now - date) / (1000 * 60));
 
-    return sampled.slice(0, 24);
-  }, [observations]);
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    const diffHours = Math.round(diffMinutes / 60);
+    return `${diffHours}h ago`;
+  }, [lastUpdated]);
 
   // Calculate temp range for coloring
   const tempRange = useMemo(() => {
@@ -138,7 +156,7 @@ export default function HourlyForecast({
       >
         <div className="flex gap-0 overflow-x-auto glass-scroll pb-1 -mx-1 px-1">
           {displayData.map((obs, index) => {
-            const isNow = index === 0;
+            const isMostRecent = index === 0;
             const Icon = getConditionIcon(obs.description, isDaytime(obs.timestamp, timezone));
             const tempColor = getTempColor(obs.temperature, tempRange.min, tempRange.max);
 
@@ -146,13 +164,13 @@ export default function HourlyForecast({
               <div
                 key={obs.time}
                 className={`
-                  flex flex-col items-center min-w-[44px] py-1 px-1 rounded-xl
-                  ${isNow ? 'bg-white/10' : ''}
+                  flex flex-col items-center min-w-[48px] py-1 px-0.5 rounded-xl
+                  ${isMostRecent ? 'bg-white/10' : ''}
                 `}
               >
-                {/* Time */}
-                <span className={`text-[11px] ${isNow ? 'font-semibold text-white' : 'text-white/60'}`}>
-                  {formatTime(obs.timestamp, timezone, isNow)}
+                {/* Time - show true timestamp */}
+                <span className={`text-[10px] ${isMostRecent ? 'font-semibold text-white' : 'text-white/60'}`}>
+                  {formatTime(obs.timestamp, timezone)}
                 </span>
 
                 {/* Condition icon */}
@@ -172,8 +190,12 @@ export default function HourlyForecast({
           })}
         </div>
 
-        {/* Tap hint */}
-        <div className="text-center mt-1">
+        {/* Station info and tap hint */}
+        <div className="flex items-center justify-between mt-1 px-1">
+          <span className="text-[10px] text-glass-text-muted">
+            {stationId ? `Station: ${stationId}` : ''}
+            {lastUpdatedText ? ` • ${lastUpdatedText}` : ''}
+          </span>
           <span className="text-[10px] text-glass-text-muted">Tap for details</span>
         </div>
       </GlassWidget>
@@ -193,7 +215,7 @@ export default function HourlyForecast({
 
 HourlyForecast.propTypes = {
   observations: PropTypes.arrayOf(PropTypes.shape({
-    timestamp: PropTypes.instanceOf(Date),
+    timestamp: PropTypes.oneOfType([PropTypes.instanceOf(Date), PropTypes.string]),
     time: PropTypes.string,
     temperature: PropTypes.number,
     dewpoint: PropTypes.number,
@@ -204,4 +226,6 @@ HourlyForecast.propTypes = {
   timezone: PropTypes.string,
   cityName: PropTypes.string,
   currentTemp: PropTypes.number,
+  stationId: PropTypes.string,
+  lastUpdated: PropTypes.oneOfType([PropTypes.instanceOf(Date), PropTypes.string]),
 };
