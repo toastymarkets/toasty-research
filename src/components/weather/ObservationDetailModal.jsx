@@ -1,5 +1,7 @@
 import PropTypes from 'prop-types';
-import { X } from 'lucide-react';
+import { X, Plus, Check } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { insertObservationToNotes } from '../../utils/noteInsertionEvents';
 
 /**
  * ObservationDetailModal - Shows observation data in NWS-style horizontal table
@@ -13,7 +15,27 @@ export default function ObservationDetailModal({
   timezone = 'America/New_York',
   useMetric = false,
   onToggleUnits,
+  cityName = '',
 }) {
+  // Track which observation was just added (for feedback)
+  const [addedObservation, setAddedObservation] = useState(null);
+
+  // Handle adding observation to notes
+  const handleAddToNotes = useCallback((obs) => {
+    insertObservationToNotes(obs, {
+      cityName,
+      timezone,
+      useMetric,
+    });
+
+    // Show feedback
+    setAddedObservation(obs.time || obs.timestamp);
+
+    // Clear feedback after animation
+    setTimeout(() => {
+      setAddedObservation(null);
+    }, 1500);
+  }, [cityName, timezone, useMetric]);
   if (!isOpen || !observation) return null;
 
   // Format time for table
@@ -98,6 +120,7 @@ export default function ObservationDetailModal({
     { key: 'wind', label: 'Wind', width: 'w-16' },
     { key: 'visibility', label: 'Vis', width: 'w-12' },
     { key: 'pressure', label: 'Press', width: 'w-14' },
+    { key: 'add', label: '', width: 'w-10' },
   ];
 
   // Get cell value for observation
@@ -193,6 +216,9 @@ export default function ObservationDetailModal({
             <tbody>
               {surroundingObservations.map((obs, idx) => {
                 const selected = isSelected(obs);
+                const obsKey = obs.time || obs.timestamp;
+                const wasAdded = addedObservation === obsKey;
+
                 return (
                   <tr
                     key={obs.time || idx}
@@ -204,18 +230,45 @@ export default function ObservationDetailModal({
                       }
                     `}
                   >
-                    {columns.map(col => (
-                      <td
-                        key={col.key}
-                        className={`
-                          ${col.width} px-2 py-2.5
-                          ${selected ? 'text-white' : 'text-white/70'}
-                          ${col.key === 'time' ? 'font-medium' : ''}
-                        `}
-                      >
-                        {getCellValue(obs, col.key)}
-                      </td>
-                    ))}
+                    {columns.map(col => {
+                      // Special handling for add button column
+                      if (col.key === 'add') {
+                        return (
+                          <td key={col.key} className={`${col.width} px-1 py-2.5`}>
+                            <button
+                              onClick={() => handleAddToNotes(obs)}
+                              className={`
+                                p-1.5 rounded-lg transition-all
+                                ${wasAdded
+                                  ? 'bg-emerald-500/20 text-emerald-400'
+                                  : 'hover:bg-white/10 text-white/40 hover:text-white/70'
+                                }
+                              `}
+                              title="Add to notes"
+                            >
+                              {wasAdded ? (
+                                <Check className="w-3.5 h-3.5" />
+                              ) : (
+                                <Plus className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </td>
+                        );
+                      }
+
+                      return (
+                        <td
+                          key={col.key}
+                          className={`
+                            ${col.width} px-2 py-2.5
+                            ${selected ? 'text-white' : 'text-white/70'}
+                            ${col.key === 'time' ? 'font-medium' : ''}
+                          `}
+                        >
+                          {getCellValue(obs, col.key)}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
@@ -269,4 +322,5 @@ ObservationDetailModal.propTypes = {
   timezone: PropTypes.string,
   useMetric: PropTypes.bool,
   onToggleUnits: PropTypes.func,
+  cityName: PropTypes.string,
 };
