@@ -24,13 +24,12 @@ const CITY_COORDS = {
 
 // Weather models available from Open-Meteo
 const MODELS = [
-  { id: 'ecmwf_ifs025', name: 'ECMWF', resolution: '25km', description: 'European Centre - Gold standard', priority: 1, updateFreq: '6h' },
-  { id: 'ncep_hrrr_conus', name: 'HRRR', resolution: '3km', description: 'High-Res Rapid Refresh', priority: 2, updateFreq: '1h' },
-  { id: 'gfs_seamless', name: 'GFS', resolution: '25km', description: 'Global Forecast System', priority: 3, updateFreq: '6h' },
-  { id: 'ncep_nam_conus', name: 'NAM', resolution: '5km', description: 'North American Mesoscale', priority: 4, updateFreq: '6h' },
-  { id: 'icon_seamless', name: 'ICON', resolution: '11km', description: 'German Weather Service', priority: 5, updateFreq: '6h' },
-  { id: 'gem_seamless', name: 'GEM', resolution: '25km', description: 'Canadian Model', priority: 6, updateFreq: '12h' },
-  { id: 'jma_seamless', name: 'JMA', resolution: '20km', description: 'Japan Meteorological Agency', priority: 7, updateFreq: '6h' },
+  { id: 'gfs_seamless', name: 'GFS', resolution: '25km', description: 'Global Forecast System (NOAA)', priority: 1, updateFreq: '6h', color: '#3B82F6' },
+  { id: 'ncep_hrrr_conus', name: 'HRRR', resolution: '3km', description: 'High-Res Rapid Refresh (NOAA)', priority: 2, updateFreq: '1h', color: '#10B981' },
+  { id: 'ncep_nam_conus', name: 'NAM', resolution: '5km', description: 'North American Mesoscale', priority: 3, updateFreq: '6h', color: '#F59E0B' },
+  { id: 'ecmwf_ifs025', name: 'ECMWF', resolution: '25km', description: 'European Centre (Gold Standard)', priority: 4, updateFreq: '6h', color: '#8B5CF6' },
+  { id: 'icon_seamless', name: 'ICON', resolution: '11km', description: 'German Weather Service (DWD)', priority: 5, updateFreq: '6h', color: '#EC4899' },
+  { id: 'meteoblue_seamless', name: 'Meteoblue', resolution: '4km', description: 'Swiss Meteoblue Ensemble', priority: 6, updateFreq: '6h', color: '#06B6D4' },
 ];
 
 // Cache duration: 15 minutes

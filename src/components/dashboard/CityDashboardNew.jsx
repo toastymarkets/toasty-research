@@ -14,9 +14,9 @@ import {
   TenDayForecast,
   MarketBrackets,
   NWSForecastWidget,
+  ModelsWidget,
   WidgetGrid,
   WeatherMap,
-  UVIndexWidget,
   WindWidget,
   HumidityWidget,
   PressureWidget,
@@ -234,8 +234,8 @@ function CityDashboardContent({ city, citySlug }) {
             timezone={city.timezone}
           />
 
-          {/* UV Index */}
-          <UVIndexWidget value={4} loading={isLoading} />
+          {/* Multi-Model Forecasts */}
+          <ModelsWidget citySlug={citySlug} loading={forecastLoading} />
 
           {/* Wind */}
           <WindWidget
