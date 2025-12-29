@@ -300,6 +300,10 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
+.notepad-compact .notepad-editor strong {
+  color: white;
+}
+
 .notepad-compact .notepad-editor li::marker {
   color: rgba(255, 255, 255, 0.5);
 }
