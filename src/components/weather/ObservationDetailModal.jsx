@@ -1,7 +1,17 @@
 import PropTypes from 'prop-types';
-import { X, Plus, Check } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { X, Plus, Check, Table, BarChart3 } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
 import { insertObservationToNotes } from '../../utils/noteInsertionEvents';
+import {
+  ComposedChart,
+  Line,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceDot,
+} from 'recharts';
 
 /**
  * ObservationDetailModal - Shows observation data in NWS-style horizontal table
@@ -12,6 +22,7 @@ export default function ObservationDetailModal({
   onClose,
   observation,
   surroundingObservations = [],
+  allObservations = [],
   timezone = 'America/New_York',
   useMetric = false,
   onToggleUnits,
@@ -19,6 +30,8 @@ export default function ObservationDetailModal({
 }) {
   // Track which observation was just added (for feedback)
   const [addedObservation, setAddedObservation] = useState(null);
+  // Track active view: 'table' or 'chart'
+  const [activeView, setActiveView] = useState('table');
 
   // Handle adding observation to notes
   const handleAddToNotes = useCallback((obs) => {
@@ -36,6 +49,56 @@ export default function ObservationDetailModal({
       setAddedObservation(null);
     }, 1500);
   }, [cityName, timezone, useMetric]);
+
+  // Chart data transformation - must be before early return (React hooks rules)
+  const chartData = useMemo(() => {
+    if (!allObservations || allObservations.length === 0) return [];
+
+    return allObservations.map(obs => {
+      const timestamp = obs.timestamp instanceof Date ? obs.timestamp : new Date(obs.timestamp);
+      return {
+        time: timestamp.getTime(),
+        timestamp,
+        temperature: obs.temperature,
+        dewpoint: obs.dewpoint,
+        humidity: obs.humidity,
+        timeLabel: timestamp.toLocaleTimeString('en-US', {
+          timeZone: timezone,
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }),
+        dateLabel: timestamp.toLocaleDateString('en-US', {
+          timeZone: timezone,
+          month: 'short',
+          day: 'numeric',
+        }),
+      };
+    });
+  }, [allObservations, timezone]);
+
+  // Temperature range for Y axis
+  const tempRange = useMemo(() => {
+    if (chartData.length === 0) return { min: 30, max: 80 };
+    const temps = chartData.map(d => d.temperature).filter(t => t != null);
+    const dewpoints = chartData.map(d => d.dewpoint).filter(d => d != null);
+    const allValues = [...temps, ...dewpoints];
+    if (allValues.length === 0) return { min: 30, max: 80 };
+    const min = Math.floor(Math.min(...allValues) / 5) * 5 - 5;
+    const max = Math.ceil(Math.max(...allValues) / 5) * 5 + 5;
+    return { min, max };
+  }, [chartData]);
+
+  // Find index of selected observation in chart data
+  const selectedChartIndex = useMemo(() => {
+    if (!observation || chartData.length === 0) return -1;
+    const selectedTime = observation?.timestamp instanceof Date
+      ? observation.timestamp.getTime()
+      : observation?.timestamp ? new Date(observation.timestamp).getTime() : -1;
+    return chartData.findIndex(d => d.time === selectedTime);
+  }, [observation, chartData]);
+
+  // Early return - after all hooks
   if (!isOpen || !observation) return null;
 
   // Format time for table
@@ -144,6 +207,44 @@ export default function ObservationDetailModal({
             new Date(obs.timestamp).getTime() === new Date(observation.timestamp).getTime());
   };
 
+  // Custom tooltip for chart
+  const CustomTooltip = ({ active, payload }) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const data = payload[0].payload;
+
+    // Convert temperature for display if using metric
+    const displayTemp = (tempF) => {
+      if (tempF == null) return '--';
+      if (useMetric) {
+        const tempC = (tempF - 32) * 5 / 9;
+        return `${Math.round(tempC)}°C`;
+      }
+      return `${Math.round(tempF)}°F`;
+    };
+
+    return (
+      <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg text-xs border border-white/10">
+        <div className="text-white/60 mb-1">{data.timeLabel} • {data.dateLabel}</div>
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#FF9F0A]" />
+            <span className="text-white">Temp: {displayTemp(data.temperature)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#64D2FF]" />
+            <span className="text-white">Dew: {displayTemp(data.dewpoint)}</span>
+          </div>
+          {data.humidity != null && (
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-white/40" />
+              <span className="text-white">RH: {Math.round(data.humidity)}%</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Full-screen backdrop - dims everything, sits behind sidebars */}
@@ -193,10 +294,37 @@ export default function ObservationDetailModal({
               {observation.description || 'No conditions reported'}
             </div>
           </div>
+
+          {/* View Toggle Tabs */}
+          <div className="mt-3 flex bg-white/10 rounded-lg p-0.5">
+            <button
+              onClick={() => setActiveView('table')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                activeView === 'table'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              <Table className="w-3.5 h-3.5" />
+              Table
+            </button>
+            <button
+              onClick={() => setActiveView('chart')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                activeView === 'chart'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              Chart
+            </button>
+          </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Table View */}
+        {activeView === 'table' && (
+          <div className="overflow-x-auto">
           <table className="w-full text-xs">
             {/* Table header */}
             <thead>
@@ -274,15 +402,162 @@ export default function ObservationDetailModal({
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        )}
+
+        {/* Chart View */}
+        {activeView === 'chart' && (
+          <div className="px-2 py-3">
+            {chartData.length > 0 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="tempGradientObs" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#FF9F0A" stopOpacity={0.4} />
+                        <stop offset="50%" stopColor="#FFD60A" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="#30D158" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+
+                    <XAxis
+                      dataKey="time"
+                      type="number"
+                      domain={['dataMin', 'dataMax']}
+                      tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(time) => {
+                        const date = new Date(time);
+                        return date.toLocaleTimeString('en-US', {
+                          timeZone: timezone,
+                          hour: 'numeric',
+                          hour12: true,
+                        });
+                      }}
+                      interval="preserveStartEnd"
+                      minTickGap={40}
+                    />
+                    <YAxis
+                      yAxisId="temp"
+                      domain={[tempRange.min, tempRange.max]}
+                      tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => {
+                        if (useMetric) {
+                          const c = (v - 32) * 5 / 9;
+                          return `${Math.round(c)}°`;
+                        }
+                        return `${v}°`;
+                      }}
+                      width={35}
+                    />
+                    <YAxis
+                      yAxisId="humidity"
+                      orientation="right"
+                      domain={[0, 100]}
+                      tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.25)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => `${v}%`}
+                      width={35}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+
+                    {/* Temperature area fill */}
+                    <Area
+                      yAxisId="temp"
+                      type="monotone"
+                      dataKey="temperature"
+                      stroke="none"
+                      fill="url(#tempGradientObs)"
+                    />
+
+                    {/* Humidity line (subtle) */}
+                    <Line
+                      yAxisId="humidity"
+                      type="monotone"
+                      dataKey="humidity"
+                      stroke="rgba(255,255,255,0.25)"
+                      strokeWidth={1}
+                      dot={false}
+                    />
+
+                    {/* Dew point line */}
+                    <Line
+                      yAxisId="temp"
+                      type="monotone"
+                      dataKey="dewpoint"
+                      stroke="#64D2FF"
+                      strokeWidth={1.5}
+                      dot={false}
+                    />
+
+                    {/* Temperature line */}
+                    <Line
+                      yAxisId="temp"
+                      type="monotone"
+                      dataKey="temperature"
+                      stroke="#FF9F0A"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4, fill: '#FF9F0A', stroke: '#fff', strokeWidth: 2 }}
+                    />
+
+                    {/* Selected observation marker */}
+                    {selectedChartIndex >= 0 && chartData[selectedChartIndex] && (
+                      <ReferenceDot
+                        yAxisId="temp"
+                        x={chartData[selectedChartIndex].time}
+                        y={chartData[selectedChartIndex].temperature}
+                        r={6}
+                        fill="#FF9F0A"
+                        stroke="#fff"
+                        strokeWidth={2}
+                      />
+                    )}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-white/40 text-sm">
+                No chart data available
+              </div>
+            )}
+
+            {/* Chart Legend */}
+            <div className="flex items-center justify-center gap-4 mt-2 text-[10px]">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-0.5 bg-[#FF9F0A] rounded" />
+                <span className="text-white/60">Temperature</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-0.5 bg-[#64D2FF] rounded" />
+                <span className="text-white/60">Dew Point</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-0.5 bg-white/25 rounded" />
+                <span className="text-white/60">Humidity</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer with units */}
         <div className="px-4 py-2 bg-white/5 border-t border-white/10">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-white/40">
             <span>Temp: {useMetric ? '°C' : '°F'}</span>
-            <span>Wind: dir {useMetric ? 'km/h' : 'mph'}</span>
-            <span>Vis: {useMetric ? 'km' : 'mi'}</span>
-            <span>Press: {useMetric ? 'hPa' : 'inHg'}</span>
+            {activeView === 'table' && (
+              <>
+                <span>Wind: dir {useMetric ? 'km/h' : 'mph'}</span>
+                <span>Vis: {useMetric ? 'km' : 'mi'}</span>
+                <span>Press: {useMetric ? 'hPa' : 'inHg'}</span>
+              </>
+            )}
+            {activeView === 'chart' && (
+              <span>24h observation history</span>
+            )}
           </div>
         </div>
         </div>
@@ -318,6 +593,12 @@ ObservationDetailModal.propTypes = {
     visibility: PropTypes.number,
     pressure: PropTypes.number,
     description: PropTypes.string,
+  })),
+  allObservations: PropTypes.arrayOf(PropTypes.shape({
+    timestamp: PropTypes.oneOfType([PropTypes.instanceOf(Date), PropTypes.string]),
+    temperature: PropTypes.number,
+    dewpoint: PropTypes.number,
+    humidity: PropTypes.number,
   })),
   timezone: PropTypes.string,
   useMetric: PropTypes.bool,
