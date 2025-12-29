@@ -100,12 +100,12 @@ export default function MarketBrackets({
   // Find the leading bracket (highest probability)
   const leadingBracket = brackets.reduce((max, b) => b.yesPrice > (max?.yesPrice || 0) ? b : max, null);
 
-  // Get color based on probability
+  // Get color based on probability - dark navy blue gradient
   const getProbColor = (prob) => {
-    if (prob >= 80) return '#30D158'; // Green - very likely
-    if (prob >= 50) return '#FFD60A'; // Yellow - likely
-    if (prob >= 20) return '#FF9F0A'; // Orange - possible
-    return '#64D2FF'; // Blue - unlikely
+    if (prob >= 80) return '#60A5FA'; // Brightest navy - very likely
+    if (prob >= 50) return '#3B82F6'; // Medium navy - likely
+    if (prob >= 20) return '#2563EB'; // Dark navy - possible
+    return '#1D4ED8'; // Deepest navy - unlikely
   };
 
   // Condense label: "39° to 40°" -> "39-40°"
@@ -178,7 +178,7 @@ export default function MarketBrackets({
                 >
                   {/* Probability bar background */}
                   <div
-                    className="absolute left-0 top-0 bottom-0 rounded-lg opacity-20"
+                    className="absolute left-0 top-0 bottom-0 rounded-lg opacity-30"
                     style={{
                       width: `${bracket.yesPrice}%`,
                       backgroundColor: probColor,
@@ -190,10 +190,7 @@ export default function MarketBrackets({
                     {condenseLabel(bracket.label)}
                   </span>
 
-                  <span
-                    className="relative text-[13px] font-bold tabular-nums"
-                    style={{ color: probColor }}
-                  >
+                  <span className="relative text-[13px] font-bold tabular-nums text-white">
                     {bracket.yesPrice}%
                   </span>
                 </div>
