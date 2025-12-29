@@ -82,83 +82,79 @@ export function formatObservationForNotes(observation, metadata = {}) {
     return `${Math.round(observation.humidity)}%`;
   };
 
-  // Build TipTap content structure
+  // Build TipTap content structure - clean, legible format
   return {
     type: 'doc',
     content: [
+      // Observation header as H3
       {
-        type: 'blockquote',
+        type: 'heading',
+        attrs: { level: 3 },
         content: [
+          { type: 'text', text: `${cityName} — ${timeStr}` }
+        ]
+      },
+      // Date and large temperature
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: `${dateStr} • ` },
           {
-            type: 'paragraph',
-            content: [
-              {
-                type: 'text',
-                marks: [{ type: 'bold' }],
-                text: `${cityName} Observation`
-              },
-              {
-                type: 'text',
-                text: ` — ${dateStr}, ${timeStr}`
-              }
-            ]
+            type: 'text',
+            marks: [{ type: 'bold' }],
+            text: formatTemp(observation.temperature)
           },
           {
-            type: 'paragraph',
-            content: [
-              {
-                type: 'text',
-                marks: [{ type: 'bold' }],
-                text: `${formatTemp(observation.temperature)}`
-              },
-              {
-                type: 'text',
-                text: observation.description ? ` ${observation.description}` : ''
-              }
-            ]
-          },
-          {
-            type: 'bulletList',
-            content: [
-              {
-                type: 'listItem',
-                content: [{
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: `Humidity: ${formatHumidity()}` }]
-                }]
-              },
-              {
-                type: 'listItem',
-                content: [{
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: `Wind: ${formatWind()}` }]
-                }]
-              },
-              {
-                type: 'listItem',
-                content: [{
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: `Dew Point: ${formatTemp(observation.dewpoint)}` }]
-                }]
-              },
-              {
-                type: 'listItem',
-                content: [{
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: `Visibility: ${formatVisibility()}` }]
-                }]
-              },
-              {
-                type: 'listItem',
-                content: [{
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: `Pressure: ${formatPressure()}` }]
-                }]
-              }
-            ]
+            type: 'text',
+            text: observation.description ? ` ${observation.description}` : ''
           }
         ]
       },
+      // Weather details as compact list
+      {
+        type: 'bulletList',
+        content: [
+          {
+            type: 'listItem',
+            content: [{
+              type: 'paragraph',
+              content: [
+                { type: 'text', marks: [{ type: 'bold' }], text: 'Humidity: ' },
+                { type: 'text', text: `${formatHumidity()}  •  ` },
+                { type: 'text', marks: [{ type: 'bold' }], text: 'Wind: ' },
+                { type: 'text', text: formatWind() }
+              ]
+            }]
+          },
+          {
+            type: 'listItem',
+            content: [{
+              type: 'paragraph',
+              content: [
+                { type: 'text', marks: [{ type: 'bold' }], text: 'Dew Point: ' },
+                { type: 'text', text: `${formatTemp(observation.dewpoint)}  •  ` },
+                { type: 'text', marks: [{ type: 'bold' }], text: 'Pressure: ' },
+                { type: 'text', text: formatPressure() }
+              ]
+            }]
+          },
+          {
+            type: 'listItem',
+            content: [{
+              type: 'paragraph',
+              content: [
+                { type: 'text', marks: [{ type: 'bold' }], text: 'Visibility: ' },
+                { type: 'text', text: formatVisibility() }
+              ]
+            }]
+          }
+        ]
+      },
+      // Horizontal rule separator
+      {
+        type: 'horizontalRule'
+      },
+      // Empty paragraph for spacing
       {
         type: 'paragraph',
         content: []
