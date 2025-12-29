@@ -226,7 +226,7 @@ export default function GlassSidebar() {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block fixed left-0 top-0 h-screen w-72 bg-black/30 backdrop-blur-2xl border-r border-white/10 z-40">
+      <aside className="hidden md:block fixed left-3 top-3 bottom-3 w-72 bg-black/30 backdrop-blur-2xl border border-white/10 rounded-2xl z-40 overflow-hidden">
         {renderSidebarContent(false)}
       </aside>
 
