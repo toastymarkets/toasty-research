@@ -5,11 +5,8 @@ import {
   X,
   Menu,
   MapPin,
-  ChevronRight,
-  FileText,
 } from 'lucide-react';
 import { CITIES } from '../../config/cities';
-import { getAllResearchNotes } from '../../utils/researchLogUtils';
 import { useSidebar } from '../../context/SidebarContext';
 import { useAllCitiesWeather } from '../../hooks/useAllCitiesWeather';
 
@@ -231,8 +228,6 @@ const getWeatherBackground = (condition, timezone) => {
 export default function GlassSidebar() {
   const { isMobileOpen, closeMobile, toggleMobile } = useSidebar();
   const [searchQuery, setSearchQuery] = useState('');
-  const [notes, setNotes] = useState([]);
-  const [showNotes, setShowNotes] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const location = useLocation();
 
@@ -244,11 +239,6 @@ export default function GlassSidebar() {
     const interval = setInterval(() => setCurrentTime(Date.now()), 60000);
     return () => clearInterval(interval);
   }, []);
-
-  // Load notes
-  useEffect(() => {
-    setNotes(getAllResearchNotes());
-  }, [location.pathname]);
 
   // Lock body scroll when mobile sidebar is open
   useEffect(() => {
@@ -358,58 +348,6 @@ export default function GlassSidebar() {
     </div>
   );
 
-  // Research notes panel content
-  const renderNotesPanel = (isMobile = false) => (
-    <div className="flex flex-col">
-      {/* Header */}
-      <button
-        onClick={() => setShowNotes(!showNotes)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors rounded-t-2xl"
-      >
-        <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-white/50" />
-          <span className="text-[11px] font-medium text-white/50 uppercase tracking-wide">
-            Research Notes
-          </span>
-        </div>
-        <ChevronRight
-          className={`w-4 h-4 text-white/40 transition-transform ${
-            showNotes ? 'rotate-90' : ''
-          }`}
-        />
-      </button>
-
-      {/* Notes list */}
-      {showNotes && (
-        <div className="px-2 pb-2 space-y-0.5">
-          {notes.slice(0, 5).map(note => (
-            <Link
-              key={note.id}
-              to={`/research/${note.type}/${note.slug}`}
-              onClick={isMobile ? closeMobile : undefined}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <FileText className="w-4 h-4 text-white/50 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm text-white truncate">{note.topic}</div>
-                <div className="text-[11px] text-white/50 truncate">{note.location}</div>
-              </div>
-            </Link>
-          ))}
-          {notes.length > 5 && (
-            <Link
-              to="/research"
-              onClick={isMobile ? closeMobile : undefined}
-              className="block text-center text-xs text-apple-blue py-2 hover:underline"
-            >
-              View all {notes.length} notes
-            </Link>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <>
       {/* Mobile hamburger button */}
@@ -423,19 +361,12 @@ export default function GlassSidebar() {
         </button>
       )}
 
-      {/* Desktop Sidebar - Two separate cards */}
-      <div className="hidden md:flex fixed left-3 top-3 bottom-3 w-72 flex-col gap-3 z-40">
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex fixed left-3 top-3 bottom-3 w-72 flex-col z-40">
         {/* Cities Card */}
         <aside className="flex-1 bg-black/30 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden min-h-0">
           {renderCitiesPanel(false)}
         </aside>
-
-        {/* Research Notes Card */}
-        {notes.length > 0 && (
-          <aside className="bg-black/30 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden flex-shrink-0">
-            {renderNotesPanel(false)}
-          </aside>
-        )}
       </div>
 
       {/* Mobile Sidebar */}
@@ -463,13 +394,6 @@ export default function GlassSidebar() {
             <div className="pt-14 flex-1 min-h-0 overflow-hidden flex flex-col">
               {renderCitiesPanel(true)}
             </div>
-
-            {/* Research Notes section - separate area at bottom */}
-            {notes.length > 0 && (
-              <div className="border-t border-white/10 flex-shrink-0">
-                {renderNotesPanel(true)}
-              </div>
-            )}
           </aside>
         </>
       )}

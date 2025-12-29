@@ -1,10 +1,12 @@
-import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2 } from 'lucide-react';
+import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2, ChevronDown, Clock } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { DataChipProvider } from '../../context/DataChipContext';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 import NotepadEditor from '../notepad/NotepadEditor';
 import ConfirmPopover from '../ui/ConfirmPopover';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getAllResearchNotes } from '../../utils/researchLogUtils';
 
 /**
  * Header controls component with save indicator and action buttons
@@ -115,6 +117,98 @@ function NotepadContent() {
 }
 
 /**
+ * Notes history section - shows recent research notes
+ */
+function NotesHistory({ currentStorageKey }) {
+  const [notes, setNotes] = useState([]);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const location = useLocation();
+
+  // Load notes on mount and when location changes
+  useEffect(() => {
+    setNotes(getAllResearchNotes());
+  }, [location.pathname]);
+
+  // Filter out the current note from history
+  const historyNotes = notes.filter(note => note.id !== currentStorageKey);
+
+  if (historyNotes.length === 0) return null;
+
+  // Format relative time
+  const formatTime = (date) => {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="border-t border-white/10">
+      {/* Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5 text-white/40" />
+          <span className="text-[11px] font-medium text-white/40 uppercase tracking-wide">
+            History
+          </span>
+          <span className="text-[10px] text-white/30">
+            ({historyNotes.length})
+          </span>
+        </div>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-white/30 transition-transform ${
+            isExpanded ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {/* Notes list */}
+      {isExpanded && (
+        <div className="px-2 pb-2 space-y-0.5 max-h-48 overflow-y-auto">
+          {historyNotes.slice(0, 10).map(note => (
+            <Link
+              key={note.id}
+              to={`/city/${note.slug}`}
+              className="flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
+            >
+              <FileText className="w-3.5 h-3.5 text-white/30 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] text-white/70 truncate group-hover:text-white">
+                  {note.topic}
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-white/40">
+                  <span>{note.location}</span>
+                  <span>•</span>
+                  <span>{formatTime(note.lastSaved)}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+          {historyNotes.length > 10 && (
+            <Link
+              to="/research"
+              className="block text-center text-[11px] text-blue-400 py-1.5 hover:underline"
+            >
+              View all {historyNotes.length} notes
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * NotesSidebar - Right sidebar for research notes
  * Apple Weather style panel
  */
@@ -179,11 +273,14 @@ export default function NotesSidebar({ storageKey, cityName }) {
               <div className="h-px bg-white/10 mx-3" />
 
               {/* Notepad content */}
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden min-h-0">
                 <div className="h-full overflow-y-auto">
                   <NotepadContent />
                 </div>
               </div>
+
+              {/* History section */}
+              <NotesHistory currentStorageKey={storageKey} />
             </div>
           </NotepadProvider>
         </DataChipProvider>
