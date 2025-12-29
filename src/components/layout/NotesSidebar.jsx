@@ -127,11 +127,11 @@ export default function NotesSidebar({ storageKey, cityName }) {
       <button
         onClick={toggle}
         className={`
-          fixed top-4 z-40
+          fixed top-5 z-40
           p-2 rounded-lg
           bg-black/30 backdrop-blur-xl border border-white/10
           hover:bg-white/10 transition-all duration-300
-          ${isCollapsed ? 'right-4' : 'right-[21rem]'}
+          ${isCollapsed ? 'right-4' : 'right-[21.5rem]'}
         `}
         title={isCollapsed ? 'Show notes' : 'Hide notes'}
       >
@@ -145,11 +145,11 @@ export default function NotesSidebar({ storageKey, cityName }) {
       {/* Sidebar panel - Apple Weather style */}
       <aside
         className={`
-          fixed right-0 top-0 h-screen w-80 z-30
+          fixed right-3 top-3 bottom-3 w-80 z-30
           bg-black/30 backdrop-blur-2xl
-          border-l border-white/10
+          border border-white/10 rounded-2xl overflow-hidden
           transition-transform duration-300 ease-in-out
-          ${isCollapsed ? 'translate-x-full' : 'translate-x-0'}
+          ${isCollapsed ? 'translate-x-[calc(100%+12px)]' : 'translate-x-0'}
         `}
       >
         <DataChipProvider>
