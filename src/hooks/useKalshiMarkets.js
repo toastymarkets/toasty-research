@@ -94,17 +94,21 @@ export function useKalshiMarkets(citySlug, dayOffset = 0) {
   const [error, setError] = useState(null);
   const [totalVolume, setTotalVolume] = useState(0);
   const [closeTime, setCloseTime] = useState(null);
+  const [hasInitialData, setHasInitialData] = useState(false);
 
   const seriesTicker = CITY_SERIES[citySlug];
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isInitial = false) => {
     if (!seriesTicker) {
       setError('No market for this city');
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    // Only show loading state on initial fetch, not refreshes
+    if (isInitial || !hasInitialData) {
+      setLoading(true);
+    }
 
     try {
       const markets = await fetchSeriesMarkets(seriesTicker, dayOffset);
@@ -133,22 +137,24 @@ export function useKalshiMarkets(citySlug, dayOffset = 0) {
       setTotalVolume(total);
       setCloseTime(firstCloseTime ? new Date(firstCloseTime) : null);
       setError(null);
+      setHasInitialData(true);
     } catch (err) {
       setError(err.message);
       setBrackets([]);
     } finally {
       setLoading(false);
     }
-  }, [seriesTicker, dayOffset]);
+  }, [seriesTicker, dayOffset, hasInitialData]);
 
   // Initial fetch
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    setHasInitialData(false); // Reset when city or day changes
+    fetchData(true);
+  }, [seriesTicker, dayOffset]);
 
-  // Refresh every 10 seconds for real-time updates
+  // Refresh every 30 seconds for real-time updates (silent refresh)
   useEffect(() => {
-    const interval = setInterval(fetchData, 10000);
+    const interval = setInterval(() => fetchData(false), 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
