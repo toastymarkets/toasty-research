@@ -68,7 +68,7 @@ function CityDashboardContent({ city, citySlug }) {
   // Fetch weather data
   const { weather, loading: weatherLoading } = useNWSWeather(city.stationId);
   const { forecast, loading: forecastLoading } = useNWSHourlyForecast(citySlug);
-  const { observations, loading: observationsLoading } = useNWSObservationHistory(city.stationId, 48);
+  const { observations, loading: observationsLoading, lastUpdated } = useNWSObservationHistory(city.stationId, 48);
   const marketData = useKalshiMarketsFromContext(citySlug);
   const localTime = useLocalTime(city.timezone);
 
@@ -200,6 +200,8 @@ function CityDashboardContent({ city, citySlug }) {
           timezone={city.timezone}
           cityName={city.name}
           currentTemp={currentTempF}
+          stationId={city.stationId}
+          lastUpdated={lastUpdated}
         />
       </div>
 

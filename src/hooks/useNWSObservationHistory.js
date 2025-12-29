@@ -8,6 +8,7 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
   const [observations, setObservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchObservations = useCallback(async (force = false) => {
     if (!stationId) {
@@ -24,7 +25,16 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
           const { data, timestamp } = JSON.parse(cached);
           // Cache for 5 minutes
           if (Date.now() - timestamp < 5 * 60 * 1000) {
-            setObservations(data);
+            // Re-hydrate Date objects from cached strings
+            const rehydrated = data.map(obs => ({
+              ...obs,
+              timestamp: new Date(obs.timestamp),
+            }));
+            setObservations(rehydrated);
+            // Set lastUpdated from most recent observation
+            if (rehydrated.length > 0) {
+              setLastUpdated(rehydrated[rehydrated.length - 1].timestamp);
+            }
             setLoading(false);
             return;
           }
@@ -95,6 +105,10 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
       } catch (e) { /* ignore cache errors */ }
 
       setObservations(transformed);
+      // Set lastUpdated from most recent observation
+      if (transformed.length > 0) {
+        setLastUpdated(transformed[transformed.length - 1].timestamp);
+      }
       setError(null);
     } catch (err) {
       console.error('[NWSObservationHistory] Fetch error:', err);
@@ -118,6 +132,7 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
     observations,
     loading,
     error,
+    lastUpdated,
     refetch: () => fetchObservations(true),
   };
 }
