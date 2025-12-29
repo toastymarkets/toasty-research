@@ -82,7 +82,19 @@ export function formatObservationForNotes(observation, metadata = {}) {
     return `${Math.round(observation.humidity)}%`;
   };
 
-  // Build TipTap content structure - clean, legible format
+  // Helper to create a data chip node
+  const createChip = (value, label, type, source = cityName) => ({
+    type: 'dataChip',
+    attrs: {
+      value,
+      label,
+      type,
+      source,
+      timestamp: timeStr,
+    }
+  });
+
+  // Build TipTap content structure with data chips
   return {
     type: 'doc',
     content: [
@@ -91,63 +103,37 @@ export function formatObservationForNotes(observation, metadata = {}) {
         type: 'heading',
         attrs: { level: 3 },
         content: [
-          { type: 'text', text: `${cityName} — ${timeStr}` }
+          { type: 'text', text: `${cityName} Observation` }
         ]
       },
-      // Date and large temperature
+      // Date/time line
       {
         type: 'paragraph',
         content: [
-          { type: 'text', text: `${dateStr} • ` },
-          {
-            type: 'text',
-            marks: [{ type: 'bold' }],
-            text: formatTemp(observation.temperature)
-          },
-          {
-            type: 'text',
-            text: observation.description ? ` ${observation.description}` : ''
-          }
+          { type: 'text', text: `${dateStr} at ${timeStr}` },
+          { type: 'text', text: observation.description ? ` — ${observation.description}` : '' }
         ]
       },
-      // Weather details as compact list
+      // Temperature row with chip
       {
-        type: 'bulletList',
+        type: 'paragraph',
         content: [
-          {
-            type: 'listItem',
-            content: [{
-              type: 'paragraph',
-              content: [
-                { type: 'text', marks: [{ type: 'bold' }], text: 'Humidity: ' },
-                { type: 'text', text: `${formatHumidity()}  •  ` },
-                { type: 'text', marks: [{ type: 'bold' }], text: 'Wind: ' },
-                { type: 'text', text: formatWind() }
-              ]
-            }]
-          },
-          {
-            type: 'listItem',
-            content: [{
-              type: 'paragraph',
-              content: [
-                { type: 'text', marks: [{ type: 'bold' }], text: 'Dew Point: ' },
-                { type: 'text', text: `${formatTemp(observation.dewpoint)}  •  ` },
-                { type: 'text', marks: [{ type: 'bold' }], text: 'Pressure: ' },
-                { type: 'text', text: formatPressure() }
-              ]
-            }]
-          },
-          {
-            type: 'listItem',
-            content: [{
-              type: 'paragraph',
-              content: [
-                { type: 'text', marks: [{ type: 'bold' }], text: 'Visibility: ' },
-                { type: 'text', text: formatVisibility() }
-              ]
-            }]
-          }
+          createChip(formatTemp(observation.temperature), 'Temp', 'temperature'),
+          { type: 'text', text: '  ' },
+          createChip(formatHumidity(), 'Humidity', 'humidity'),
+          { type: 'text', text: '  ' },
+          createChip(formatWind(), 'Wind', 'wind'),
+        ]
+      },
+      // Second row of chips
+      {
+        type: 'paragraph',
+        content: [
+          createChip(formatTemp(observation.dewpoint), 'Dew Pt', 'temperature'),
+          { type: 'text', text: '  ' },
+          createChip(formatPressure(), 'Pressure', 'pressure'),
+          { type: 'text', text: '  ' },
+          createChip(formatVisibility(), 'Visibility', 'default'),
         ]
       },
       // Horizontal rule separator
