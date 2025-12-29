@@ -14,6 +14,7 @@ import {
   TenDayForecast,
   MarketBrackets,
   NWSForecastWidget,
+  NWSDiscussionWidget,
   ModelsWidget,
   WidgetGrid,
   WeatherMap,
@@ -21,7 +22,6 @@ import {
   HumidityWidget,
   PressureWidget,
   VisibilityWidget,
-  FeelsLikeWidget,
   MarketInsightWidget,
 } from '../weather';
 
@@ -264,11 +264,11 @@ function CityDashboardContent({ city, citySlug }) {
             loading={weatherLoading}
           />
 
-          {/* Feels Like */}
-          <FeelsLikeWidget
-            actual={currentConditions.temperature || 50}
-            feelsLike={weather?.heatIndex?.value || weather?.windChill?.value || currentConditions.temperature || 50}
-            loading={weatherLoading}
+          {/* NWS Forecast Discussion */}
+          <NWSDiscussionWidget
+            lat={city.lat}
+            lon={city.lon}
+            citySlug={citySlug}
           />
 
           {/* Market Insight - Kalshi prediction data */}
