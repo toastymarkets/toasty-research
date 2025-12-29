@@ -41,15 +41,14 @@
     #A8CCE8 100%
   );
 
-  /* Sunset (6pm - 8pm) */
+  /* Sunset (6pm - 8pm) - Muted Twilight */
   --gradient-sunset: linear-gradient(
     180deg,
-    #1E3A5F 0%,
-    #4A5568 15%,
-    #C56B6B 40%,
-    #E8967C 60%,
-    #F4C076 80%,
-    #FFD89B 100%
+    #1A1A2E 0%,
+    #2D3A4A 25%,
+    #4A5568 50%,
+    #6B7280 75%,
+    #9CA3AF 100%
   );
 
   /* Dusk (8pm - 9pm) */
