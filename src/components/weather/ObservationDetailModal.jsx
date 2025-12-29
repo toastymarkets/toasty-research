@@ -122,15 +122,17 @@ export default function ObservationDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
-      {/* Backdrop */}
+    <>
+      {/* Full-screen backdrop - dims everything, sits behind sidebars */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[25] bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="glass-elevated relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+      {/* Modal container - constrained to main content area, above backdrop but below sidebars */}
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:left-[300px] lg:right-[344px] pointer-events-none">
+        {/* Modal */}
+        <div className="glass-elevated relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-scale-in pointer-events-auto">
         {/* Header */}
         <div className="px-4 pt-4 pb-3 border-b border-white/10">
           <div className="flex items-center justify-between">
@@ -230,8 +232,9 @@ export default function ObservationDetailModal({
             <span>Press: {useMetric ? 'hPa' : 'inHg'}</span>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

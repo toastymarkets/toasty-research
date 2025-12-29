@@ -144,7 +144,7 @@ body {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur-heavy));
   -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none;
   border-radius: var(--radius-lg);
   box-shadow: var(--glass-shadow);
   overflow: hidden;
