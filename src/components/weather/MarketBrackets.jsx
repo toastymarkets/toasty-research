@@ -186,7 +186,7 @@ export default function MarketBrackets({
                   />
 
                   {/* Content */}
-                  <span className={`relative text-[12px] font-medium ${isLeader ? 'text-white' : 'text-white/70'}`}>
+                  <span className={`relative text-[12px] font-bold ${isLeader ? 'text-white' : 'text-white/70'}`}>
                     {condenseLabel(bracket.label)}
                   </span>
 
