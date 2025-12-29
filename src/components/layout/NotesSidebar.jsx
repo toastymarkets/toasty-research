@@ -5,8 +5,9 @@ import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 import NotepadEditor from '../notepad/NotepadEditor';
 import ConfirmPopover from '../ui/ConfirmPopover';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
+import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 
 /**
  * Header controls component with save indicator and action buttons
@@ -256,8 +257,22 @@ function ResearchLog() {
  * Apple Weather style panel
  */
 export default function NotesSidebar({ storageKey, cityName }) {
-  const { isCollapsed, toggle } = useNotesSidebar();
+  const { isCollapsed, toggle, expand } = useNotesSidebar();
   const [activeView, setActiveView] = useState('notes'); // 'notes' | 'log'
+
+  // Auto-switch to Notes tab when data is inserted from widgets
+  useEffect(() => {
+    const handleInsertion = () => {
+      setActiveView('notes');
+      // Also expand the sidebar if collapsed
+      if (isCollapsed) {
+        expand();
+      }
+    };
+
+    window.addEventListener(NOTE_INSERTION_EVENT, handleInsertion);
+    return () => window.removeEventListener(NOTE_INSERTION_EVENT, handleInsertion);
+  }, [isCollapsed, expand]);
 
   return (
     <>
@@ -345,15 +360,16 @@ export default function NotesSidebar({ storageKey, cityName }) {
               {/* Divider */}
               <div className="h-px bg-white/10 mx-3" />
 
-              {/* Content - Notes editor or Research Log */}
-              <div className="flex-1 overflow-hidden min-h-0">
-                {activeView === 'notes' ? (
-                  <div className="h-full overflow-y-auto">
-                    <NotepadContent />
-                  </div>
-                ) : (
+              {/* Content - Notes editor and Research Log (both mounted, one hidden) */}
+              <div className="flex-1 overflow-hidden min-h-0 relative">
+                {/* Notes editor - always mounted to receive insertion events */}
+                <div className={`h-full overflow-y-auto ${activeView === 'notes' ? '' : 'hidden'}`}>
+                  <NotepadContent />
+                </div>
+                {/* Research Log */}
+                <div className={`h-full ${activeView === 'log' ? '' : 'hidden'}`}>
                   <ResearchLog />
-                )}
+                </div>
               </div>
             </div>
           </NotepadProvider>
