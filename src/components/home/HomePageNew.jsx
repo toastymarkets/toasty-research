@@ -98,9 +98,9 @@ export default function HomePageNew() {
   };
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className="min-h-screen pb-24 md:pb-8 overflow-x-hidden w-full max-w-[100vw]">
       {/* Hero Section */}
-      <div className="max-w-4xl mx-auto px-4 pt-8">
+      <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 pt-4 md:pt-8">
         <HeroWeather
           cityName={selectedCity?.name}
           temperature={currentConditions?.temperature}
@@ -112,7 +112,7 @@ export default function HomePageNew() {
       </div>
 
       {/* Hourly Forecast - Full width scroll */}
-      <div className="max-w-4xl mx-auto px-4 mt-4">
+      <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 mt-4">
         <HourlyForecast
           periods={forecast?.periods || []}
           loading={forecastLoading}
@@ -121,7 +121,7 @@ export default function HomePageNew() {
       </div>
 
       {/* Widget Grid */}
-      <div className="max-w-4xl mx-auto px-4 mt-4">
+      <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 mt-4">
         <WidgetGrid>
           {/* 10-Day Forecast - Takes 2 columns */}
           <WidgetGrid.Item span={2}>
@@ -189,7 +189,7 @@ export default function HomePageNew() {
       </div>
 
       {/* City selector (subtle, at bottom) */}
-      <div className="max-w-4xl mx-auto px-4 mt-8">
+      <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 mt-8">
         <div className="flex flex-wrap gap-2 justify-center">
           {CITIES.slice(0, 7).map(city => (
             <button

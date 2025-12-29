@@ -57,7 +57,7 @@ export default function HeroWeather({
   const displayLow = formatTemp(low);
 
   return (
-    <div className="flex flex-col items-center text-center py-2 md:py-4">
+    <div className="flex flex-col items-center text-center py-2 md:py-4 w-full">
       {/* City name */}
       <h1 className="glass-location mb-0.5">
         {cityName || 'Loading...'}

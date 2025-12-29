@@ -22,7 +22,7 @@ export default function GlassWidget({
   return (
     <div
       className={`
-        glass-widget flex flex-col
+        glass-widget flex flex-col w-full max-w-full overflow-hidden
         ${sizeClasses[size]}
         ${onClick ? 'cursor-pointer' : ''}
         ${className}

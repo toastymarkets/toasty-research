@@ -1,6 +1,28 @@
 /* ===== LIQUID GLASS DESIGN SYSTEM ===== */
 /* Apple Weather / macOS Tahoe inspired glassmorphism */
 
+/* ===== GLOBAL MOBILE OVERFLOW FIX ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+  position: relative;
+}
+
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
 /* ===== CSS CUSTOM PROPERTIES ===== */
 :root {
   /* Glass properties */
@@ -127,6 +149,8 @@
   box-shadow: var(--glass-shadow);
   overflow: hidden;
   transition: all var(--transition-normal);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .glass-widget:hover {
@@ -159,19 +183,22 @@
   color: var(--glass-text-primary);
 }
 
-/* Widget sizes */
+/* Widget sizes - responsive */
 .widget-small {
-  width: var(--widget-small);
+  width: 100%;
+  max-width: var(--widget-small);
   height: var(--widget-small);
 }
 
 .widget-medium {
-  width: var(--widget-medium);
+  width: 100%;
+  max-width: var(--widget-medium);
   height: var(--widget-small);
 }
 
 .widget-large {
-  width: var(--widget-medium);
+  width: 100%;
+  max-width: var(--widget-medium);
   height: var(--widget-medium);
 }
 
@@ -453,7 +480,8 @@
 
 /* ===== RESPONSIVE ADJUSTMENTS ===== */
 
-@media (max-width: 768px) {
+/* Mobile only (< 768px) */
+@media (max-width: 767px) {
   :root {
     --glass-blur: 16px;
     --widget-small: 100%;
@@ -461,12 +489,54 @@
     --widget-large: 100%;
   }
 
+  /* Force all elements to respect viewport width */
+  * {
+    max-width: 100vw;
+  }
+
   .glass-temp-hero {
-    font-size: 56px;
+    font-size: 48px;
   }
 
   .glass-location {
     font-size: 18px;
+  }
+
+  /* Ensure widgets fit mobile viewport */
+  .glass-widget {
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .widget-small,
+  .widget-medium,
+  .widget-large {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 120px;
+  }
+
+  .widget-large {
+    min-height: 200px;
+  }
+
+  /* Widget content should not overflow */
+  .widget-content {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  /* Ensure flex items don't overflow */
+  .flex {
+    max-width: 100%;
+  }
+
+  /* Fix grid items */
+  .grid > * {
+    max-width: 100%;
+    overflow: hidden;
   }
 }
 

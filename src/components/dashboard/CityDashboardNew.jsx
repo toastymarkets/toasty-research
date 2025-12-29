@@ -143,9 +143,9 @@ function CityDashboardContent({ city, citySlug }) {
   const { isCollapsed: notesSidebarCollapsed } = useNotesSidebar();
 
   return (
-    <div className={`min-h-screen pb-8 transition-all duration-300 ${notesSidebarCollapsed ? '' : 'lg:pr-80'}`}>
-      {/* Back button - floating glass */}
-      <div className="fixed top-4 left-4 z-50 md:left-[calc(18rem+1rem)]">
+    <div className={`min-h-screen pb-24 md:pb-8 transition-all duration-300 overflow-x-hidden w-full max-w-[100vw] ${notesSidebarCollapsed ? '' : 'lg:pr-80'}`}>
+      {/* Back button - floating glass, positioned after hamburger on mobile */}
+      <div className="fixed top-4 left-14 z-50 md:left-[calc(19rem+0.5rem)]">
         <Link
           to="/"
           className="glass-button-icon flex items-center justify-center"
@@ -154,8 +154,8 @@ function CityDashboardContent({ city, citySlug }) {
         </Link>
       </div>
 
-      {/* Location badge - positioned left of the notes toggle button */}
-      <div className={`fixed top-4 z-50 transition-all duration-300 ${notesSidebarCollapsed ? 'right-16' : 'lg:right-[26rem] right-16'}`}>
+      {/* Location badge - hidden on mobile, visible on larger screens */}
+      <div className={`hidden md:block fixed top-4 z-50 transition-all duration-300 ${notesSidebarCollapsed ? 'right-16' : 'lg:right-[26rem] right-16'}`}>
         <div className="glass-badge">
           <MapPin className="w-3 h-3" />
           <span>{city.stationId}</span>
@@ -175,13 +175,13 @@ function CityDashboardContent({ city, citySlug }) {
       {/* Mobile Notes Button */}
       <Link
         to="/research"
-        className="lg:hidden fixed bottom-6 right-6 z-50 glass-button-primary p-4 rounded-full shadow-lg"
+        className="md:hidden fixed bottom-6 right-6 z-50 glass-button-primary p-3 rounded-full shadow-lg"
       >
-        <FileText className="w-6 h-6" />
+        <FileText className="w-5 h-5" />
       </Link>
 
       {/* Hero Section - compact */}
-      <div className="max-w-5xl mx-auto px-3 pt-12">
+      <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 pt-4 md:pt-12">
         <HeroWeather
           cityName={city.name}
           temperature={currentConditions.temperature}
@@ -193,7 +193,7 @@ function CityDashboardContent({ city, citySlug }) {
       </div>
 
       {/* Hourly Forecast - Real NWS observation data */}
-      <div className="max-w-5xl mx-auto px-3 mt-2">
+      <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 mt-2">
         <HourlyForecast
           observations={observations}
           loading={observationsLoading}
@@ -206,7 +206,7 @@ function CityDashboardContent({ city, citySlug }) {
       </div>
 
       {/* Widget Grid - compact */}
-      <div className="max-w-5xl mx-auto px-3 mt-2 pb-4">
+      <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 mt-2 pb-4">
         <WidgetGrid>
           {/* Market Brackets - Kalshi temperature markets */}
           <WidgetGrid.Item span={2}>

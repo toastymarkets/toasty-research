@@ -8,11 +8,11 @@ export default function WidgetGrid({ children, className = '' }) {
   return (
     <div
       className={`
-        grid gap-2 items-stretch
-        grid-cols-2
+        grid gap-2 items-stretch w-full max-w-full overflow-hidden
+        grid-cols-1
+        xs:grid-cols-2
         sm:grid-cols-3
         lg:grid-cols-4
-        xl:grid-cols-4
         ${className}
       `}
     >
@@ -30,15 +30,19 @@ WidgetGrid.propTypes = {
  * WidgetGrid.Item - Wrapper for grid items with size control
  */
 function WidgetGridItem({ children, span = 1, className = '' }) {
+  // On mobile (grid-cols-1), all items are full width
+  // On xs+ (grid-cols-2), span-2 items take full width
+  // On sm+ (grid-cols-3), span-2 items take 2 cols, span-3 takes full
+  // On lg+ (grid-cols-4), all spans work as expected
   const spanClasses = {
     1: '',
-    2: 'col-span-2',
-    3: 'col-span-2 lg:col-span-3',
-    4: 'col-span-2 lg:col-span-4',
+    2: 'xs:col-span-2',
+    3: 'xs:col-span-2 sm:col-span-3',
+    4: 'xs:col-span-2 sm:col-span-3 lg:col-span-4',
   };
 
   return (
-    <div className={`${spanClasses[span] || ''} h-full ${className}`}>
+    <div className={`${spanClasses[span] || ''} h-full w-full ${className}`}>
       {children}
     </div>
   );

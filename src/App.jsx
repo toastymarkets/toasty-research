@@ -20,13 +20,13 @@ function App() {
               {/* Dynamic weather background - changes with time of day */}
               <DynamicBackground animate={true} showCelestial={true} showClouds={true} />
 
-              <div className="min-h-screen text-white relative z-10">
-                <div className="flex">
+              <div className="min-h-screen text-white relative z-10 overflow-x-hidden w-full max-w-[100vw]">
+                <div className="flex w-full">
                   {/* New glass-styled sidebar */}
                   <GlassSidebar />
 
                   {/* Main content area - offset for sidebar on desktop */}
-                  <main className="flex-1 ml-0 md:ml-72 transition-all duration-300">
+                  <main className="flex-1 ml-0 md:ml-[19rem] transition-all duration-300 w-full max-w-full overflow-x-hidden">
                     <Routes>
                       <Route path="/" element={<HomePageNew />} />
                       <Route path="/research" element={<ResearchLogPageNew />} />
