@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, FileText } from 'lucide-react';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { CITY_BY_SLUG } from '../../config/cities';
 import { useNWSWeather } from '../../hooks/useNWSWeather';
 import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
@@ -162,15 +162,6 @@ function CityDashboardContent({ city, citySlug }) {
         </Link>
       </div>
 
-      {/* Location badge - hidden on mobile, visible on larger screens */}
-      <div className={`hidden md:block fixed top-4 z-50 transition-all duration-300 ${notesSidebarCollapsed ? 'right-16' : 'lg:right-[26rem] right-16'}`}>
-        <div className="glass-badge">
-          <MapPin className="w-3 h-3" />
-          <span>{city.stationId}</span>
-          <span className="text-glass-text-muted">•</span>
-          <span>{localTime}</span>
-        </div>
-      </div>
 
       {/* Notes Sidebar - Desktop */}
       <div className="hidden lg:block">
@@ -196,6 +187,8 @@ function CityDashboardContent({ city, citySlug }) {
           condition={currentConditions.condition}
           high={currentConditions.high}
           low={currentConditions.low}
+          stationId={city.stationId}
+          localTime={localTime}
           loading={isLoading}
         />
       </div>

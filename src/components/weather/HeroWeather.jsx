@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Cloud, Sun, CloudRain, CloudSnow, CloudFog, CloudLightning, Wind } from 'lucide-react';
+import { Cloud, Sun, CloudRain, CloudSnow, CloudFog, CloudLightning, Wind, MapPin } from 'lucide-react';
 
 /**
  * HeroWeather - Large hero display for current weather
@@ -26,6 +26,8 @@ export default function HeroWeather({
   condition,
   high,
   low,
+  stationId,
+  localTime,
   loading = false,
 }) {
   const WeatherIcon = getWeatherIcon(condition);
@@ -58,6 +60,16 @@ export default function HeroWeather({
 
   return (
     <div className="flex flex-col items-center text-center py-2 md:py-4 w-full">
+      {/* Station badge */}
+      {stationId && localTime && (
+        <div className="glass-badge mb-2">
+          <MapPin className="w-3 h-3" />
+          <span>{stationId}</span>
+          <span className="text-glass-text-muted">•</span>
+          <span>{localTime}</span>
+        </div>
+      )}
+
       {/* City name */}
       <h1 className="glass-location mb-0.5">
         {cityName || 'Loading...'}
@@ -93,5 +105,7 @@ HeroWeather.propTypes = {
   condition: PropTypes.string,
   high: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
   low: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
+  stationId: PropTypes.string,
+  localTime: PropTypes.string,
   loading: PropTypes.bool,
 };
