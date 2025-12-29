@@ -8,11 +8,11 @@
   --glass-blur-heavy: 40px;
   --glass-blur-light: 12px;
 
-  /* Glass backgrounds - Light surfaces on gradient backgrounds */
-  --glass-bg: rgba(255, 255, 255, 0.18);
-  --glass-bg-hover: rgba(255, 255, 255, 0.25);
-  --glass-bg-active: rgba(255, 255, 255, 0.3);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.22);
+  /* Glass backgrounds - Dark surfaces matching sidebar panels */
+  --glass-bg: rgba(0, 0, 0, 0.3);
+  --glass-bg-hover: rgba(0, 0, 0, 0.35);
+  --glass-bg-active: rgba(0, 0, 0, 0.4);
+  --glass-bg-elevated: rgba(0, 0, 0, 0.35);
 
   /* Glass borders */
   --glass-border: rgba(255, 255, 255, 0.25);
@@ -120,18 +120,18 @@
 
 .glass-widget {
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow), var(--glass-inner-highlight);
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
   transition: all var(--transition-normal);
 }
 
 .glass-widget:hover {
   background: var(--glass-bg-hover);
-  box-shadow: var(--glass-shadow-elevated), var(--glass-inner-highlight);
+  box-shadow: var(--glass-shadow-elevated);
 }
 
 /* Widget header - Apple compact style */
