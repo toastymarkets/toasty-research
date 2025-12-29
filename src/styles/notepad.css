@@ -347,8 +347,9 @@
 /* Data chips in compact/glass mode - type-specific colors */
 .notepad-compact .data-chip {
   backdrop-filter: blur(8px);
-  font-size: 0.75rem;
-  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  padding: 0.1875rem 0.5rem;
+  gap: 0.25rem;
 }
 
 .notepad-compact .data-chip-meta {
@@ -356,7 +357,12 @@
 }
 
 .notepad-compact .data-chip-label {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+.notepad-compact .data-chip-label:empty {
+  display: none;
 }
 
 /* Temperature chips - warm orange/yellow */

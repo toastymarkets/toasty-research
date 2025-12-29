@@ -83,68 +83,46 @@ export function formatObservationForNotes(observation, metadata = {}) {
   };
 
   // Helper to create a data chip node
-  const createChip = (value, label, type, source = cityName) => ({
+  const createChip = (value, label, type) => ({
     type: 'dataChip',
     attrs: {
       value,
       label,
       type,
-      source,
-      timestamp: timeStr,
+      source: '',
+      timestamp: '',
     }
   });
 
-  // Build TipTap content structure with data chips
+  // Build TipTap content structure - compact card style
   return {
     type: 'doc',
     content: [
-      // Observation header as H3
-      {
-        type: 'heading',
-        attrs: { level: 3 },
-        content: [
-          { type: 'text', text: `${cityName} Observation` }
-        ]
-      },
-      // Date/time line
+      // Compact time + condition header
       {
         type: 'paragraph',
         content: [
-          { type: 'text', text: `${dateStr} at ${timeStr}` },
-          { type: 'text', text: observation.description ? ` — ${observation.description}` : '' }
+          { type: 'text', marks: [{ type: 'bold' }], text: timeStr },
+          { type: 'text', text: observation.description ? ` · ${observation.description}` : '' }
         ]
       },
-      // Temperature row with chip
+      // All chips in one row - most important data
       {
         type: 'paragraph',
         content: [
-          createChip(formatTemp(observation.temperature), 'Temp', 'temperature'),
-          { type: 'text', text: '  ' },
-          createChip(formatHumidity(), 'Humidity', 'humidity'),
-          { type: 'text', text: '  ' },
-          createChip(formatWind(), 'Wind', 'wind'),
-        ]
-      },
-      // Second row of chips
-      {
-        type: 'paragraph',
-        content: [
-          createChip(formatTemp(observation.dewpoint), 'Dew Pt', 'temperature'),
-          { type: 'text', text: '  ' },
-          createChip(formatPressure(), 'Pressure', 'pressure'),
-          { type: 'text', text: '  ' },
-          createChip(formatVisibility(), 'Visibility', 'default'),
+          createChip(formatTemp(observation.temperature), '', 'temperature'),
+          { type: 'text', text: ' ' },
+          createChip(formatHumidity(), 'RH', 'humidity'),
+          { type: 'text', text: ' ' },
+          createChip(formatWind(), '', 'wind'),
+          { type: 'text', text: ' ' },
+          createChip(formatPressure(), '', 'pressure'),
         ]
       },
       // Horizontal rule separator
       {
         type: 'horizontalRule'
       },
-      // Empty paragraph for spacing
-      {
-        type: 'paragraph',
-        content: []
-      }
     ]
   };
 }
