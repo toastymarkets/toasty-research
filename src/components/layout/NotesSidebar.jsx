@@ -1,4 +1,4 @@
-import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2, ChevronDown, Clock } from 'lucide-react';
+import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2, ChevronDown, Clock, X, ExternalLink } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { DataChipProvider } from '../../context/DataChipContext';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
@@ -8,6 +8,9 @@ import ConfirmPopover from '../ui/ConfirmPopover';
 import { useState, useEffect, useCallback } from 'react';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { DataChipNode } from '../notepad/extensions/DataChipNode';
 
 /**
  * Header controls component with save indicator and action buttons
@@ -135,11 +138,111 @@ const formatRelativeTime = (date) => {
 };
 
 /**
+ * Note Preview Modal - Shows saved note content in a popup
+ */
+function NotePreviewModal({ note, onClose }) {
+  const [content, setContent] = useState(null);
+
+  // Load note content from localStorage
+  useEffect(() => {
+    if (!note) return;
+    try {
+      const saved = localStorage.getItem(note.id);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setContent(parsed.document);
+      }
+    } catch (e) {
+      console.error('Failed to load note:', e);
+    }
+  }, [note]);
+
+  // Read-only TipTap editor for displaying content
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
+      DataChipNode,
+    ],
+    content: content,
+    editable: false,
+  }, [content]);
+
+  // Update editor content when it changes
+  useEffect(() => {
+    if (editor && content) {
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
+
+  if (!note) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="fixed inset-4 z-[70] flex items-center justify-center pointer-events-none">
+        <div className="bg-black/70 backdrop-blur-2xl border border-white/20 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden pointer-events-auto shadow-2xl">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[15px] font-semibold text-white truncate">
+                {note.topic}
+              </h3>
+              <p className="text-[11px] text-white/50 mt-0.5">
+                {note.location} • {formatRelativeTime(note.lastSaved)}
+                {note.isArchived && ' • archived'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 ml-3">
+              <Link
+                to={`/city/${note.slug}`}
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                title="Go to city"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 notepad-compact">
+            {content ? (
+              <div className="notepad-editor text-white/90">
+                <EditorContent editor={editor} />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-32 text-white/40">
+                Loading...
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
  * Research Log - Full history view of all notes
  */
 function ResearchLog() {
   const [notes, setNotes] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all', 'today', 'week'
+  const [selectedNote, setSelectedNote] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -214,10 +317,10 @@ function ResearchLog() {
               {/* Notes for this date */}
               <div className="space-y-0.5">
                 {dateNotes.map(note => (
-                  <Link
+                  <button
                     key={note.id}
-                    to={`/city/${note.slug}`}
-                    className="flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-white/10 transition-colors group"
+                    onClick={() => setSelectedNote(note)}
+                    className="w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-white/10 transition-colors group text-left"
                   >
                     <FileText className="w-4 h-4 text-white/30 flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
@@ -236,7 +339,7 @@ function ResearchLog() {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>
@@ -248,6 +351,14 @@ function ResearchLog() {
       <div className="px-3 py-2 border-t border-white/10 text-[10px] text-white/30 text-center">
         {filteredNotes.length} note{filteredNotes.length !== 1 ? 's' : ''} • {notes.length} total
       </div>
+
+      {/* Note Preview Modal */}
+      {selectedNote && (
+        <NotePreviewModal
+          note={selectedNote}
+          onClose={() => setSelectedNote(null)}
+        />
+      )}
     </div>
   );
 }
