@@ -188,7 +188,7 @@ function NotePreviewModal({ note, onClose }) {
 
       {/* Modal */}
       <div className="fixed inset-4 z-[70] flex items-center justify-center pointer-events-none">
-        <div className="bg-black/70 backdrop-blur-2xl border border-white/20 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden pointer-events-auto shadow-2xl">
+        <div className="glass-elevated relative w-full max-w-lg max-h-[80vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl pointer-events-auto animate-scale-in">
           {/* Header */}
           <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
             <div className="flex-1 min-w-0">
