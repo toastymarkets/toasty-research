@@ -177,30 +177,31 @@ const CommandList = forwardRef(({ items, command }, ref) => {
 
   if (items.length === 0) {
     return (
-      <div className="slash-command-menu bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 min-w-[200px]">
-        <div className="text-sm text-gray-500 dark:text-gray-400 px-2 py-1">No commands found</div>
+      <div className="slash-command-menu bg-black/40 backdrop-blur-2xl rounded-xl border border-white/10 p-2 min-w-[200px] shadow-xl">
+        <div className="text-sm text-white/50 px-2 py-1">No commands found</div>
       </div>
     );
   }
 
   return (
-    <div className="slash-command-menu bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[220px] max-h-[300px] overflow-y-auto">
+    <div className="slash-command-menu bg-black/40 backdrop-blur-2xl rounded-xl border border-white/10 py-1.5 min-w-[220px] max-h-[300px] overflow-y-auto shadow-xl">
       {items.map((item, index) => {
         const Icon = item.icon;
         return (
           <button
             key={item.id}
             onClick={() => selectItem(index)}
-            className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-2 mx-1.5 rounded-lg text-left transition-all ${
               index === selectedIndex
-                ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                ? 'bg-white/20 text-white'
+                : 'text-white/70 hover:bg-white/10 hover:text-white'
             }`}
+            style={{ width: 'calc(100% - 12px)' }}
           >
-            <Icon size={16} className="shrink-0" />
+            <Icon size={16} className="shrink-0 opacity-70" />
             <div className="flex flex-col">
-              <span className="text-sm font-medium">{item.title}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
+              <span className="text-[13px] font-medium">{item.title}</span>
+              <span className="text-[11px] text-white/50">{item.description}</span>
             </div>
           </button>
         );
