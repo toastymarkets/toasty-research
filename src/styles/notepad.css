@@ -277,3 +277,77 @@
 .selectable-data-btn:active {
   transform: scale(1);
 }
+
+/* ===== COMPACT MODE FOR GLASS WIDGETS ===== */
+
+.notepad-compact .notepad-wrapper .tiptap {
+  padding: 0.75rem;
+  background: transparent;
+  color: white;
+}
+
+.notepad-compact .notepad-editor {
+  color: white;
+}
+
+.notepad-compact .notepad-editor h1,
+.notepad-compact .notepad-editor h2,
+.notepad-compact .notepad-editor h3 {
+  color: white;
+}
+
+.notepad-compact .notepad-editor p {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.notepad-compact .notepad-editor li::marker {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.notepad-compact .notepad-editor blockquote {
+  border-left-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.notepad-compact .notepad-editor hr {
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+.notepad-compact .notepad-editor pre {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.notepad-compact .notepad-editor code {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.notepad-compact .notepad-editor a {
+  color: #64D2FF;
+}
+
+.notepad-compact .notepad-editor ::selection {
+  background: rgba(100, 210, 255, 0.3);
+}
+
+.notepad-compact .notepad-editor p.is-editor-empty:first-child::before,
+.notepad-compact .notepad-editor .is-empty::before {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Data chips in compact/glass mode - need solid backgrounds */
+.notepad-compact .data-chip {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: white;
+  backdrop-filter: blur(8px);
+}
+
+.notepad-compact .data-chip-value {
+  color: #64D2FF;
+}
+
+.notepad-compact .data-chip-meta {
+  color: rgba(255, 255, 255, 0.6);
+}

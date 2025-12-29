@@ -1,34 +1,45 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './hooks/useTheme';
 import { SidebarProvider } from './context/SidebarContext';
-import HomePage from './components/home/HomePage';
-import CityDashboard from './components/dashboard/CityDashboard';
-import WorkspaceDashboard from './components/dashboard/WorkspaceDashboard';
-import ResearchLogPage from './components/research/ResearchLogPage';
+import { NotesSidebarProvider } from './context/NotesSidebarContext';
+import { KalshiMarketsProvider } from './hooks/useAllKalshiMarkets';
+import DynamicBackground from './components/layout/DynamicBackground';
+import GlassSidebar from './components/layout/GlassSidebar';
+import HomePageNew from './components/home/HomePageNew';
+import CityDashboardNew from './components/dashboard/CityDashboardNew';
+import ResearchLogPageNew from './components/research/ResearchLogPageNew';
 import ResearchNotePage from './components/research/ResearchNotePage';
-import Sidebar from './components/layout/Sidebar';
 
 function App() {
   return (
     <ThemeProvider>
-      <SidebarProvider>
-        <Router>
-          <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
-            <div className="flex">
-              <Sidebar />
-              <main className="flex-1 ml-0 md:ml-60 transition-all duration-300">
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/research" element={<ResearchLogPage />} />
-                  <Route path="/research/:noteType/:slug" element={<ResearchNotePage />} />
-                  <Route path="/city/:citySlug" element={<CityDashboard />} />
-                  <Route path="/workspace/:workspaceId" element={<WorkspaceDashboard />} />
-                </Routes>
-              </main>
-            </div>
-          </div>
-        </Router>
-      </SidebarProvider>
+      <KalshiMarketsProvider>
+        <SidebarProvider>
+          <NotesSidebarProvider>
+            <Router>
+              {/* Dynamic weather background - changes with time of day */}
+              <DynamicBackground animate={true} showCelestial={true} showClouds={true} />
+
+              <div className="min-h-screen text-white relative z-10">
+                <div className="flex">
+                  {/* New glass-styled sidebar */}
+                  <GlassSidebar />
+
+                  {/* Main content area - offset for sidebar on desktop */}
+                  <main className="flex-1 ml-0 md:ml-72 transition-all duration-300">
+                    <Routes>
+                      <Route path="/" element={<HomePageNew />} />
+                      <Route path="/research" element={<ResearchLogPageNew />} />
+                      <Route path="/research/:noteType/:slug" element={<ResearchNotePage />} />
+                      <Route path="/city/:citySlug" element={<CityDashboardNew />} />
+                    </Routes>
+                  </main>
+                </div>
+              </div>
+            </Router>
+          </NotesSidebarProvider>
+        </SidebarProvider>
+      </KalshiMarketsProvider>
     </ThemeProvider>
   );
 }
