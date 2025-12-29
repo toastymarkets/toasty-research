@@ -48,11 +48,37 @@ export default function WeatherMap({
 
     mapInstanceRef.current = map;
 
+    // Fix map size after initialization (Leaflet needs this for proper tile loading)
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
+    // Also invalidate on window resize
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener('resize', handleResize);
+
     return () => {
+      window.removeEventListener('resize', handleResize);
       map.remove();
       mapInstanceRef.current = null;
     };
   }, [L, lat, lon, zoom]);
+
+  // Invalidate map size when container might have changed
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    // Use ResizeObserver to detect container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      mapInstanceRef.current?.invalidateSize();
+    });
+
+    if (mapRef.current) {
+      resizeObserver.observe(mapRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [L]);
 
   // Update weather overlay based on active layer
   useEffect(() => {
