@@ -1,8 +1,22 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, ExternalLink } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import GlassWidget from './GlassWidget';
+
+/**
+ * Generate Kalshi market URL for a city
+ * Example: https://kalshi.com/markets/kxhighlax/highest-temperature-in-los-angeles
+ */
+const getKalshiUrl = (citySlug, cityName) => {
+  const seriesTicker = CITY_SERIES[citySlug];
+  if (!seriesTicker) return null;
+
+  const tickerLower = seriesTicker.toLowerCase();
+  const citySlugForUrl = `highest-temperature-in-${cityName.toLowerCase().replace(/\s+/g, '-')}`;
+
+  return `https://kalshi.com/markets/${tickerLower}/${citySlugForUrl}`;
+};
 
 /**
  * MarketBrackets - Kalshi temperature market widget
@@ -124,12 +138,6 @@ export default function MarketBrackets({
     >
       {/* Header */}
       <div className="px-2.5 pt-2 pb-1">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-medium text-white/40 uppercase tracking-wide">Market Forecast</span>
-          {timeRemaining && timeRemaining !== 'Closed' && (
-            <span className="text-[9px] text-white/40">Closes {timeRemaining}</span>
-          )}
-        </div>
         <h3 className="text-[14px] font-semibold text-white leading-snug">
           Highest temp in {cityName} {dayLabel}?
         </h3>
@@ -197,6 +205,22 @@ export default function MarketBrackets({
               );
             })}
           </div>
+        )}
+      </div>
+
+      {/* Footer - Kalshi link and timer */}
+      <div className="px-2.5 pt-1 pb-2 flex items-center justify-between border-t border-white/10 mt-1">
+        <a
+          href={getKalshiUrl(citySlug, cityName)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-[10px] font-medium text-white/40 uppercase tracking-wide hover:text-white/60 transition-colors"
+        >
+          Kalshi Odds
+          <ExternalLink className="w-2.5 h-2.5" />
+        </a>
+        {timeRemaining && timeRemaining !== 'Closed' && (
+          <span className="text-[9px] text-white/40">Closes {timeRemaining}</span>
         )}
       </div>
     </GlassWidget>
