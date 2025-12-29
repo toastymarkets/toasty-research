@@ -11,6 +11,7 @@ import {
   HeroWeather,
   HourlyForecast,
   TenDayForecast,
+  MarketBrackets,
   SunriseSunset,
   WidgetGrid,
   WeatherMap,
@@ -201,10 +202,11 @@ function CityDashboardContent({ city, citySlug }) {
       {/* Widget Grid - compact */}
       <div className="max-w-5xl mx-auto px-3 mt-2 pb-4">
         <WidgetGrid>
-          {/* 10-Day Forecast */}
+          {/* Market Brackets - Kalshi temperature markets */}
           <WidgetGrid.Item span={2}>
-            <TenDayForecast
-              days={tenDayForecast}
+            <MarketBrackets
+              citySlug={citySlug}
+              cityName={city.name}
               loading={forecastLoading}
             />
           </WidgetGrid.Item>
