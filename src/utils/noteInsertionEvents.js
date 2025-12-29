@@ -146,6 +146,165 @@ export function insertObservationToNotes(observation, metadata = {}) {
 }
 
 /**
+ * Format NWS forecast period for notes
+ */
+export function formatForecastForNotes(period, metadata = {}) {
+  const { source = 'NWS', gridId, location } = metadata;
+
+  // Build source label (e.g., "NWS Forecast (LOX) · Los Angeles, CA")
+  const sourceLabel = gridId
+    ? `${source} Forecast (${gridId})`
+    : `${source} Forecast`;
+  const headerText = location
+    ? `${sourceLabel} · ${location}`
+    : sourceLabel;
+
+  // Helper to create a data chip node
+  const createChip = (value, label, type) => ({
+    type: 'dataChip',
+    attrs: {
+      value,
+      label,
+      type,
+      source: '',
+      timestamp: '',
+    }
+  });
+
+  return {
+    type: 'doc',
+    content: [
+      // Source header
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', marks: [{ type: 'bold' }], text: headerText }
+        ]
+      },
+      // Period name + condition
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: `${period.name}: ${period.shortForecast}` }
+        ]
+      },
+      // Temperature and wind chips
+      {
+        type: 'paragraph',
+        content: [
+          createChip(`${period.temperature}°${period.temperatureUnit || 'F'}`, '', 'forecast'),
+          { type: 'text', text: ' ' },
+          ...(period.windSpeed ? [
+            createChip(`${period.windDirection} ${period.windSpeed}`, 'Wind', 'wind'),
+          ] : []),
+        ]
+      },
+      // Horizontal rule
+      {
+        type: 'horizontalRule'
+      },
+    ]
+  };
+}
+
+/**
+ * Dispatch an event to insert forecast data into notes
+ */
+export function insertForecastToNotes(period, metadata = {}) {
+  const formattedContent = formatForecastForNotes(period, metadata);
+
+  const event = new CustomEvent(NOTE_INSERTION_EVENT, {
+    detail: {
+      type: 'forecast',
+      content: formattedContent,
+      rawData: period,
+      metadata
+    }
+  });
+
+  window.dispatchEvent(event);
+}
+
+/**
+ * Format model comparison data for notes
+ */
+export function formatModelsForNotes(data, metadata = {}) {
+  const { dayConsensus, models, selectedDay, dateLabel } = data;
+
+  // Helper to create a data chip node
+  const createChip = (value, label, type) => ({
+    type: 'dataChip',
+    attrs: {
+      value,
+      label,
+      type,
+      source: '',
+      timestamp: '',
+    }
+  });
+
+  // Build model summary text
+  const modelSummary = models.map(m => {
+    const dayData = m.daily[selectedDay];
+    return `${m.name}: ${dayData?.high}°`;
+  }).join(' · ');
+
+  return {
+    type: 'doc',
+    content: [
+      // Date header
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', marks: [{ type: 'bold' }], text: `Model Consensus · ${dateLabel}` }
+        ]
+      },
+      // Consensus chips
+      {
+        type: 'paragraph',
+        content: [
+          createChip(`${dayConsensus.highAvg}°`, 'High', 'temperature'),
+          { type: 'text', text: ' ' },
+          createChip(`${dayConsensus.lowAvg}°`, 'Low', 'forecast'),
+          { type: 'text', text: ' ' },
+          createChip(`±${Math.round(dayConsensus.spread / 2)}°`, 'Spread',
+            dayConsensus.spread <= 3 ? 'market' : dayConsensus.spread <= 6 ? 'humidity' : 'temperature'),
+        ]
+      },
+      // Model breakdown
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: modelSummary }
+        ]
+      },
+      // Horizontal rule
+      {
+        type: 'horizontalRule'
+      },
+    ]
+  };
+}
+
+/**
+ * Dispatch an event to insert model comparison data into notes
+ */
+export function insertModelsToNotes(data, metadata = {}) {
+  const formattedContent = formatModelsForNotes(data, metadata);
+
+  const event = new CustomEvent(NOTE_INSERTION_EVENT, {
+    detail: {
+      type: 'models',
+      content: formattedContent,
+      rawData: data,
+      metadata
+    }
+  });
+
+  window.dispatchEvent(event);
+}
+
+/**
  * Subscribe to note insertion events
  * Returns an unsubscribe function
  */

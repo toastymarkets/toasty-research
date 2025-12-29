@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Cloud, X, Sun, CloudRain, CloudSnow, Wind, ChevronRight } from 'lucide-react';
+import { Cloud, X, Sun, CloudRain, CloudSnow, Wind, ChevronRight, Plus, Check } from 'lucide-react';
 import GlassWidget from './GlassWidget';
+import { insertForecastToNotes } from '../../utils/noteInsertionEvents';
 
 /**
  * NWSForecastWidget - Shows NWS forecast summary with clickable detail modal
@@ -22,7 +23,7 @@ export default function NWSForecastWidget({
   const fetchForecast = useCallback(async () => {
     if (!lat || !lon) return;
 
-    const cacheKey = `nws_forecast_widget_v1_${citySlug}`;
+    const cacheKey = `nws_forecast_widget_v2_${citySlug}`;
 
     // Check cache
     try {
@@ -50,6 +51,8 @@ export default function NWSForecastWidget({
 
       const pointsData = await pointsRes.json();
       const forecastUrl = pointsData.properties.forecast;
+      const gridId = pointsData.properties.gridId; // NWS office (e.g., "LOX" for Los Angeles)
+      const relativeLocation = pointsData.properties.relativeLocation?.properties;
 
       // Get forecast
       const forecastRes = await fetch(forecastUrl, {
@@ -75,6 +78,9 @@ export default function NWSForecastWidget({
           windDirection: p.windDirection,
         })),
         updateTime: forecastData.properties.updateTime,
+        gridId, // NWS office code
+        city: relativeLocation?.city,
+        state: relativeLocation?.state,
       };
 
       // Cache
@@ -189,6 +195,8 @@ NWSForecastWidget.propTypes = {
  * ForecastDetailModal - Shows detailed NWS forecast
  */
 function ForecastDetailModal({ forecast, timezone, onClose }) {
+  const [addedPeriod, setAddedPeriod] = useState(null);
+
   if (!forecast) return null;
 
   // Get weather icon
@@ -211,6 +219,20 @@ function ForecastDetailModal({ forecast, timezone, onClose }) {
     if (temp >= 50) return 'bg-blue-500/20';
     if (temp >= 40) return 'bg-indigo-500/20';
     return 'bg-purple-500/20';
+  };
+
+  // Handle adding forecast to notes
+  const handleAddToNotes = (period, idx) => {
+    const locationLabel = forecast.city && forecast.state
+      ? `${forecast.city}, ${forecast.state}`
+      : forecast.gridId || 'Local Area';
+    insertForecastToNotes(period, {
+      source: 'NWS',
+      gridId: forecast.gridId,
+      location: locationLabel,
+    });
+    setAddedPeriod(idx);
+    setTimeout(() => setAddedPeriod(null), 1500);
   };
 
   return (
@@ -242,6 +264,7 @@ function ForecastDetailModal({ forecast, timezone, onClose }) {
           <div className="overflow-y-auto max-h-[60vh]">
             {forecast.periods.slice(0, 14).map((period, idx) => {
               const Icon = getWeatherIcon(period.shortForecast, period.isDaytime);
+              const wasAdded = addedPeriod === idx;
               return (
                 <div
                   key={idx}
@@ -253,9 +276,28 @@ function ForecastDetailModal({ forecast, timezone, onClose }) {
                       <Icon className="w-5 h-5 text-white/70" />
                       <span className="font-medium text-white">{period.name}</span>
                     </div>
-                    <span className="text-2xl font-light text-white">
-                      {period.temperature}°{period.temperatureUnit}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-light text-white">
+                        {period.temperature}°{period.temperatureUnit}
+                      </span>
+                      <button
+                        onClick={() => handleAddToNotes(period, idx)}
+                        className={`
+                          p-1.5 rounded-lg transition-all
+                          ${wasAdded
+                            ? 'bg-emerald-500/20 text-emerald-400'
+                            : 'hover:bg-white/10 text-white/40 hover:text-white/70'
+                          }
+                        `}
+                        title="Add to notes"
+                      >
+                        {wasAdded ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Short forecast */}
