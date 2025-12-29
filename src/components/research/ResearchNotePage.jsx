@@ -2,7 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { ArrowLeft, Edit2, Thermometer, Cloud, Snowflake, Wind, HelpCircle, Calendar, MapPin, Archive } from 'lucide-react';
+import {
+  ArrowLeft,
+  Edit2,
+  Thermometer,
+  Cloud,
+  Snowflake,
+  Wind,
+  HelpCircle,
+  Calendar,
+  MapPin,
+  Archive,
+} from 'lucide-react';
 import { CITY_BY_SLUG } from '../../config/cities';
 import { getWorkspaceList } from '../../stores/workspaceStore';
 import { extractResearchTopic, detectWeatherType } from '../../utils/researchLogUtils';
@@ -14,22 +25,22 @@ const CITY_NOTE_PREFIX = 'toasty_research_notes_v1_city_';
 const WORKSPACE_NOTE_PREFIX = 'toasty_research_notes_v1_workspace_';
 const DAILY_SUMMARY_KEY = 'toasty_research_notes_v1_daily_summary';
 
-// Weather type icons and colors
-const WEATHER_CONFIG = {
-  Temperature: { icon: Thermometer, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-  Rain: { icon: Cloud, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  Snow: { icon: Snowflake, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-  Wind: { icon: Wind, color: 'text-teal-500', bg: 'bg-teal-500/10' },
-  General: { icon: HelpCircle, color: 'text-gray-500', bg: 'bg-gray-500/10' },
+// Weather type configs - glass styled
+const WEATHER_CONFIGS = {
+  Temperature: { icon: Thermometer, color: 'text-apple-orange', bg: 'bg-apple-orange/20' },
+  Rain: { icon: Cloud, color: 'text-apple-blue', bg: 'bg-apple-blue/20' },
+  Snow: { icon: Snowflake, color: 'text-apple-purple', bg: 'bg-apple-purple/20' },
+  Wind: { icon: Wind, color: 'text-apple-teal', bg: 'bg-apple-teal/20' },
+  General: { icon: HelpCircle, color: 'text-white/60', bg: 'bg-white/10' },
 };
 
 function WeatherTypeBadge({ type }) {
-  const config = WEATHER_CONFIG[type] || WEATHER_CONFIG.General;
+  const config = WEATHER_CONFIGS[type] || WEATHER_CONFIGS.General;
   const Icon = config.icon;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${config.bg} ${config.color}`}>
-      <Icon size={14} />
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
+      <Icon size={12} />
       {type}
     </span>
   );
@@ -64,13 +75,13 @@ function ReadOnlyEditor({ content }) {
   if (!editor) {
     return (
       <div className="h-64 flex items-center justify-center">
-        <div className="animate-spin h-5 w-5 border-2 border-orange-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-5 w-5 border-2 border-apple-blue border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="notepad-wrapper">
+    <div className="notepad-wrapper compact">
       <EditorContent editor={editor} />
     </div>
   );
@@ -95,7 +106,6 @@ export default function ResearchNotePage() {
       let isArchived = false;
 
       if (noteType === 'city') {
-        // Use archived key if provided, otherwise use current note key
         storageKey = archivedKey || `${CITY_NOTE_PREFIX}${slug}`;
         isArchived = !!archivedKey;
         const city = CITY_BY_SLUG[slug];
@@ -157,18 +167,18 @@ export default function ResearchNotePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin h-8 w-8 border-2 border-orange-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-apple-blue border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (error || !noteData) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">{error || 'Note not found'}</h1>
-          <Link to="/research" className="text-orange-500 hover:underline">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass p-8 text-center">
+          <h1 className="text-2xl font-semibold text-white mb-4">{error || 'Note not found'}</h1>
+          <Link to="/research" className="text-apple-blue hover:underline">
             ← Back to Research Log
           </Link>
         </div>
@@ -177,65 +187,67 @@ export default function ResearchNotePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen pb-8">
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div className="flex items-start gap-4">
-          <button
-            onClick={() => navigate('/research')}
-            className="p-2 rounded-lg hover:bg-[var(--color-card-elevated)] transition-colors mt-1"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-heading font-bold mb-3">{noteData.topic}</h1>
-            <div className="flex flex-wrap items-center gap-4 text-[var(--color-text-secondary)]">
-              <span className="flex items-center gap-1.5">
-                <MapPin size={14} />
-                {noteData.location}
-                {noteData.noteType === 'workspace' && (
-                  <span className="text-xs text-[var(--color-text-muted)]">(Workspace)</span>
-                )}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Calendar size={14} />
-                {formatDate(noteData.lastSaved)}
-              </span>
-              <WeatherTypeBadge type={noteData.weatherType} />
-              {noteData.isArchived && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-500/10 text-gray-500">
-                  <Archive size={14} />
-                  Archived
+      <div className="max-w-4xl mx-auto px-4 pt-8">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-start gap-4">
+            <button
+              onClick={() => navigate('/research')}
+              className="glass-button-icon mt-1"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold text-white mb-3">{noteData.topic}</h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex items-center gap-1.5 text-glass-text-secondary text-sm">
+                  <MapPin size={14} />
+                  {noteData.location}
+                  {noteData.noteType === 'workspace' && (
+                    <span className="text-xs text-glass-text-muted">(Workspace)</span>
+                  )}
                 </span>
-              )}
+                <span className="flex items-center gap-1.5 text-glass-text-secondary text-sm">
+                  <Calendar size={14} />
+                  {formatDate(noteData.lastSaved)}
+                </span>
+                <WeatherTypeBadge type={noteData.weatherType} />
+                {noteData.isArchived && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-glass-text-muted">
+                    <Archive size={12} />
+                    Archived
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {noteData.isArchived ? (
-          <Link
-            to={noteData.dashboardPath}
-            className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border)] hover:border-orange-500 text-[var(--color-text-secondary)] hover:text-orange-500 rounded-lg transition-colors"
-          >
-            <Edit2 size={16} />
-            <span className="hidden sm:inline">View Current</span>
-            <span className="sm:hidden">Current</span>
-          </Link>
-        ) : (
-          <Link
-            to={noteData.dashboardPath}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
-          >
-            <Edit2 size={16} />
-            <span className="hidden sm:inline">Edit in Dashboard</span>
-            <span className="sm:hidden">Edit</span>
-          </Link>
-        )}
+          {noteData.isArchived ? (
+            <Link
+              to={noteData.dashboardPath}
+              className="glass-button flex items-center gap-2"
+            >
+              <Edit2 size={16} />
+              <span className="hidden sm:inline">View Current</span>
+            </Link>
+          ) : (
+            <Link
+              to={noteData.dashboardPath}
+              className="glass-button-primary flex items-center gap-2"
+            >
+              <Edit2 size={16} />
+              <span className="hidden sm:inline">Edit in Dashboard</span>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Note Content */}
-      <div className="card-elevated p-6 sm:p-8">
-        <ReadOnlyEditor content={noteData.document} />
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="glass p-6 sm:p-8">
+          <ReadOnlyEditor content={noteData.document} />
+        </div>
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import NotepadEditor from './NotepadEditor';
 import ConfirmPopover from '../ui/ConfirmPopover';
 import { FileText, Clock, Trash2, FilePlus } from 'lucide-react';
 
-function NotepadContent() {
+function NotepadContent({ compact = false }) {
   const { isLoading, lastSaved, isSaving, createNewNote, clearDocument } = useNotepad();
   const [activePopover, setActivePopover] = useState(null); // 'new' | 'clear' | null
 
@@ -19,8 +20,19 @@ function NotepadContent() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-[var(--color-card-bg)]">
+      <div className={`h-full flex items-center justify-center ${compact ? 'bg-transparent' : 'bg-[var(--color-card-bg)]'}`}>
         <div className="animate-spin h-6 w-6 border-2 border-orange-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // Compact mode for glass widgets - no header, minimal styling
+  if (compact) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-auto notepad-compact">
+          <NotepadEditor />
+        </div>
       </div>
     );
   }
@@ -103,10 +115,19 @@ function NotepadContent() {
   );
 }
 
-export default function ResearchNotepad({ storageKey }) {
+NotepadContent.propTypes = {
+  compact: PropTypes.bool,
+};
+
+export default function ResearchNotepad({ storageKey, compact = false }) {
   return (
     <NotepadProvider storageKey={storageKey}>
-      <NotepadContent />
+      <NotepadContent compact={compact} />
     </NotepadProvider>
   );
 }
+
+ResearchNotepad.propTypes = {
+  storageKey: PropTypes.string.isRequired,
+  compact: PropTypes.bool,
+};

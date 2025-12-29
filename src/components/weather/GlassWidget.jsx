@@ -1,0 +1,55 @@
+import PropTypes from 'prop-types';
+
+/**
+ * GlassWidget - Base container for all weather widgets
+ * Apple Weather inspired glass card with header
+ */
+export default function GlassWidget({
+  title,
+  icon: Icon,
+  size = 'medium',
+  className = '',
+  children,
+  onClick,
+}) {
+  // Size classes
+  const sizeClasses = {
+    small: 'min-h-[164px]',
+    medium: 'min-h-[164px]',
+    large: 'min-h-[344px]',
+  };
+
+  return (
+    <div
+      className={`
+        glass-widget flex flex-col
+        ${sizeClasses[size]}
+        ${onClick ? 'cursor-pointer' : ''}
+        ${className}
+      `}
+      onClick={onClick}
+    >
+      {/* Widget header */}
+      {title && (
+        <div className="widget-header">
+          {Icon && <Icon className="w-3.5 h-3.5" />}
+          <span>{title}</span>
+        </div>
+      )}
+
+      {/* Widget content */}
+      <div className="widget-content flex-1 flex flex-col">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+GlassWidget.propTypes = {
+  title: PropTypes.string,
+  icon: PropTypes.elementType,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
+  className: PropTypes.string,
+  children: PropTypes.node,
+  onClick: PropTypes.func,
+};

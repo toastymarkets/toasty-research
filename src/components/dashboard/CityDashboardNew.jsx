@@ -1,0 +1,295 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, MapPin, FileText } from 'lucide-react';
+import { CITY_BY_SLUG } from '../../config/cities';
+import { useNWSWeather } from '../../hooks/useNWSWeather';
+import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
+import { useNotesSidebar } from '../../context/NotesSidebarContext';
+
+// Weather Components
+import {
+  HeroWeather,
+  HourlyForecast,
+  TenDayForecast,
+  SunriseSunset,
+  WidgetGrid,
+  WeatherMap,
+  UVIndexWidget,
+  WindWidget,
+  HumidityWidget,
+  PressureWidget,
+  VisibilityWidget,
+  FeelsLikeWidget,
+  MarketInsightWidget,
+} from '../weather';
+
+// Kalshi market data
+import { useKalshiMarketsFromContext } from '../../hooks/useAllKalshiMarkets';
+
+// Notes sidebar
+import NotesSidebar from '../layout/NotesSidebar';
+
+/**
+ * Hook to get the current local time for a timezone
+ */
+function useLocalTime(timezone) {
+  const [time, setTime] = useState(() => {
+    return new Date().toLocaleTimeString('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  });
+
+  useEffect(() => {
+    const updateTime = () => {
+      setTime(new Date().toLocaleTimeString('en-US', {
+        timeZone: timezone,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }));
+    };
+
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, [timezone]);
+
+  return time;
+}
+
+/**
+ * CityDashboardNew - Apple Weather inspired city dashboard
+ */
+function CityDashboardContent({ city, citySlug }) {
+  // Fetch weather data
+  const { weather, loading: weatherLoading } = useNWSWeather(city.stationId);
+  const { forecast, loading: forecastLoading } = useNWSHourlyForecast(citySlug);
+  const marketData = useKalshiMarketsFromContext(citySlug);
+  const localTime = useLocalTime(city.timezone);
+
+  // Convert NWS temperature to Fahrenheit
+  const currentTempF = useMemo(() => {
+    if (weather?.temperature?.value == null) return null;
+    return Math.round((weather.temperature.value * 9/5) + 32);
+  }, [weather]);
+
+  // Generate 10-day forecast from hourly data
+  const tenDayForecast = useMemo(() => {
+    if (!forecast?.periods) return [];
+
+    const byDate = {};
+    forecast.periods.forEach(period => {
+      const date = period.dateStr;
+      if (!byDate[date]) {
+        byDate[date] = {
+          date,
+          temps: [],
+          condition: period.shortForecast,
+        };
+      }
+      byDate[date].temps.push(period.temperature);
+    });
+
+    return Object.values(byDate).slice(0, 10).map((day, index) => ({
+      date: day.date,
+      high: Math.max(...day.temps),
+      low: Math.min(...day.temps),
+      condition: day.condition,
+      current: index === 0 ? currentTempF : undefined,
+    }));
+  }, [forecast, currentTempF]);
+
+  // Get current conditions
+  const currentConditions = useMemo(() => {
+    return {
+      temperature: currentTempF,
+      condition: weather?.textDescription || forecast?.periods?.[0]?.shortForecast || 'Clear',
+      high: forecast?.todayHigh,
+      low: forecast?.todayLow,
+    };
+  }, [weather, forecast, currentTempF]);
+
+  // Sunrise/sunset times (mock - would need real API)
+  const sunTimes = useMemo(() => {
+    const now = new Date();
+    const sunrise = new Date(now);
+    sunrise.setHours(6, 45, 0);
+    const sunset = new Date(now);
+    sunset.setHours(17, 30, 0);
+    return { sunrise: sunrise.toISOString(), sunset: sunset.toISOString() };
+  }, []);
+
+  // Extract weather details from NWS data
+  const weatherDetails = useMemo(() => {
+    return {
+      windSpeed: weather?.windSpeed?.value || 0,
+      windDirection: weather?.windDirection?.value || 0,
+      humidity: weather?.humidity?.value || 65,
+      pressure: weather?.barometricPressure?.value || 101325,
+      visibility: weather?.visibility?.value || 16000,
+      dewPoint: weather?.dewpoint?.value,
+    };
+  }, [weather]);
+
+  const isLoading = weatherLoading && forecastLoading;
+  const notepadStorageKey = `toasty_research_notes_v1_city_${citySlug}`;
+  const { isCollapsed: notesSidebarCollapsed } = useNotesSidebar();
+
+  return (
+    <div className={`min-h-screen pb-8 transition-all duration-300 ${notesSidebarCollapsed ? '' : 'lg:pr-80'}`}>
+      {/* Back button - floating glass */}
+      <div className="fixed top-4 left-4 z-50 md:left-[calc(18rem+1rem)]">
+        <Link
+          to="/"
+          className="glass-button-icon flex items-center justify-center"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+      </div>
+
+      {/* Location badge - positioned left of the notes toggle button */}
+      <div className={`fixed top-4 z-50 transition-all duration-300 ${notesSidebarCollapsed ? 'right-16' : 'lg:right-[26rem] right-16'}`}>
+        <div className="glass-badge">
+          <MapPin className="w-3 h-3" />
+          <span>{city.stationId}</span>
+          <span className="text-glass-text-muted">•</span>
+          <span>{localTime}</span>
+        </div>
+      </div>
+
+      {/* Notes Sidebar - Desktop */}
+      <div className="hidden lg:block">
+        <NotesSidebar
+          storageKey={notepadStorageKey}
+          cityName={city.name}
+        />
+      </div>
+
+      {/* Mobile Notes Button */}
+      <Link
+        to="/research"
+        className="lg:hidden fixed bottom-6 right-6 z-50 glass-button-primary p-4 rounded-full shadow-lg"
+      >
+        <FileText className="w-6 h-6" />
+      </Link>
+
+      {/* Hero Section */}
+      <div className="max-w-4xl mx-auto px-4 pt-16">
+        <HeroWeather
+          cityName={city.name}
+          temperature={currentConditions.temperature}
+          condition={currentConditions.condition}
+          high={currentConditions.high}
+          low={currentConditions.low}
+          loading={isLoading}
+        />
+      </div>
+
+      {/* Hourly Forecast */}
+      <div className="max-w-4xl mx-auto px-4 mt-4">
+        <HourlyForecast
+          periods={forecast?.periods || []}
+          loading={forecastLoading}
+          timezone={city.timezone}
+        />
+      </div>
+
+      {/* Widget Grid */}
+      <div className="max-w-4xl mx-auto px-4 mt-4">
+        <WidgetGrid>
+          {/* 10-Day Forecast */}
+          <WidgetGrid.Item span={2}>
+            <TenDayForecast
+              days={tenDayForecast}
+              loading={forecastLoading}
+            />
+          </WidgetGrid.Item>
+
+          {/* Weather Map */}
+          <WidgetGrid.Item span={2}>
+            <WeatherMap
+              lat={city.lat}
+              lon={city.lon}
+              zoom={8}
+            />
+          </WidgetGrid.Item>
+
+          {/* Sunrise/Sunset */}
+          <WidgetGrid.Item span={2}>
+            <SunriseSunset
+              sunrise={sunTimes.sunrise}
+              sunset={sunTimes.sunset}
+              timezone={city.timezone}
+            />
+          </WidgetGrid.Item>
+
+          {/* UV Index */}
+          <UVIndexWidget value={4} loading={isLoading} />
+
+          {/* Wind */}
+          <WindWidget
+            speed={weatherDetails.windSpeed}
+            direction={weatherDetails.windDirection}
+            loading={weatherLoading}
+          />
+
+          {/* Humidity */}
+          <HumidityWidget
+            value={weatherDetails.humidity}
+            dewPoint={weatherDetails.dewPoint}
+            loading={weatherLoading}
+          />
+
+          {/* Pressure */}
+          <PressureWidget
+            value={weatherDetails.pressure}
+            trend="steady"
+            loading={weatherLoading}
+          />
+
+          {/* Visibility */}
+          <VisibilityWidget
+            value={weatherDetails.visibility}
+            loading={weatherLoading}
+          />
+
+          {/* Feels Like */}
+          <FeelsLikeWidget
+            actual={currentConditions.temperature || 50}
+            feelsLike={weather?.heatIndex?.value || weather?.windChill?.value || currentConditions.temperature || 50}
+            loading={weatherLoading}
+          />
+
+          {/* Market Insight - Kalshi prediction data */}
+          <MarketInsightWidget
+            marketData={marketData}
+            forecastHigh={forecast?.todayHigh}
+            loading={forecastLoading}
+          />
+        </WidgetGrid>
+      </div>
+    </div>
+  );
+}
+
+export default function CityDashboardNew() {
+  const { citySlug } = useParams();
+  const city = CITY_BY_SLUG[citySlug];
+
+  if (!city) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass p-8 text-center">
+          <h1 className="text-2xl font-semibold mb-4 text-white">City not found</h1>
+          <Link to="/" className="text-apple-blue hover:underline">
+            ← Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return <CityDashboardContent city={city} citySlug={citySlug} />;
+}

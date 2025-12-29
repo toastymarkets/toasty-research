@@ -1,0 +1,495 @@
+/* ===== DYNAMIC WEATHER GRADIENTS ===== */
+/* Apple Weather inspired background system */
+
+:root {
+  /* Time-based gradient presets */
+
+  /* Dawn (5am - 7am) */
+  --gradient-dawn: linear-gradient(
+    180deg,
+    #2D1B4E 0%,
+    #5D3A6B 20%,
+    #C56B6B 45%,
+    #E8A87C 70%,
+    #FFD89B 100%
+  );
+
+  /* Morning (7am - 11am) */
+  --gradient-morning: linear-gradient(
+    180deg,
+    #4A90D9 0%,
+    #6BA3E0 30%,
+    #87CEEB 60%,
+    #B8D4E8 100%
+  );
+
+  /* Midday (11am - 3pm) */
+  --gradient-day: linear-gradient(
+    180deg,
+    #2B7CC9 0%,
+    #4A9DE0 40%,
+    #6BB3EB 70%,
+    #8BC4F0 100%
+  );
+
+  /* Afternoon (3pm - 6pm) */
+  --gradient-afternoon: linear-gradient(
+    180deg,
+    #3D8BD4 0%,
+    #5BA0DC 35%,
+    #7EB4E4 65%,
+    #A8CCE8 100%
+  );
+
+  /* Sunset (6pm - 8pm) */
+  --gradient-sunset: linear-gradient(
+    180deg,
+    #1E3A5F 0%,
+    #4A5568 15%,
+    #C56B6B 40%,
+    #E8967C 60%,
+    #F4C076 80%,
+    #FFD89B 100%
+  );
+
+  /* Dusk (8pm - 9pm) */
+  --gradient-dusk: linear-gradient(
+    180deg,
+    #1A1A2E 0%,
+    #2D2D5A 25%,
+    #4A4A82 50%,
+    #6B5B7A 75%,
+    #8B6B72 100%
+  );
+
+  /* Night (9pm - 5am) */
+  --gradient-night: linear-gradient(
+    180deg,
+    #0A0A1A 0%,
+    #0F1528 30%,
+    #1A2540 60%,
+    #1E3048 100%
+  );
+
+  /* Weather condition overlays */
+
+  /* Cloudy overlay */
+  --gradient-cloudy: linear-gradient(
+    180deg,
+    rgba(100, 110, 130, 0.6) 0%,
+    rgba(140, 150, 170, 0.4) 50%,
+    rgba(180, 190, 200, 0.3) 100%
+  );
+
+  /* Overcast */
+  --gradient-overcast: linear-gradient(
+    180deg,
+    #5A6270 0%,
+    #6E7785 30%,
+    #858E9B 60%,
+    #9AA3AF 100%
+  );
+
+  /* Rainy */
+  --gradient-rain: linear-gradient(
+    180deg,
+    #374151 0%,
+    #4B5563 30%,
+    #6B7280 60%,
+    #9CA3AF 100%
+  );
+
+  /* Stormy */
+  --gradient-storm: linear-gradient(
+    180deg,
+    #1F2937 0%,
+    #374151 30%,
+    #4B5563 60%,
+    #6B7280 100%
+  );
+
+  /* Snowy */
+  --gradient-snow: linear-gradient(
+    180deg,
+    #94A3B8 0%,
+    #B0BEC5 30%,
+    #CFD8DC 60%,
+    #E8EEF1 100%
+  );
+
+  /* Foggy */
+  --gradient-fog: linear-gradient(
+    180deg,
+    #90A4AE 0%,
+    #A8B8C0 30%,
+    #C5D1D8 60%,
+    #E0E7EB 100%
+  );
+}
+
+/* ===== BACKGROUND CONTAINER ===== */
+
+.weather-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  transition: background 2s ease;
+  overflow: hidden;
+}
+
+/* Time-based backgrounds */
+.weather-background.time-dawn { background: var(--gradient-dawn); }
+.weather-background.time-morning { background: var(--gradient-morning); }
+.weather-background.time-day { background: var(--gradient-day); }
+.weather-background.time-afternoon { background: var(--gradient-afternoon); }
+.weather-background.time-sunset { background: var(--gradient-sunset); }
+.weather-background.time-dusk { background: var(--gradient-dusk); }
+.weather-background.time-night { background: var(--gradient-night); }
+
+/* Weather condition classes (applied on top of time) */
+.weather-background.condition-cloudy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-cloudy);
+  pointer-events: none;
+}
+
+.weather-background.condition-overcast {
+  background: var(--gradient-overcast) !important;
+}
+
+.weather-background.condition-rain {
+  background: var(--gradient-rain) !important;
+}
+
+.weather-background.condition-storm {
+  background: var(--gradient-storm) !important;
+}
+
+.weather-background.condition-snow {
+  background: var(--gradient-snow) !important;
+}
+
+.weather-background.condition-fog {
+  background: var(--gradient-fog) !important;
+}
+
+/* ===== ANIMATED ELEMENTS ===== */
+
+/* Subtle gradient animation for clear days */
+.weather-background.animate-gradient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 150% 100% at 50% 0%,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%
+  );
+  animation: gradient-shimmer 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes gradient-shimmer {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateY(-5%);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(0%);
+  }
+}
+
+/* Stars for night time */
+.weather-background.time-night .stars,
+.weather-background.time-dusk .stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 40% 70%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 60% 20%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 80% 50%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 10% 80%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 90% 10%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 30% 90%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(2px 2px at 70% 40%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 50% 60%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(2px 2px at 15% 45%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 85% 75%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(2px 2px at 45% 15%, rgba(255, 255, 255, 0.6), transparent);
+  background-size: 100% 100%;
+  animation: stars-twinkle 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes stars-twinkle {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Rain animation */
+.weather-background.condition-rain .rain-layer,
+.weather-background.condition-storm .rain-layer {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(transparent 0%, rgba(200, 210, 220, 0.3) 50%, transparent 100%);
+  background-size: 2px 80px;
+  animation: rain-fall 0.5s linear infinite;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+@keyframes rain-fall {
+  from {
+    background-position: 0 -80px;
+  }
+  to {
+    background-position: 0 80px;
+  }
+}
+
+/* Snow animation */
+.weather-background.condition-snow .snow-layer {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(4px 4px at 10% 20%, white, transparent),
+    radial-gradient(3px 3px at 30% 40%, white, transparent),
+    radial-gradient(5px 5px at 50% 10%, white, transparent),
+    radial-gradient(4px 4px at 70% 60%, white, transparent),
+    radial-gradient(3px 3px at 90% 30%, white, transparent);
+  background-size: 100px 100px;
+  animation: snow-fall 3s linear infinite;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+@keyframes snow-fall {
+  from {
+    transform: translateY(-100px);
+  }
+  to {
+    transform: translateY(100px);
+  }
+}
+
+/* ===== SUN POSITION ELEMENT ===== */
+
+.weather-background .sun {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 230, 150, 0.9) 0%,
+    rgba(255, 200, 100, 0.6) 30%,
+    rgba(255, 180, 80, 0.2) 60%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  filter: blur(2px);
+  pointer-events: none;
+  transition: all 1s ease;
+}
+
+/* Sun positions based on time */
+.weather-background.time-dawn .sun {
+  bottom: 10%;
+  right: 20%;
+  opacity: 0.8;
+  transform: scale(0.8);
+}
+
+.weather-background.time-morning .sun {
+  bottom: 40%;
+  right: 15%;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.weather-background.time-day .sun {
+  top: 15%;
+  right: 30%;
+  opacity: 0.9;
+  transform: scale(1.1);
+}
+
+.weather-background.time-afternoon .sun {
+  top: 25%;
+  left: 25%;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.weather-background.time-sunset .sun {
+  bottom: 5%;
+  left: 15%;
+  opacity: 0.9;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 150, 80, 0.95) 0%,
+    rgba(255, 100, 50, 0.7) 30%,
+    rgba(200, 80, 50, 0.3) 60%,
+    transparent 70%
+  );
+}
+
+.weather-background.time-dusk .sun,
+.weather-background.time-night .sun {
+  opacity: 0;
+}
+
+/* Moon for night */
+.weather-background .moon {
+  position: absolute;
+  top: 15%;
+  right: 20%;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(
+    circle at 35% 35%,
+    #F5F5F5 0%,
+    #E0E0E0 40%,
+    #BDBDBD 100%
+  );
+  border-radius: 50%;
+  box-shadow:
+    0 0 40px rgba(255, 255, 255, 0.3),
+    inset -10px -10px 20px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transition: opacity 1s ease;
+  pointer-events: none;
+}
+
+.weather-background.time-night .moon {
+  opacity: 1;
+}
+
+.weather-background.time-dusk .moon {
+  opacity: 0.5;
+}
+
+/* ===== CLOUD LAYERS ===== */
+
+.weather-background .clouds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.weather-background .cloud {
+  position: absolute;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.4) 40%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  filter: blur(10px);
+  animation: cloud-drift 60s linear infinite;
+}
+
+.weather-background .cloud:nth-child(1) {
+  top: 10%;
+  left: -20%;
+  width: 400px;
+  height: 150px;
+  animation-duration: 80s;
+}
+
+.weather-background .cloud:nth-child(2) {
+  top: 25%;
+  left: -30%;
+  width: 300px;
+  height: 100px;
+  animation-duration: 100s;
+  animation-delay: -20s;
+}
+
+.weather-background .cloud:nth-child(3) {
+  top: 5%;
+  left: -25%;
+  width: 350px;
+  height: 120px;
+  animation-duration: 90s;
+  animation-delay: -40s;
+}
+
+@keyframes cloud-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(100vw + 400px));
+  }
+}
+
+/* Hide clouds at night unless overcast */
+.weather-background.time-night .clouds {
+  opacity: 0;
+}
+
+.weather-background.time-night.condition-cloudy .clouds,
+.weather-background.time-night.condition-overcast .clouds {
+  opacity: 0.3;
+}
+
+/* ===== CONTENT OVERLAY GRADIENT ===== */
+
+/* Subtle darkening at top for status bar/text readability */
+.weather-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Subtle gradient at bottom for footer/controls */
+.weather-background .bottom-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  background: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.2) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+.bg-weather-gradient {
+  background: var(--gradient-day);
+}
+
+.bg-weather-gradient-night {
+  background: var(--gradient-night);
+}
+
+/* Transition helper */
+.weather-transition {
+  transition: background 2s ease, opacity 1s ease;
+}
