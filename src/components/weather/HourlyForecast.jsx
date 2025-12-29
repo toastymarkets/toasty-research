@@ -103,22 +103,29 @@ export default function HourlyForecast({
     }));
   }, [observations]);
 
-  // Get last 24 hours of observations for display (most recent first for the scroll)
-  // Show ALL observations with true 5-minute timestamps - no sampling
-  const displayData = useMemo(() => {
+  // Get last 24 hours of observations for chart (oldest first for proper chart display)
+  const allObservations24h = useMemo(() => {
     if (normalizedObservations.length === 0) return [];
 
-    // Take observations from the last 24 hours
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const filtered = normalizedObservations
-      .filter(obs => obs.timestamp >= twentyFourHoursAgo)
-      .reverse(); // Most recent first
+    return normalizedObservations
+      .filter(obs => obs.timestamp >= twentyFourHoursAgo);
+    // Keep oldest first for chart X-axis
+  }, [normalizedObservations]);
+
+  // Get last 24 hours of observations for display (most recent first for the scroll)
+  // Show ALL observations with true 5-minute timestamps - no sampling
+  const displayData = useMemo(() => {
+    if (allObservations24h.length === 0) return [];
+
+    // Reverse for display (most recent first)
+    const reversed = [...allObservations24h].reverse();
 
     // Return all observations (limit to 72 for performance - 6 hours of 5-min data)
-    return filtered.slice(0, 72);
-  }, [normalizedObservations]);
+    return reversed.slice(0, 72);
+  }, [allObservations24h]);
 
   // Format last updated time
   const lastUpdatedText = useMemo(() => {
@@ -240,6 +247,7 @@ export default function HourlyForecast({
         onClose={() => setSelectedIndex(null)}
         observation={selectedObservation}
         surroundingObservations={getSurroundingObservations}
+        allObservations={allObservations24h}
         timezone={timezone}
         useMetric={useMetric}
         onToggleUnits={toggleUnits}
