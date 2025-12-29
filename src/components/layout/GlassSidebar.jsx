@@ -11,28 +11,7 @@ import {
 import { CITIES } from '../../config/cities';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
 import { useSidebar } from '../../context/SidebarContext';
-
-// Mock weather data - in production, this would come from a shared context/API
-const getMockWeather = (citySlug) => {
-  const weathers = {
-    'new-york': { temp: 42, high: 45, low: 38, condition: 'Cloudy' },
-    'chicago': { temp: 38, high: 40, low: 32, condition: 'Snow' },
-    'los-angeles': { temp: 68, high: 72, low: 58, condition: 'Sunny' },
-    'miami': { temp: 78, high: 82, low: 71, condition: 'Partly Cloudy' },
-    'denver': { temp: 45, high: 52, low: 35, condition: 'Clear' },
-    'austin': { temp: 62, high: 68, low: 54, condition: 'Sunny' },
-    'philadelphia': { temp: 40, high: 44, low: 35, condition: 'Rain' },
-    'houston': { temp: 65, high: 70, low: 58, condition: 'Cloudy' },
-    'seattle': { temp: 48, high: 52, low: 44, condition: 'Rain' },
-    'san-francisco': { temp: 58, high: 62, low: 52, condition: 'Fog' },
-    'boston': { temp: 36, high: 40, low: 30, condition: 'Snow' },
-    'washington-dc': { temp: 44, high: 48, low: 38, condition: 'Cloudy' },
-    'dallas': { temp: 55, high: 62, low: 48, condition: 'Clear' },
-    'detroit': { temp: 34, high: 38, low: 28, condition: 'Snow' },
-    'salt-lake-city': { temp: 40, high: 45, low: 32, condition: 'Clear' },
-  };
-  return weathers[citySlug] || { temp: 50, high: 55, low: 45, condition: 'Clear' };
-};
+import { useAllCitiesWeather } from '../../hooks/useAllCitiesWeather';
 
 // Get local time for a timezone
 const getLocalTime = (timezone) => {
@@ -257,6 +236,9 @@ export default function GlassSidebar() {
   const [currentTime, setCurrentTime] = useState(Date.now());
   const location = useLocation();
 
+  // Fetch real weather data for all cities
+  const { weatherData, loading: weatherLoading, getWeatherForCity } = useAllCitiesWeather();
+
   // Update time every minute
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(Date.now()), 60000);
@@ -290,7 +272,8 @@ export default function GlassSidebar() {
 
   // Render city item - Apple Weather style with dynamic backgrounds
   const renderCityItem = (city, isMobile = false) => {
-    const weather = getMockWeather(city.slug);
+    const realWeather = getWeatherForCity(city.slug);
+    const weather = realWeather || { temp: '--', condition: 'Loading...' };
     const isActive = isCityActive(city.slug);
     const localTime = getLocalTime(city.timezone);
     const weatherBg = getWeatherBackground(weather.condition, city.timezone);
@@ -329,14 +312,16 @@ export default function GlassSidebar() {
             <p className="text-[13px] text-white/90 mt-2 drop-shadow-sm">
               {weather.condition}
             </p>
-            <p className="text-[11px] text-white/70 mt-0.5 drop-shadow-sm">
-              H:{weather.high}° L:{weather.low}°
-            </p>
+            {weather.humidity != null && (
+              <p className="text-[11px] text-white/70 mt-0.5 drop-shadow-sm">
+                Humidity: {weather.humidity}%
+              </p>
+            )}
           </div>
 
           {/* Right side - Temperature */}
           <span className="text-[36px] font-light text-white leading-none drop-shadow-md">
-            {weather.temp}°
+            {weather.temp != null ? `${weather.temp}°` : '--'}
           </span>
         </div>
       </Link>
