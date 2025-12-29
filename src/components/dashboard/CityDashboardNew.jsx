@@ -6,6 +6,7 @@ import { useNWSWeather } from '../../hooks/useNWSWeather';
 import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
 import { useNWSObservationHistory } from '../../hooks/useNWSObservationHistory';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
+import { DashboardWeatherBackground } from '../weather/DynamicWeatherBackground';
 
 // Weather Components
 import {
@@ -143,8 +144,15 @@ function CityDashboardContent({ city, citySlug }) {
   const { isCollapsed: notesSidebarCollapsed } = useNotesSidebar();
 
   return (
-    <div className={`min-h-screen pb-24 md:pb-8 transition-all duration-300 overflow-x-hidden w-full max-w-[100vw] ${notesSidebarCollapsed ? '' : 'lg:pr-80'}`}>
-      {/* Back button - floating glass, positioned after hamburger on mobile */}
+    <>
+      {/* Dynamic weather background */}
+      <DashboardWeatherBackground
+        condition={currentConditions.condition}
+        timezone={city.timezone}
+      />
+
+      <div className={`min-h-screen pb-24 md:pb-8 transition-all duration-300 overflow-x-hidden w-full max-w-[100vw] ${notesSidebarCollapsed ? '' : 'lg:pr-80'}`}>
+        {/* Back button - floating glass, positioned after hamburger on mobile */}
       <div className="fixed top-4 left-14 z-50 md:left-[calc(19rem+0.5rem)]">
         <Link
           to="/"
@@ -279,7 +287,8 @@ function CityDashboardContent({ city, citySlug }) {
           />
         </WidgetGrid>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
