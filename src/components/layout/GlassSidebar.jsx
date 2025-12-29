@@ -44,6 +44,211 @@ const getLocalTime = (timezone) => {
   });
 };
 
+// Check if it's daytime in a timezone (between 6am and 8pm)
+const isDaytime = (timezone) => {
+  const hour = parseInt(new Date().toLocaleTimeString('en-US', {
+    timeZone: timezone,
+    hour: 'numeric',
+    hour12: false,
+  }));
+  return hour >= 6 && hour < 20;
+};
+
+// Weather visual overlay component
+const WeatherOverlay = ({ condition, isDay }) => {
+  const cond = (condition || '').toLowerCase();
+
+  // Snow
+  if (cond.includes('snow') || cond.includes('flurr') || cond.includes('blizzard')) {
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1.5 h-1.5 bg-white/60 rounded-full animate-snow"
+            style={{
+              left: `${8 + i * 8}%`,
+              animationDelay: `${i * 0.3}s`,
+              animationDuration: `${2 + Math.random()}s`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Rain
+  if (cond.includes('rain') || cond.includes('shower') || cond.includes('drizzle')) {
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(10)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-0.5 h-3 bg-white/30 rounded-full animate-rain"
+            style={{
+              left: `${10 + i * 9}%`,
+              animationDelay: `${i * 0.15}s`,
+              animationDuration: `${0.6 + Math.random() * 0.3}s`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Fog/Mist
+  if (cond.includes('fog') || cond.includes('mist') || cond.includes('haze')) {
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute h-2 bg-white/20 rounded-full animate-fog"
+            style={{
+              top: `${25 + i * 25}%`,
+              width: '120%',
+              left: '-10%',
+              animationDelay: `${i * 2}s`,
+              animationDuration: `${8 + i * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Cloudy
+  if (cond.includes('cloud') || cond.includes('overcast') || cond.includes('partly')) {
+    const cloudCount = cond.includes('partly') ? 2 : 3;
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(cloudCount)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-cloud-drift"
+            style={{
+              top: `${10 + i * 20}%`,
+              left: `${50 + i * 15}%`,
+              animationDelay: `${i * 3}s`,
+              animationDuration: `${20 + i * 5}s`,
+            }}
+          >
+            <svg
+              className="w-12 h-8 text-white/25"
+              viewBox="0 0 64 40"
+              fill="currentColor"
+            >
+              <ellipse cx="20" cy="28" rx="16" ry="10" />
+              <ellipse cx="40" cy="28" rx="18" ry="12" />
+              <ellipse cx="30" cy="18" rx="14" ry="10" />
+            </svg>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Thunder/Storm
+  if (cond.includes('thunder') || cond.includes('storm') || cond.includes('lightning')) {
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Rain */}
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={`rain-${i}`}
+            className="absolute w-0.5 h-3 bg-white/20 rounded-full animate-rain"
+            style={{
+              left: `${10 + i * 11}%`,
+              animationDelay: `${i * 0.12}s`,
+              animationDuration: `${0.5 + Math.random() * 0.2}s`,
+            }}
+          />
+        ))}
+        {/* Lightning flash */}
+        <div className="absolute inset-0 bg-white/10 animate-lightning" />
+      </div>
+    );
+  }
+
+  // Clear/Sunny - show sun or stars
+  if (isDay) {
+    return (
+      <div className="absolute top-2 right-10 pointer-events-none">
+        <div className="w-8 h-8 rounded-full bg-yellow-300/30 animate-pulse-slow" />
+        <div className="absolute inset-1 rounded-full bg-yellow-200/20" />
+      </div>
+    );
+  } else {
+    // Night - stars
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-0.5 h-0.5 bg-white/40 rounded-full animate-twinkle"
+            style={{
+              top: `${15 + (i * 13) % 50}%`,
+              left: `${55 + (i * 17) % 40}%`,
+              animationDelay: `${i * 0.5}s`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+};
+
+// Get weather background gradient based on condition and time
+const getWeatherBackground = (condition, timezone) => {
+  const isDay = isDaytime(timezone);
+  const cond = (condition || '').toLowerCase();
+
+  // Snow conditions
+  if (cond.includes('snow') || cond.includes('flurr') || cond.includes('blizzard')) {
+    return isDay
+      ? 'linear-gradient(135deg, #8BA4B4 0%, #5A7A8A 50%, #4A6A7A 100%)'
+      : 'linear-gradient(135deg, #3A4A5A 0%, #2A3A4A 50%, #1A2A3A 100%)';
+  }
+
+  // Rain conditions
+  if (cond.includes('rain') || cond.includes('shower') || cond.includes('drizzle')) {
+    return isDay
+      ? 'linear-gradient(135deg, #5A6A7A 0%, #4A5A6A 50%, #3A4A5A 100%)'
+      : 'linear-gradient(135deg, #2A3A4A 0%, #1A2A3A 50%, #0A1A2A 100%)';
+  }
+
+  // Fog/Mist conditions
+  if (cond.includes('fog') || cond.includes('mist') || cond.includes('haze')) {
+    return isDay
+      ? 'linear-gradient(135deg, #9AABBF 0%, #7A8B9F 50%, #6A7B8F 100%)'
+      : 'linear-gradient(135deg, #4A5A6A 0%, #3A4A5A 50%, #2A3A4A 100%)';
+  }
+
+  // Cloudy conditions
+  if (cond.includes('cloud') || cond.includes('overcast')) {
+    return isDay
+      ? 'linear-gradient(135deg, #6A8AAA 0%, #5A7A9A 50%, #4A6A8A 100%)'
+      : 'linear-gradient(135deg, #3A4A5A 0%, #2A3A4A 50%, #1A2A3A 100%)';
+  }
+
+  // Partly cloudy
+  if (cond.includes('partly')) {
+    return isDay
+      ? 'linear-gradient(135deg, #5A9AD9 0%, #4A8AC9 50%, #3A7AB9 100%)'
+      : 'linear-gradient(135deg, #2A3A5A 0%, #1A2A4A 50%, #0A1A3A 100%)';
+  }
+
+  // Thunder/Storm
+  if (cond.includes('thunder') || cond.includes('storm') || cond.includes('lightning')) {
+    return 'linear-gradient(135deg, #3A4050 0%, #2A3040 50%, #1A2030 100%)';
+  }
+
+  // Clear/Sunny (default)
+  return isDay
+    ? 'linear-gradient(135deg, #4A9EEA 0%, #3A8EDA 50%, #2A7ECA 100%)'
+    : 'linear-gradient(135deg, #1A2A4A 0%, #0A1A3A 50%, #050F2A 100%)';
+};
+
 export default function GlassSidebar() {
   const { isMobileOpen, closeMobile, toggleMobile } = useSidebar();
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,11 +288,12 @@ export default function GlassSidebar() {
   // Check if a city is active
   const isCityActive = (citySlug) => location.pathname === `/city/${citySlug}`;
 
-  // Render city item - Apple Weather style
+  // Render city item - Apple Weather style with dynamic backgrounds
   const renderCityItem = (city, isMobile = false) => {
     const weather = getMockWeather(city.slug);
     const isActive = isCityActive(city.slug);
     const localTime = getLocalTime(city.timezone);
+    const weatherBg = getWeatherBackground(weather.condition, city.timezone);
 
     return (
       <Link
@@ -95,37 +301,41 @@ export default function GlassSidebar() {
         to={`/city/${city.slug}`}
         onClick={isMobile ? closeMobile : undefined}
         className={`
-          block px-3 py-2.5 rounded-xl transition-all
-          ${isActive
-            ? 'bg-white/20 backdrop-blur-sm'
-            : 'hover:bg-white/10'
-          }
+          block px-3 py-3 rounded-2xl transition-all relative overflow-hidden
+          ${isActive ? 'ring-2 ring-white/30' : 'hover:scale-[1.02]'}
         `}
+        style={{ background: weatherBg }}
       >
-        <div className="flex items-start justify-between">
+        {/* Weather visual overlay */}
+        <WeatherOverlay condition={weather.condition} isDay={isDaytime(city.timezone)} />
+
+        {/* Subtle noise overlay for texture */}
+        <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNhKSIvPjwvc3ZnPg==')]" />
+
+        <div className="relative flex items-start justify-between">
           {/* Left side - City info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               {city.slug === 'new-york' && (
-                <MapPin className="w-3 h-3 text-white/70 flex-shrink-0" />
+                <MapPin className="w-3 h-3 text-white/80 flex-shrink-0" />
               )}
-              <span className="text-[15px] font-semibold text-white truncate">
+              <span className="text-[15px] font-semibold text-white truncate drop-shadow-sm">
                 {city.name}
               </span>
             </div>
-            <p className="text-[11px] text-white/50 mt-0.5">
+            <p className="text-[11px] text-white/70 mt-0.5 drop-shadow-sm">
               {localTime}
             </p>
-            <p className="text-[13px] text-white/70 mt-1">
+            <p className="text-[13px] text-white/90 mt-2 drop-shadow-sm">
               {weather.condition}
             </p>
-            <p className="text-[11px] text-white/50 mt-0.5">
+            <p className="text-[11px] text-white/70 mt-0.5 drop-shadow-sm">
               H:{weather.high}° L:{weather.low}°
             </p>
           </div>
 
           {/* Right side - Temperature */}
-          <span className="text-[32px] font-light text-white leading-none">
+          <span className="text-[36px] font-light text-white leading-none drop-shadow-md">
             {weather.temp}°
           </span>
         </div>
@@ -151,7 +361,7 @@ export default function GlassSidebar() {
       </div>
 
       {/* Cities list */}
-      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
+      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-2">
         {filteredCities.length > 0 ? (
           filteredCities.map(city => renderCityItem(city, isMobile))
         ) : (
