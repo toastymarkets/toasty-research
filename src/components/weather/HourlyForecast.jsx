@@ -252,6 +252,7 @@ export default function HourlyForecast({
         useMetric={useMetric}
         onToggleUnits={toggleUnits}
         cityName={cityName}
+        stationId={stationId}
       />
     </>
   );

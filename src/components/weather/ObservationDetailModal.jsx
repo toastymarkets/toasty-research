@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { X, Plus, Check, Table, BarChart3 } from 'lucide-react';
+import { X, Plus, Check, Table, BarChart3, Info } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
 import { insertObservationToNotes } from '../../utils/noteInsertionEvents';
 import {
@@ -27,11 +27,34 @@ export default function ObservationDetailModal({
   useMetric = false,
   onToggleUnits,
   cityName = '',
+  stationId = '',
 }) {
   // Track which observation was just added (for feedback)
   const [addedObservation, setAddedObservation] = useState(null);
   // Track active view: 'table' or 'chart'
   const [activeView, setActiveView] = useState('table');
+  // METAR filter toggle
+  const [showMETAROnly, setShowMETAROnly] = useState(false);
+  // Info popover visibility
+  const [showInfo, setShowInfo] = useState(false);
+
+  // Filter observations based on METAR toggle, and reverse for display (newest first)
+  const displayObservations = useMemo(() => {
+    const filtered = showMETAROnly
+      ? allObservations.filter(obs => obs.rawMessage && obs.rawMessage.length > 0)
+      : allObservations;
+    // Reverse so newest is at top of table (allObservations is oldest-first for charts)
+    return [...filtered].reverse();
+  }, [allObservations, showMETAROnly]);
+
+  // Get last updated time from most recent observation (last element since array is oldest-first)
+  const lastUpdated = useMemo(() => {
+    if (!allObservations || allObservations.length === 0) return null;
+    const mostRecent = allObservations[allObservations.length - 1];
+    return mostRecent?.timestamp instanceof Date
+      ? mostRecent.timestamp
+      : mostRecent?.timestamp ? new Date(mostRecent.timestamp) : null;
+  }, [allObservations]);
 
   // Handle adding observation to notes
   const handleAddToNotes = useCallback((obs) => {
@@ -269,6 +292,30 @@ export default function ObservationDetailModal({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* METAR toggle */}
+              <button
+                onClick={() => setShowMETAROnly(!showMETAROnly)}
+                className={`px-2.5 py-1 rounded-full transition-colors text-xs font-medium ${
+                  showMETAROnly
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/10 text-white/80 hover:bg-white/20'
+                }`}
+                title="Show only hourly METAR observations"
+              >
+                METAR
+              </button>
+              {/* Info button */}
+              <button
+                onClick={() => setShowInfo(!showInfo)}
+                className={`p-1.5 rounded-full transition-colors ${
+                  showInfo
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white/80'
+                }`}
+                title="About NWS observation data"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
               {/* Unit toggle */}
               <button
                 onClick={onToggleUnits}
@@ -294,6 +341,30 @@ export default function ObservationDetailModal({
               {observation.description || 'No conditions reported'}
             </div>
           </div>
+
+          {/* NWS Data Info Panel */}
+          {showInfo && (
+            <div className="mt-3 p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white/70 space-y-2">
+              <div className="font-medium text-white/90 text-sm mb-2">NWS Observation Data Types</div>
+              <div>
+                <span className="text-blue-400 font-medium">Hourly METAR</span>
+                <span className="text-white/50"> (XX:51-XX:54)</span>
+                <p className="text-white/50 mt-0.5">Official hourly observations with higher precision. Minimal rounding ambiguity.</p>
+              </div>
+              <div>
+                <span className="text-orange-400 font-medium">5-Minute ASOS</span>
+                <span className="text-white/50"> (XX:00, XX:05, etc.)</span>
+                <p className="text-white/50 mt-0.5">Automated observations every 5 minutes. Contains significant rounding ambiguity.</p>
+              </div>
+              <div>
+                <span className="text-emerald-400 font-medium">SPECI</span>
+                <p className="text-white/50 mt-0.5">Special observations triggered by significant weather changes. Exact temperature readings.</p>
+              </div>
+              <p className="text-white/40 text-[10px] pt-1 border-t border-white/10">
+                Toggle METAR to show only hourly and SPECI observations (higher precision).
+              </p>
+            </div>
+          )}
 
           {/* View Toggle Tabs */}
           <div className="mt-3 flex bg-white/10 rounded-lg p-0.5">
@@ -322,17 +393,17 @@ export default function ObservationDetailModal({
           </div>
         </div>
 
-        {/* Table View */}
+        {/* Table View - 24 hour history */}
         {activeView === 'table' && (
-          <div className="overflow-x-auto">
+          <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
           <table className="w-full text-xs">
-            {/* Table header */}
-            <thead>
+            {/* Table header - sticky, compact */}
+            <thead className="sticky top-0 bg-[#1c1c1e] z-10">
               <tr className="border-b border-white/10">
                 {columns.map(col => (
                   <th
                     key={col.key}
-                    className={`${col.width} px-2 py-2 text-left font-medium text-white/50 uppercase tracking-wide`}
+                    className={`${col.width} px-2 py-1.5 text-left font-medium text-white/50 uppercase tracking-wide`}
                   >
                     {col.label}
                   </th>
@@ -340,9 +411,9 @@ export default function ObservationDetailModal({
               </tr>
             </thead>
 
-            {/* Table body */}
+            {/* Table body - filtered observations */}
             <tbody>
-              {surroundingObservations.map((obs, idx) => {
+              {displayObservations.map((obs, idx) => {
                 const selected = isSelected(obs);
                 const obsKey = obs.time || obs.timestamp;
                 const wasAdded = addedObservation === obsKey;
@@ -362,11 +433,11 @@ export default function ObservationDetailModal({
                       // Special handling for add button column
                       if (col.key === 'add') {
                         return (
-                          <td key={col.key} className={`${col.width} px-1 py-2.5`}>
+                          <td key={col.key} className={`${col.width} px-1 py-1`}>
                             <button
                               onClick={() => handleAddToNotes(obs)}
                               className={`
-                                p-1.5 rounded-lg transition-all
+                                p-1 rounded-lg transition-all
                                 ${wasAdded
                                   ? 'bg-emerald-500/20 text-emerald-400'
                                   : 'hover:bg-white/10 text-white/40 hover:text-white/70'
@@ -375,9 +446,9 @@ export default function ObservationDetailModal({
                               title="Add to notes"
                             >
                               {wasAdded ? (
-                                <Check className="w-3.5 h-3.5" />
+                                <Check className="w-3 h-3" />
                               ) : (
-                                <Plus className="w-3.5 h-3.5" />
+                                <Plus className="w-3 h-3" />
                               )}
                             </button>
                           </td>
@@ -388,7 +459,7 @@ export default function ObservationDetailModal({
                         <td
                           key={col.key}
                           className={`
-                            ${col.width} px-2 py-2.5
+                            ${col.width} px-2 py-1
                             ${selected ? 'text-white' : 'text-white/70'}
                             ${col.key === 'time' ? 'font-medium' : ''}
                           `}
@@ -544,19 +615,27 @@ export default function ObservationDetailModal({
           </div>
         )}
 
-        {/* Footer with units */}
-        <div className="px-4 py-2 bg-white/5 border-t border-white/10">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-white/40">
-            <span>Temp: {useMetric ? '°C' : '°F'}</span>
-            {activeView === 'table' && (
-              <>
-                <span>Wind: dir {useMetric ? 'km/h' : 'mph'}</span>
-                <span>Vis: {useMetric ? 'km' : 'mi'}</span>
-                <span>Press: {useMetric ? 'hPa' : 'inHg'}</span>
-              </>
-            )}
-            {activeView === 'chart' && (
-              <span>24h observation history</span>
+        {/* Footer - simplified one line */}
+        <div className="px-4 py-1.5 bg-white/5 border-t border-white/10">
+          <div className="flex items-center justify-between text-[10px] text-white/40">
+            <span>
+              {displayObservations.length} obs{showMETAROnly && ' (METAR)'}
+              {lastUpdated && ` • ${lastUpdated.toLocaleTimeString('en-US', {
+                timeZone: timezone,
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              })}`}
+            </span>
+            {stationId && (
+              <a
+                href={`https://www.weather.gov/wrh/timeseries?site=${stationId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                NWS Timeseries →
+              </a>
             )}
           </div>
         </div>
@@ -604,4 +683,5 @@ ObservationDetailModal.propTypes = {
   useMetric: PropTypes.bool,
   onToggleUnits: PropTypes.func,
   cityName: PropTypes.string,
+  stationId: PropTypes.string,
 };
