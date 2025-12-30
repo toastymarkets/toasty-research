@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   Sun,
@@ -10,8 +11,10 @@ import {
   TrendingDown,
   Minus,
   BarChart3,
+  ChevronRight,
 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
+import WindDetailModal from './WindDetailModal';
 
 /**
  * Small Weather Widgets - Apple Weather inspired compact widgets
@@ -188,7 +191,17 @@ const WindCompass = ({ direction = 0, speed = 0 }) => {
   );
 };
 
-export function WindWidget({ speed = 0, direction = 0, gusts = null, loading = false }) {
+export function WindWidget({
+  speed = 0,
+  direction = 0,
+  gusts = null,
+  loading = false,
+  observations = [],
+  timezone = 'America/New_York',
+  cityName,
+}) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Convert m/s to mph if needed
   const speedMph = typeof speed === 'object' ? Math.round(speed.value * 2.237) : Math.round(speed);
   const gustsMph = gusts ? (typeof gusts === 'object' ? Math.round(gusts.value * 2.237) : Math.round(gusts)) : null;
@@ -205,32 +218,57 @@ export function WindWidget({ speed = 0, direction = 0, gusts = null, loading = f
   }
 
   return (
-    <GlassWidget title="WIND" icon={Wind} size="medium">
-      <div className="flex items-center justify-between flex-1 gap-3">
-        {/* Left: Text data with separator lines */}
-        <div className="flex flex-col divide-y divide-white/10 flex-1">
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-[11px] text-glass-text-muted">Wind</span>
-            <span className="text-sm font-medium text-white">{speedMph} mph</span>
-          </div>
-          {gustsMph && (
+    <>
+      <GlassWidget
+        title="WIND"
+        icon={Wind}
+        size="medium"
+        className="cursor-pointer"
+        onClick={() => setIsModalOpen(true)}
+      >
+        <div className="flex items-center justify-between flex-1 gap-3">
+          {/* Left: Text data with separator lines */}
+          <div className="flex flex-col divide-y divide-white/10 flex-1">
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-[11px] text-glass-text-muted">Gusts</span>
-              <span className="text-sm font-medium text-white">{gustsMph} mph</span>
+              <span className="text-[11px] text-glass-text-muted">Wind</span>
+              <span className="text-sm font-medium text-white">{speedMph} mph</span>
             </div>
-          )}
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-[11px] text-glass-text-muted">Direction</span>
-            <span className="text-sm font-medium text-white">{Math.round(directionDeg)}° {getWindDirection(directionDeg)}</span>
+            {gustsMph && (
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-[11px] text-glass-text-muted">Gusts</span>
+                <span className="text-sm font-medium text-white">{gustsMph} mph</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-[11px] text-glass-text-muted">Direction</span>
+              <span className="text-sm font-medium text-white">{Math.round(directionDeg)}° {getWindDirection(directionDeg)}</span>
+            </div>
+          </div>
+
+          {/* Right: Compass */}
+          <div className="w-20 h-20 flex-shrink-0">
+            <WindCompass direction={directionDeg} speed={speedMph} />
           </div>
         </div>
 
-        {/* Right: Compass */}
-        <div className="w-20 h-20 flex-shrink-0">
-          <WindCompass direction={directionDeg} speed={speedMph} />
+        {/* Tap hint */}
+        <div className="flex items-center justify-end mt-1">
+          <ChevronRight className="w-4 h-4 text-white/30" />
         </div>
-      </div>
-    </GlassWidget>
+      </GlassWidget>
+
+      {/* Wind Detail Modal */}
+      <WindDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        currentSpeed={speedMph}
+        currentDirection={directionDeg}
+        currentGusts={gustsMph}
+        observations={observations}
+        timezone={timezone}
+        cityName={cityName}
+      />
+    </>
   );
 }
 
@@ -239,6 +277,9 @@ WindWidget.propTypes = {
   direction: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
   gusts: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
   loading: PropTypes.bool,
+  observations: PropTypes.array,
+  timezone: PropTypes.string,
+  cityName: PropTypes.string,
 };
 
 // ============ HUMIDITY WIDGET ============

@@ -243,6 +243,9 @@ function CityDashboardContent({ city, citySlug }) {
             speed={weatherDetails.windSpeed}
             direction={weatherDetails.windDirection}
             loading={weatherLoading}
+            observations={observations}
+            timezone={city.timezone}
+            cityName={city.name}
           />
 
           {/* Humidity */}
