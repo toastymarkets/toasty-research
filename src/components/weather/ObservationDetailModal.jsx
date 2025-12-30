@@ -294,7 +294,7 @@ export default function ObservationDetailModal({
       />
 
       {/* Modal container - constrained to main content area, above backdrop but below sidebars */}
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:left-[300px] lg:right-[344px] pointer-events-none">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:left-[300px] lg:right-[21.25rem] pointer-events-none">
         {/* Modal */}
         <div className="glass-elevated relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-scale-in pointer-events-auto">
         {/* Header */}

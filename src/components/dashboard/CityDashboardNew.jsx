@@ -151,7 +151,7 @@ function CityDashboardContent({ city, citySlug }) {
         timezone={city.timezone}
       />
 
-      <div className={`min-h-screen pb-24 md:pb-8 transition-all duration-300 overflow-x-hidden w-full max-w-[100vw] ${notesSidebarCollapsed ? '' : 'lg:pr-80'}`}>
+      <div className={`min-h-screen pb-24 md:pb-8 transition-all duration-300 overflow-x-hidden w-full max-w-[100vw] ${notesSidebarCollapsed ? '' : 'lg:pr-[21.25rem]'}`}>
         {/* Back button - floating glass, positioned after hamburger on mobile */}
       <div className="fixed top-4 left-14 z-50 md:left-[calc(19rem+0.5rem)]">
         <Link
