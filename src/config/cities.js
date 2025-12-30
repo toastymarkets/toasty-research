@@ -9,7 +9,7 @@ const CITY_IMAGES = {
   'chicago': 'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=200&h=200&fit=crop',
   'los-angeles': 'https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=200&h=200&fit=crop',
   'miami': 'https://images.unsplash.com/photo-1533106497176-45ae19e68ba2?w=200&h=200&fit=crop',
-  'denver': 'https://images.unsplash.com/photo-1619856699906-09e1f58c98b1?w=200&h=200&fit=crop',
+  'denver': 'https://images.unsplash.com/photo-1546156929-a4c0ac411f47?w=200&h=200&fit=crop',
   'austin': 'https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=200&h=200&fit=crop',
   'philadelphia': 'https://images.unsplash.com/photo-1569761316261-9a8696fa2ca3?w=200&h=200&fit=crop',
   'houston': 'https://images.unsplash.com/photo-1530089711124-9ca31fb9e863?w=200&h=200&fit=crop',

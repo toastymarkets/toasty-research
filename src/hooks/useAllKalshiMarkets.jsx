@@ -211,4 +211,4 @@ export function useKalshiMarketsFromContext(citySlug) {
   };
 }
 
-export { CITY_SERIES };
+export { CITY_SERIES, KalshiMarketsContext };
