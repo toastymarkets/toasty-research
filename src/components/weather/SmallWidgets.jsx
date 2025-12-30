@@ -77,6 +77,117 @@ const getWindDirection = (degrees) => {
   return directions[index];
 };
 
+// Wind Compass SVG Component with animated wind flag
+const WindCompass = ({ direction = 0, speed = 0 }) => {
+  // Generate tick marks (every 10 degrees = 36 ticks for finer graduation)
+  const tickMarks = [...Array(36)].map((_, i) => {
+    const angle = i * 10;
+    const isCardinal = angle % 90 === 0;
+    const isMajor = angle % 30 === 0;
+    // Skip cardinal positions - we'll use labels there instead
+    if (isCardinal) return null;
+    const innerRadius = isMajor ? 36 : 38;
+    const outerRadius = 42;
+    const radian = (angle - 90) * (Math.PI / 180);
+    const x1 = 50 + innerRadius * Math.cos(radian);
+    const y1 = 50 + innerRadius * Math.sin(radian);
+    const x2 = 50 + outerRadius * Math.cos(radian);
+    const y2 = 50 + outerRadius * Math.sin(radian);
+    return (
+      <line
+        key={i}
+        x1={x1}
+        y1={y1}
+        x2={x2}
+        y2={y2}
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth={isMajor ? 1 : 0.5}
+      />
+    );
+  });
+
+  // Animation speed based on wind - faster wind = faster wave
+  // Range: 0.4s (strong wind 30+ mph) to 3s (light breeze)
+  const animationDuration = speed > 0 ? Math.max(0.4, 3 - (speed / 10)) : 0;
+  // Wave amplitude based on wind speed (more wind = bigger waves)
+  const waveAmplitude = Math.min(6, speed * 0.4);
+  // Flag extends more when there's wind
+  const flagExtend = Math.min(8, speed * 0.5);
+
+  return (
+    <svg viewBox="0 0 100 100" className="w-full h-full">
+      {/* Outer circle */}
+      <circle
+        cx="50"
+        cy="50"
+        r="44"
+        fill="none"
+        stroke="rgba(255,255,255,0.15)"
+        strokeWidth="1"
+      />
+
+      {/* Tick marks */}
+      {tickMarks}
+
+      {/* Wind flag - rotated based on direction */}
+      <g transform={`rotate(${direction}, 50, 50)`}>
+        {/* Flag pole */}
+        <line
+          x1="50"
+          y1="50"
+          x2="50"
+          y2="24"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        {/* Triangular pennant flag - attached at top of pole */}
+        <g transform="translate(50, 24)">
+          {speed === 0 ? (
+            /* Still flag - hangs down when no wind */
+            <path
+              d="M 0,0 L 0,12 L 6,6 Z"
+              fill="rgba(255,255,255,0.8)"
+            />
+          ) : (
+            /* Waving triangular flag - wave travels through the fabric */
+            <path
+              d={`M 0,0 L ${16 + flagExtend},5 L 0,10 Z`}
+              fill="rgba(255,255,255,0.85)"
+            >
+              <animate
+                attributeName="d"
+                dur={`${animationDuration}s`}
+                repeatCount="indefinite"
+                values={`
+                  M 0,0 C 5,${-waveAmplitude} 10,${waveAmplitude} ${16 + flagExtend},5 C 10,${5 + waveAmplitude} 5,${10 - waveAmplitude} 0,10 Z;
+                  M 0,0 C 5,${waveAmplitude} 10,${-waveAmplitude} ${16 + flagExtend},5 C 10,${5 - waveAmplitude} 5,${10 + waveAmplitude} 0,10 Z;
+                  M 0,0 C 5,${-waveAmplitude} 10,${waveAmplitude} ${16 + flagExtend},5 C 10,${5 + waveAmplitude} 5,${10 - waveAmplitude} 0,10 Z
+                `}
+              />
+            </path>
+          )}
+        </g>
+      </g>
+
+      {/* Cardinal direction labels - positioned OUTSIDE the circle */}
+      <text x="50" y="4" textAnchor="middle" dominantBaseline="hanging" fill="white" fontSize="8" fontWeight="600">N</text>
+      <text x="97" y="50" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.5)" fontSize="7">E</text>
+      <text x="50" y="97" textAnchor="middle" dominantBaseline="auto" fill="rgba(255,255,255,0.5)" fontSize="7">S</text>
+      <text x="3" y="50" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.5)" fontSize="7">W</text>
+
+      {/* Center speed display - rendered LAST so it appears on top */}
+      <circle cx="50" cy="50" r="16" fill="rgba(0,0,0,0.4)" />
+      <text x="50" y="48" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="14" fontWeight="600">
+        {speed}
+      </text>
+      <text x="50" y="61" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="7">
+        mph
+      </text>
+    </svg>
+  );
+};
+
 export function WindWidget({ speed = 0, direction = 0, gusts = null, loading = false }) {
   // Convert m/s to mph if needed
   const speedMph = typeof speed === 'object' ? Math.round(speed.value * 2.237) : Math.round(speed);
@@ -85,30 +196,39 @@ export function WindWidget({ speed = 0, direction = 0, gusts = null, loading = f
 
   if (loading) {
     return (
-      <GlassWidget title="WIND" icon={Wind} size="small">
-        <div className="flex flex-col items-center justify-center h-full animate-pulse">
-          <div className="w-16 h-16 bg-white/10 rounded-full" />
+      <GlassWidget title="WIND" icon={Wind} size="medium">
+        <div className="flex items-center justify-center h-full animate-pulse">
+          <div className="w-20 h-20 bg-white/10 rounded-full" />
         </div>
       </GlassWidget>
     );
   }
 
   return (
-    <GlassWidget title="WIND" icon={Wind} size="small">
-      <div className="flex flex-col items-start justify-center flex-1">
-        {/* Speed and direction */}
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-light">{speedMph}</span>
-          <span className="text-[11px] text-glass-text-muted">mph</span>
+    <GlassWidget title="WIND" icon={Wind} size="medium">
+      <div className="flex items-center justify-between flex-1 gap-3">
+        {/* Left: Text data with separator lines */}
+        <div className="flex flex-col divide-y divide-white/10 flex-1">
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-[11px] text-glass-text-muted">Wind</span>
+            <span className="text-sm font-medium text-white">{speedMph} mph</span>
+          </div>
+          {gustsMph && (
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-[11px] text-glass-text-muted">Gusts</span>
+              <span className="text-sm font-medium text-white">{gustsMph} mph</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-[11px] text-glass-text-muted">Direction</span>
+            <span className="text-sm font-medium text-white">{Math.round(directionDeg)}° {getWindDirection(directionDeg)}</span>
+          </div>
         </div>
-        <span className="text-[11px] text-glass-text-secondary">
-          {getWindDirection(directionDeg)}
-        </span>
-        {gustsMph && (
-          <span className="text-[10px] text-glass-text-muted mt-1">
-            Gusts {gustsMph} mph
-          </span>
-        )}
+
+        {/* Right: Compass */}
+        <div className="w-20 h-20 flex-shrink-0">
+          <WindCompass direction={directionDeg} speed={speedMph} />
+        </div>
       </div>
     </GlassWidget>
   );
