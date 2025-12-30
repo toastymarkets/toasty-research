@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
-import { X, Plus, Check, Table, BarChart3 } from 'lucide-react';
+import { X, Plus, Check, Table, BarChart3, Info, Thermometer, Droplets, Wind, Eye, Gauge, Clock, FileText } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
-import { insertObservationToNotes } from '../../utils/noteInsertionEvents';
+import { insertObservationToNotes, insertSingleDataPoint } from '../../utils/noteInsertionEvents';
 import {
   ComposedChart,
   Line,
@@ -27,13 +27,36 @@ export default function ObservationDetailModal({
   useMetric = false,
   onToggleUnits,
   cityName = '',
+  stationId = '',
 }) {
   // Track which observation was just added (for feedback)
   const [addedObservation, setAddedObservation] = useState(null);
   // Track active view: 'table' or 'chart'
   const [activeView, setActiveView] = useState('table');
+  // METAR filter toggle
+  const [showMETAROnly, setShowMETAROnly] = useState(false);
+  // Info popover visibility
+  const [showInfo, setShowInfo] = useState(false);
 
-  // Handle adding observation to notes
+  // Filter observations based on METAR toggle, and reverse for display (newest first)
+  const displayObservations = useMemo(() => {
+    const filtered = showMETAROnly
+      ? allObservations.filter(obs => obs.rawMessage && obs.rawMessage.length > 0)
+      : allObservations;
+    // Reverse so newest is at top of table (allObservations is oldest-first for charts)
+    return [...filtered].reverse();
+  }, [allObservations, showMETAROnly]);
+
+  // Get last updated time from most recent observation (last element since array is oldest-first)
+  const lastUpdated = useMemo(() => {
+    if (!allObservations || allObservations.length === 0) return null;
+    const mostRecent = allObservations[allObservations.length - 1];
+    return mostRecent?.timestamp instanceof Date
+      ? mostRecent.timestamp
+      : mostRecent?.timestamp ? new Date(mostRecent.timestamp) : null;
+  }, [allObservations]);
+
+  // Handle adding full observation to notes
   const handleAddToNotes = useCallback((obs) => {
     insertObservationToNotes(obs, {
       cityName,
@@ -48,6 +71,23 @@ export default function ObservationDetailModal({
     setTimeout(() => {
       setAddedObservation(null);
     }, 1500);
+  }, [cityName, timezone, useMetric]);
+
+  // Handle adding a single data point to notes
+  const handleAddSingleDataPoint = useCallback((obs, dataType) => {
+    insertSingleDataPoint(obs, dataType, {
+      cityName,
+      timezone,
+      useMetric,
+    });
+
+    // Show feedback with dataType suffix to differentiate
+    setAddedObservation(`${obs.time || obs.timestamp}_${dataType}`);
+
+    // Clear feedback after animation
+    setTimeout(() => {
+      setAddedObservation(null);
+    }, 1000);
   }, [cityName, timezone, useMetric]);
 
   // Chart data transformation - must be before early return (React hooks rules)
@@ -174,16 +214,16 @@ export default function ObservationDetailModal({
     return `${(pa / 3386.39).toFixed(2)}`;
   };
 
-  // Table columns
+  // Table columns with icons and descriptions
   const columns = [
-    { key: 'time', label: 'Time', width: 'w-16' },
-    { key: 'temp', label: 'Temp', width: 'w-12' },
-    { key: 'dewpoint', label: 'Dew', width: 'w-12' },
-    { key: 'humidity', label: 'RH', width: 'w-12' },
-    { key: 'wind', label: 'Wind', width: 'w-16' },
-    { key: 'visibility', label: 'Vis', width: 'w-12' },
-    { key: 'pressure', label: 'Press', width: 'w-14' },
-    { key: 'add', label: '', width: 'w-10' },
+    { key: 'time', label: 'Time', icon: Clock, width: 'w-16', description: 'Observation timestamp from the weather station' },
+    { key: 'temp', label: 'Temperature', icon: Thermometer, width: 'w-12', description: 'Air temperature measured at the station' },
+    { key: 'dewpoint', label: 'Dew Point', icon: Droplets, width: 'w-12', description: 'Temperature at which air becomes saturated and dew forms. Closer to temp = higher humidity feel' },
+    { key: 'humidity', label: 'Relative Humidity', icon: Droplets, width: 'w-12', description: 'Percentage of moisture in the air relative to maximum capacity at current temp' },
+    { key: 'wind', label: 'Wind', icon: Wind, width: 'w-16', description: 'Wind direction and speed at the station' },
+    { key: 'visibility', label: 'Visibility', icon: Eye, width: 'w-12', description: 'How far you can see clearly, affected by fog, haze, or precipitation' },
+    { key: 'pressure', label: 'Barometric Pressure', icon: Gauge, width: 'w-14', description: 'Atmospheric pressure (altimeter setting). Rising = improving weather, falling = storms approaching' },
+    { key: 'add', label: 'Add to Notes', icon: FileText, width: 'w-10', description: 'Click to add this entire observation to your research notes' },
   ];
 
   // Get cell value for observation
@@ -254,7 +294,7 @@ export default function ObservationDetailModal({
       />
 
       {/* Modal container - constrained to main content area, above backdrop but below sidebars */}
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:left-[300px] lg:right-[344px] pointer-events-none">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:left-[300px] lg:right-[21.25rem] pointer-events-none">
         {/* Modal */}
         <div className="glass-elevated relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-scale-in pointer-events-auto">
         {/* Header */}
@@ -269,6 +309,30 @@ export default function ObservationDetailModal({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* METAR toggle */}
+              <button
+                onClick={() => setShowMETAROnly(!showMETAROnly)}
+                className={`px-2.5 py-1 rounded-full transition-colors text-xs font-medium ${
+                  showMETAROnly
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/10 text-white/80 hover:bg-white/20'
+                }`}
+                title="Show only hourly METAR observations"
+              >
+                METAR
+              </button>
+              {/* Info button */}
+              <button
+                onClick={() => setShowInfo(!showInfo)}
+                className={`p-1.5 rounded-full transition-colors ${
+                  showInfo
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white/80'
+                }`}
+                title="About NWS observation data"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
               {/* Unit toggle */}
               <button
                 onClick={onToggleUnits}
@@ -294,6 +358,30 @@ export default function ObservationDetailModal({
               {observation.description || 'No conditions reported'}
             </div>
           </div>
+
+          {/* NWS Data Info Panel */}
+          {showInfo && (
+            <div className="mt-3 p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white/70 space-y-2">
+              <div className="font-medium text-white/90 text-sm mb-2">NWS Observation Data Types</div>
+              <div>
+                <span className="text-blue-400 font-medium">Hourly METAR</span>
+                <span className="text-white/50"> (XX:51-XX:54)</span>
+                <p className="text-white/50 mt-0.5">Official hourly observations with higher precision. Minimal rounding ambiguity.</p>
+              </div>
+              <div>
+                <span className="text-orange-400 font-medium">5-Minute ASOS</span>
+                <span className="text-white/50"> (XX:00, XX:05, etc.)</span>
+                <p className="text-white/50 mt-0.5">Automated observations every 5 minutes. Contains significant rounding ambiguity.</p>
+              </div>
+              <div>
+                <span className="text-emerald-400 font-medium">SPECI</span>
+                <p className="text-white/50 mt-0.5">Special observations triggered by significant weather changes. Exact temperature readings.</p>
+              </div>
+              <p className="text-white/40 text-[10px] pt-1 border-t border-white/10">
+                Toggle METAR to show only hourly and SPECI observations (higher precision).
+              </p>
+            </div>
+          )}
 
           {/* View Toggle Tabs */}
           <div className="mt-3 flex bg-white/10 rounded-lg p-0.5">
@@ -322,30 +410,50 @@ export default function ObservationDetailModal({
           </div>
         </div>
 
-        {/* Table View */}
+        {/* Table View - 24 hour history */}
         {activeView === 'table' && (
-          <div className="overflow-x-auto">
+          <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
           <table className="w-full text-xs">
-            {/* Table header */}
-            <thead>
+            {/* Table header - sticky, compact with icon tooltips */}
+            <thead className="sticky top-0 bg-[#1c1c1e] z-10">
               <tr className="border-b border-white/10">
-                {columns.map(col => (
-                  <th
-                    key={col.key}
-                    className={`${col.width} px-2 py-2 text-left font-medium text-white/50 uppercase tracking-wide`}
-                  >
-                    {col.label}
-                  </th>
-                ))}
+                {columns.map(col => {
+                  const Icon = col.icon;
+                  return (
+                    <th
+                      key={col.key}
+                      className={`${col.width} px-2 py-1.5 text-center font-medium text-white/50 group relative`}
+                    >
+                      <div className="flex items-center justify-center">
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      {/* Tooltip on hover */}
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1.5 bg-black/90 backdrop-blur-sm rounded-lg text-[10px] text-white/90 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 max-w-[200px] text-left">
+                        <div className="font-semibold text-white mb-0.5">{col.label}</div>
+                        <div className="text-white/70 whitespace-normal leading-tight">{col.description}</div>
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
 
-            {/* Table body */}
+            {/* Table body - filtered observations */}
             <tbody>
-              {surroundingObservations.map((obs, idx) => {
+              {displayObservations.map((obs, idx) => {
                 const selected = isSelected(obs);
                 const obsKey = obs.time || obs.timestamp;
-                const wasAdded = addedObservation === obsKey;
+                const wasAddedFull = addedObservation === obsKey;
+
+                // Map column keys to data types for single insertion
+                const colToDataType = {
+                  temp: 'temperature',
+                  dewpoint: 'dewpoint',
+                  humidity: 'humidity',
+                  wind: 'wind',
+                  visibility: 'visibility',
+                  pressure: 'pressure',
+                };
 
                 return (
                   <tr
@@ -359,39 +467,61 @@ export default function ObservationDetailModal({
                     `}
                   >
                     {columns.map(col => {
-                      // Special handling for add button column
+                      // Special handling for add button column (full observation)
                       if (col.key === 'add') {
                         return (
-                          <td key={col.key} className={`${col.width} px-1 py-2.5`}>
+                          <td key={col.key} className={`${col.width} px-1 py-1 text-center`}>
                             <button
                               onClick={() => handleAddToNotes(obs)}
                               className={`
-                                p-1.5 rounded-lg transition-all
-                                ${wasAdded
+                                p-1 rounded-lg transition-all
+                                ${wasAddedFull
                                   ? 'bg-emerald-500/20 text-emerald-400'
                                   : 'hover:bg-white/10 text-white/40 hover:text-white/70'
                                 }
                               `}
-                              title="Add to notes"
+                              title="Add full observation to notes"
                             >
-                              {wasAdded ? (
-                                <Check className="w-3.5 h-3.5" />
+                              {wasAddedFull ? (
+                                <Check className="w-3 h-3" />
                               ) : (
-                                <Plus className="w-3.5 h-3.5" />
+                                <Plus className="w-3 h-3" />
                               )}
                             </button>
                           </td>
                         );
                       }
 
+                      // Time column - not clickable
+                      if (col.key === 'time') {
+                        return (
+                          <td
+                            key={col.key}
+                            className={`${col.width} px-2 py-1 text-center font-medium ${selected ? 'text-white' : 'text-white/70'}`}
+                          >
+                            {getCellValue(obs, col.key)}
+                          </td>
+                        );
+                      }
+
+                      // Data columns - clickable for single insertion
+                      const dataType = colToDataType[col.key];
+                      const wasAddedSingle = addedObservation === `${obsKey}_${dataType}`;
+
                       return (
                         <td
                           key={col.key}
+                          onClick={() => handleAddSingleDataPoint(obs, dataType)}
                           className={`
-                            ${col.width} px-2 py-2.5
-                            ${selected ? 'text-white' : 'text-white/70'}
-                            ${col.key === 'time' ? 'font-medium' : ''}
+                            ${col.width} px-2 py-1 text-center cursor-pointer transition-colors
+                            ${wasAddedSingle
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : selected
+                                ? 'text-white hover:bg-white/10'
+                                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                            }
                           `}
+                          title={`Click to add ${col.label || col.key} to notes`}
                         >
                           {getCellValue(obs, col.key)}
                         </td>
@@ -544,19 +674,27 @@ export default function ObservationDetailModal({
           </div>
         )}
 
-        {/* Footer with units */}
-        <div className="px-4 py-2 bg-white/5 border-t border-white/10">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-white/40">
-            <span>Temp: {useMetric ? '°C' : '°F'}</span>
-            {activeView === 'table' && (
-              <>
-                <span>Wind: dir {useMetric ? 'km/h' : 'mph'}</span>
-                <span>Vis: {useMetric ? 'km' : 'mi'}</span>
-                <span>Press: {useMetric ? 'hPa' : 'inHg'}</span>
-              </>
-            )}
-            {activeView === 'chart' && (
-              <span>24h observation history</span>
+        {/* Footer - simplified one line */}
+        <div className="px-4 py-1.5 bg-white/5 border-t border-white/10">
+          <div className="flex items-center justify-between text-[10px] text-white/40">
+            <span>
+              {displayObservations.length} obs{showMETAROnly && ' (METAR)'}
+              {lastUpdated && ` • ${lastUpdated.toLocaleTimeString('en-US', {
+                timeZone: timezone,
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              })}`}
+            </span>
+            {stationId && (
+              <a
+                href={`https://www.weather.gov/wrh/timeseries?site=${stationId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                NWS Timeseries →
+              </a>
             )}
           </div>
         </div>
@@ -604,4 +742,5 @@ ObservationDetailModal.propTypes = {
   useMetric: PropTypes.bool,
   onToggleUnits: PropTypes.func,
   cityName: PropTypes.string,
+  stationId: PropTypes.string,
 };

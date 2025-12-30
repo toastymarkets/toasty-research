@@ -244,7 +244,7 @@ function ForecastDetailModal({ forecast, timezone, onClose }) {
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:left-[300px] lg:right-[344px] pointer-events-none">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:left-[300px] lg:right-[21.25rem] pointer-events-none">
         <div className="glass-elevated relative w-full max-w-lg max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl animate-scale-in pointer-events-auto">
           {/* Header */}
           <div className="px-4 pt-4 pb-3 border-b border-white/10 flex items-center justify-between">

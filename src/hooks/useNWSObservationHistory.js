@@ -17,7 +17,8 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
     }
 
     // Check cache first (v2 = fixed wind speed conversion + added visibility/windChill)
-    const cacheKey = `nws_obs_history_v2_${stationId}_${hoursBack}`;
+    // v3 = added rawMessage field for METAR filtering
+    const cacheKey = `nws_obs_history_v3_${stationId}_${hoursBack}`;
     if (!force) {
       try {
         const cached = localStorage.getItem(cacheKey);
@@ -113,6 +114,7 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
             visibility: visibilityM, // Keep in meters
             pressure: pressurePa, // Keep in Pascals
             description: props.textDescription,
+            rawMessage: props.rawMessage || '', // METAR/SPECI string (empty for 5-min ASOS)
           };
         })
         .filter(obs => obs.temperature != null) // Only keep observations with valid temperature

@@ -32,7 +32,7 @@ export function formatObservationForNotes(observation, metadata = {}) {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-  });
+  }).replace(' AM', '').replace(' PM', '');
 
   const dateStr = date.toLocaleDateString('en-US', {
     timeZone: timezone,
@@ -94,34 +94,40 @@ export function formatObservationForNotes(observation, metadata = {}) {
     }
   });
 
-  // Build TipTap content structure - compact card style
+  // Format wind without unit for compact display
+  const formatWindCompact = () => {
+    if (observation.windSpeed == null) return '--';
+    const dir = getWindDirection(observation.windDirection);
+    return `${dir} ${Math.round(observation.windSpeed)}`;
+  };
+
+  // Format pressure without unit for compact display
+  const formatPressureCompact = () => {
+    if (observation.pressure == null) return '--';
+    if (useMetric) {
+      return `${Math.round(observation.pressure / 100)}`;
+    }
+    return `${(observation.pressure / 3386.39).toFixed(2)}`;
+  };
+
+  // Build full observation as a single chip with all data
+  const fullObsValue = [
+    timeStr,
+    formatTemp(observation.temperature),
+    formatHumidity(),
+    `DP ${formatTemp(observation.dewpoint)}`,
+    formatWindCompact(),
+    formatPressureCompact(),
+  ].filter(v => v && v !== '--').join(' · ');
+
   return {
     type: 'doc',
     content: [
-      // Compact time + condition header
       {
         type: 'paragraph',
         content: [
-          { type: 'text', marks: [{ type: 'bold' }], text: timeStr },
-          { type: 'text', text: observation.description ? ` · ${observation.description}` : '' }
+          createChip(fullObsValue, '', 'observation'),
         ]
-      },
-      // All chips in one row - most important data
-      {
-        type: 'paragraph',
-        content: [
-          createChip(formatTemp(observation.temperature), '', 'temperature'),
-          { type: 'text', text: ' ' },
-          createChip(formatHumidity(), 'RH', 'humidity'),
-          { type: 'text', text: ' ' },
-          createChip(formatWind(), '', 'wind'),
-          { type: 'text', text: ' ' },
-          createChip(formatPressure(), '', 'pressure'),
-        ]
-      },
-      // Horizontal rule separator
-      {
-        type: 'horizontalRule'
       },
     ]
   };
@@ -138,6 +144,160 @@ export function insertObservationToNotes(observation, metadata = {}) {
       type: 'observation',
       content: formattedContent,
       rawData: observation,
+      metadata
+    }
+  });
+
+  window.dispatchEvent(event);
+}
+
+/**
+ * Format a single data point from an observation for notes
+ * @param {Object} observation - The observation data
+ * @param {string} dataType - One of: temperature, dewpoint, humidity, wind, visibility, pressure
+ * @param {Object} metadata - Optional metadata (timezone, useMetric)
+ */
+export function formatSingleDataPoint(observation, dataType, metadata = {}) {
+  const { timezone = 'America/New_York', useMetric = false } = metadata;
+
+  // Format timestamp
+  const date = observation.timestamp instanceof Date
+    ? observation.timestamp
+    : new Date(observation.timestamp);
+
+  const timeStr = date.toLocaleTimeString('en-US', {
+    timeZone: timezone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).replace(' AM', '').replace(' PM', '');
+
+  // Format helper functions
+  const formatTemp = (tempF) => {
+    if (tempF == null) return '--';
+    if (useMetric) {
+      const tempC = (tempF - 32) * 5 / 9;
+      return `${Math.round(tempC)}°C`;
+    }
+    return `${Math.round(tempF)}°F`;
+  };
+
+  const formatHumidity = () => {
+    if (observation.humidity == null) return '--';
+    return `${Math.round(observation.humidity)}%`;
+  };
+
+  const formatWind = () => {
+    if (observation.windSpeed == null) return '--';
+    const dir = getWindDirection(observation.windDirection);
+    if (useMetric) {
+      const kmh = observation.windSpeed * 1.60934;
+      return `${dir} ${Math.round(kmh)} km/h`;
+    }
+    return `${dir} ${Math.round(observation.windSpeed)} mph`;
+  };
+
+  const formatVisibility = () => {
+    if (observation.visibility == null) return '--';
+    if (useMetric) {
+      return `${(observation.visibility / 1000).toFixed(1)} km`;
+    }
+    return `${(observation.visibility / 1609.34).toFixed(1)} mi`;
+  };
+
+  const formatPressure = () => {
+    if (observation.pressure == null) return '--';
+    if (useMetric) {
+      return `${Math.round(observation.pressure / 100)} hPa`;
+    }
+    return `${(observation.pressure / 3386.39).toFixed(2)} inHg`;
+  };
+
+  // Helper to create a data chip node
+  const createChip = (value, label, type) => ({
+    type: 'dataChip',
+    attrs: { value, label, type, source: '', timestamp: '' }
+  });
+
+  // Compact formatters (no units)
+  const formatWindCompact = () => {
+    if (observation.windSpeed == null) return '--';
+    const dir = getWindDirection(observation.windDirection);
+    return `${dir} ${Math.round(observation.windSpeed)}`;
+  };
+
+  const formatPressureCompact = () => {
+    if (observation.pressure == null) return '--';
+    if (useMetric) {
+      return `${Math.round(observation.pressure / 100)}`;
+    }
+    return `${(observation.pressure / 3386.39).toFixed(2)}`;
+  };
+
+  const formatVisibilityCompact = () => {
+    if (observation.visibility == null) return '--';
+    if (useMetric) {
+      return `${(observation.visibility / 1000).toFixed(1)}`;
+    }
+    return `${(observation.visibility / 1609.34).toFixed(1)}`;
+  };
+
+  // Build chip value with timestamp included
+  let chipValue;
+  let chipType;
+  switch (dataType) {
+    case 'temperature':
+      chipValue = `${timeStr} · ${formatTemp(observation.temperature)}`;
+      chipType = 'temperature';
+      break;
+    case 'dewpoint':
+      chipValue = `${timeStr} · DP ${formatTemp(observation.dewpoint)}`;
+      chipType = 'temperature';
+      break;
+    case 'humidity':
+      chipValue = `${timeStr} · ${formatHumidity()}`;
+      chipType = 'humidity';
+      break;
+    case 'wind':
+      chipValue = `${timeStr} · ${formatWindCompact()}`;
+      chipType = 'wind';
+      break;
+    case 'visibility':
+      chipValue = `${timeStr} · Vis ${formatVisibilityCompact()}`;
+      chipType = 'humidity';
+      break;
+    case 'pressure':
+      chipValue = `${timeStr} · ${formatPressureCompact()}`;
+      chipType = 'pressure';
+      break;
+    default:
+      chipValue = `${timeStr} · --`;
+      chipType = 'observation';
+  }
+
+  return {
+    type: 'doc',
+    content: [{
+      type: 'paragraph',
+      content: [
+        createChip(chipValue, '', chipType),
+      ]
+    }]
+  };
+}
+
+/**
+ * Dispatch an event to insert a single data point into notes
+ */
+export function insertSingleDataPoint(observation, dataType, metadata = {}) {
+  const formattedContent = formatSingleDataPoint(observation, dataType, metadata);
+
+  const event = new CustomEvent(NOTE_INSERTION_EVENT, {
+    detail: {
+      type: 'single-data',
+      content: formattedContent,
+      rawData: observation,
+      dataType,
       metadata
     }
   });
