@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { X, Plus, Check, Table, BarChart3, Info } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
-import { insertObservationToNotes } from '../../utils/noteInsertionEvents';
+import { insertObservationToNotes, insertSingleDataPoint } from '../../utils/noteInsertionEvents';
 import {
   ComposedChart,
   Line,
@@ -56,7 +56,7 @@ export default function ObservationDetailModal({
       : mostRecent?.timestamp ? new Date(mostRecent.timestamp) : null;
   }, [allObservations]);
 
-  // Handle adding observation to notes
+  // Handle adding full observation to notes
   const handleAddToNotes = useCallback((obs) => {
     insertObservationToNotes(obs, {
       cityName,
@@ -71,6 +71,23 @@ export default function ObservationDetailModal({
     setTimeout(() => {
       setAddedObservation(null);
     }, 1500);
+  }, [cityName, timezone, useMetric]);
+
+  // Handle adding a single data point to notes
+  const handleAddSingleDataPoint = useCallback((obs, dataType) => {
+    insertSingleDataPoint(obs, dataType, {
+      cityName,
+      timezone,
+      useMetric,
+    });
+
+    // Show feedback with dataType suffix to differentiate
+    setAddedObservation(`${obs.time || obs.timestamp}_${dataType}`);
+
+    // Clear feedback after animation
+    setTimeout(() => {
+      setAddedObservation(null);
+    }, 1000);
   }, [cityName, timezone, useMetric]);
 
   // Chart data transformation - must be before early return (React hooks rules)
@@ -416,7 +433,17 @@ export default function ObservationDetailModal({
               {displayObservations.map((obs, idx) => {
                 const selected = isSelected(obs);
                 const obsKey = obs.time || obs.timestamp;
-                const wasAdded = addedObservation === obsKey;
+                const wasAddedFull = addedObservation === obsKey;
+
+                // Map column keys to data types for single insertion
+                const colToDataType = {
+                  temp: 'temperature',
+                  dewpoint: 'dewpoint',
+                  humidity: 'humidity',
+                  wind: 'wind',
+                  visibility: 'visibility',
+                  pressure: 'pressure',
+                };
 
                 return (
                   <tr
@@ -430,7 +457,7 @@ export default function ObservationDetailModal({
                     `}
                   >
                     {columns.map(col => {
-                      // Special handling for add button column
+                      // Special handling for add button column (full observation)
                       if (col.key === 'add') {
                         return (
                           <td key={col.key} className={`${col.width} px-1 py-1`}>
@@ -438,14 +465,14 @@ export default function ObservationDetailModal({
                               onClick={() => handleAddToNotes(obs)}
                               className={`
                                 p-1 rounded-lg transition-all
-                                ${wasAdded
+                                ${wasAddedFull
                                   ? 'bg-emerald-500/20 text-emerald-400'
                                   : 'hover:bg-white/10 text-white/40 hover:text-white/70'
                                 }
                               `}
-                              title="Add to notes"
+                              title="Add full observation to notes"
                             >
-                              {wasAdded ? (
+                              {wasAddedFull ? (
                                 <Check className="w-3 h-3" />
                               ) : (
                                 <Plus className="w-3 h-3" />
@@ -455,14 +482,36 @@ export default function ObservationDetailModal({
                         );
                       }
 
+                      // Time column - not clickable
+                      if (col.key === 'time') {
+                        return (
+                          <td
+                            key={col.key}
+                            className={`${col.width} px-2 py-1 font-medium ${selected ? 'text-white' : 'text-white/70'}`}
+                          >
+                            {getCellValue(obs, col.key)}
+                          </td>
+                        );
+                      }
+
+                      // Data columns - clickable for single insertion
+                      const dataType = colToDataType[col.key];
+                      const wasAddedSingle = addedObservation === `${obsKey}_${dataType}`;
+
                       return (
                         <td
                           key={col.key}
+                          onClick={() => handleAddSingleDataPoint(obs, dataType)}
                           className={`
-                            ${col.width} px-2 py-1
-                            ${selected ? 'text-white' : 'text-white/70'}
-                            ${col.key === 'time' ? 'font-medium' : ''}
+                            ${col.width} px-2 py-1 cursor-pointer transition-colors
+                            ${wasAddedSingle
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : selected
+                                ? 'text-white hover:bg-white/10'
+                                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                            }
                           `}
+                          title={`Click to add ${col.label || col.key} to notes`}
                         >
                           {getCellValue(obs, col.key)}
                         </td>
