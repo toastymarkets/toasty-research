@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { X, Plus, Check, Table, BarChart3, Info } from 'lucide-react';
+import { X, Plus, Check, Table, BarChart3, Info, Thermometer, Droplets, Wind, Eye, Gauge, Clock, FileText } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
 import { insertObservationToNotes, insertSingleDataPoint } from '../../utils/noteInsertionEvents';
 import {
@@ -214,16 +214,16 @@ export default function ObservationDetailModal({
     return `${(pa / 3386.39).toFixed(2)}`;
   };
 
-  // Table columns
+  // Table columns with icons and descriptions
   const columns = [
-    { key: 'time', label: 'Time', width: 'w-16' },
-    { key: 'temp', label: 'Temp', width: 'w-12' },
-    { key: 'dewpoint', label: 'Dew', width: 'w-12' },
-    { key: 'humidity', label: 'RH', width: 'w-12' },
-    { key: 'wind', label: 'Wind', width: 'w-16' },
-    { key: 'visibility', label: 'Vis', width: 'w-12' },
-    { key: 'pressure', label: 'Press', width: 'w-14' },
-    { key: 'add', label: '', width: 'w-10' },
+    { key: 'time', label: 'Time', icon: Clock, width: 'w-16', description: 'Observation timestamp from the weather station' },
+    { key: 'temp', label: 'Temperature', icon: Thermometer, width: 'w-12', description: 'Air temperature measured at the station' },
+    { key: 'dewpoint', label: 'Dew Point', icon: Droplets, width: 'w-12', description: 'Temperature at which air becomes saturated and dew forms. Closer to temp = higher humidity feel' },
+    { key: 'humidity', label: 'Relative Humidity', icon: Droplets, width: 'w-12', description: 'Percentage of moisture in the air relative to maximum capacity at current temp' },
+    { key: 'wind', label: 'Wind', icon: Wind, width: 'w-16', description: 'Wind direction and speed at the station' },
+    { key: 'visibility', label: 'Visibility', icon: Eye, width: 'w-12', description: 'How far you can see clearly, affected by fog, haze, or precipitation' },
+    { key: 'pressure', label: 'Barometric Pressure', icon: Gauge, width: 'w-14', description: 'Atmospheric pressure (altimeter setting). Rising = improving weather, falling = storms approaching' },
+    { key: 'add', label: 'Add to Notes', icon: FileText, width: 'w-10', description: 'Click to add this entire observation to your research notes' },
   ];
 
   // Get cell value for observation
@@ -414,17 +414,27 @@ export default function ObservationDetailModal({
         {activeView === 'table' && (
           <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
           <table className="w-full text-xs">
-            {/* Table header - sticky, compact */}
+            {/* Table header - sticky, compact with icon tooltips */}
             <thead className="sticky top-0 bg-[#1c1c1e] z-10">
               <tr className="border-b border-white/10">
-                {columns.map(col => (
-                  <th
-                    key={col.key}
-                    className={`${col.width} px-2 py-1.5 text-left font-medium text-white/50 uppercase tracking-wide`}
-                  >
-                    {col.label}
-                  </th>
-                ))}
+                {columns.map(col => {
+                  const Icon = col.icon;
+                  return (
+                    <th
+                      key={col.key}
+                      className={`${col.width} px-2 py-1.5 text-center font-medium text-white/50 group relative`}
+                    >
+                      <div className="flex items-center justify-center">
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      {/* Tooltip on hover */}
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1.5 bg-black/90 backdrop-blur-sm rounded-lg text-[10px] text-white/90 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 max-w-[200px] text-left">
+                        <div className="font-semibold text-white mb-0.5">{col.label}</div>
+                        <div className="text-white/70 whitespace-normal leading-tight">{col.description}</div>
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
 
@@ -460,7 +470,7 @@ export default function ObservationDetailModal({
                       // Special handling for add button column (full observation)
                       if (col.key === 'add') {
                         return (
-                          <td key={col.key} className={`${col.width} px-1 py-1`}>
+                          <td key={col.key} className={`${col.width} px-1 py-1 text-center`}>
                             <button
                               onClick={() => handleAddToNotes(obs)}
                               className={`
@@ -487,7 +497,7 @@ export default function ObservationDetailModal({
                         return (
                           <td
                             key={col.key}
-                            className={`${col.width} px-2 py-1 font-medium ${selected ? 'text-white' : 'text-white/70'}`}
+                            className={`${col.width} px-2 py-1 text-center font-medium ${selected ? 'text-white' : 'text-white/70'}`}
                           >
                             {getCellValue(obs, col.key)}
                           </td>
@@ -503,7 +513,7 @@ export default function ObservationDetailModal({
                           key={col.key}
                           onClick={() => handleAddSingleDataPoint(obs, dataType)}
                           className={`
-                            ${col.width} px-2 py-1 cursor-pointer transition-colors
+                            ${col.width} px-2 py-1 text-center cursor-pointer transition-colors
                             ${wasAddedSingle
                               ? 'bg-emerald-500/20 text-emerald-400'
                               : selected
