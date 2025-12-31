@@ -160,29 +160,21 @@ export default function MapWidgetPopup({
     if (!isOpen || !lat || !lon || activeLayer !== 'satellite') return;
 
     setSatelliteLoading(true);
-    const sector = satelliteSector; // Use selected sector
+    const sector = satelliteSector;
     const sectorConfig = availableSectors.find(s => s.id === sector);
     const satellite = sectorConfig?.satellite || getGOESConfig(lon, lat).satellite;
     const imageSize = sectorConfig?.size || '1200x1200';
     const isRegional = imageSize !== '1200x1200';
 
-    const now = new Date();
-    const frameUrls = [];
-
-    // Local sectors: update every 5 min at minutes ending in 1 or 6
-    // Regional sectors: update every 10 min at minutes ending in 0
-    const frameCount = 72;
-    const intervalMinutes = 10;
-    for (let i = frameCount - 1; i >= 0; i--) {
-      const frameTime = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
+    // Generate frame URL for a given time offset (minutes ago)
+    const generateFrameUrl = (minutesAgo) => {
+      const frameTime = new Date(Date.now() - minutesAgo * 60 * 1000);
       const mins = frameTime.getUTCMinutes();
 
       let roundedMins;
       if (isRegional) {
-        // Regional: round to nearest 10 (00, 10, 20, 30, 40, 50)
         roundedMins = Math.round(mins / 10) * 10;
       } else {
-        // Local: round to nearest GOES interval (minutes ending in 1 or 6)
         const remainder = mins % 5;
         roundedMins = mins - remainder + (remainder < 3 ? 1 : 6);
       }
@@ -190,7 +182,6 @@ export default function MapWidgetPopup({
       frameTime.setUTCMinutes(roundedMins >= 60 ? roundedMins - 60 : roundedMins);
       if (roundedMins >= 60) frameTime.setUTCHours(frameTime.getUTCHours() + 1);
       frameTime.setSeconds(0);
-      frameTime.setMilliseconds(0);
 
       const year = frameTime.getUTCFullYear();
       const dayOfYear = Math.floor((frameTime - new Date(Date.UTC(year, 0, 0))) / (1000 * 60 * 60 * 24));
@@ -198,45 +189,56 @@ export default function MapWidgetPopup({
       const minsStr = frameTime.getUTCMinutes().toString().padStart(2, '0');
       const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${minsStr}`;
 
-      // Use selected band for satellite imagery
-      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${satelliteBand}/${timestamp}_${satellite}-ABI-${sector}-${satelliteBand}-${imageSize}.jpg`;
-
-      frameUrls.push({
-        url,
+      return {
+        url: `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${satelliteBand}/${timestamp}_${satellite}-ABI-${sector}-${satelliteBand}-${imageSize}.jpg`,
         time: frameTime,
-        timestamp,
-      });
-    }
-
-    // Validate which frames actually exist by trying to load them
-    const validateFrames = async () => {
-      const validFrames = [];
-
-      // Check frames in parallel but limit concurrency
-      const checkFrame = async (frame) => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve({ ...frame, valid: true });
-          img.onerror = () => resolve({ ...frame, valid: false });
-          img.src = frame.url;
-        });
+        timestamp
       };
+    };
 
-      const results = await Promise.all(frameUrls.map(checkFrame));
-      const valid = results.filter(f => f.valid);
+    // Quick check for a single frame
+    const checkFrame = (frame) => new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ ...frame, valid: true });
+      img.onerror = () => resolve({ ...frame, valid: false });
+      img.src = frame.url;
+    });
 
-      if (valid.length > 0) {
-        setSatelliteFrames(valid);
-        setSatelliteFrameIndex(valid.length - 1); // Start at most recent
-      } else {
-        // Fallback: try latest_times.json API from CIRA
-        console.warn('No GOES frames found via CDN, satellite view may be unavailable');
-        setSatelliteFrames([]);
+    const loadFrames = async () => {
+      // First, quickly find the most recent valid frame (check last 5)
+      for (let i = 0; i < 5; i++) {
+        const frame = generateFrameUrl(i * 10);
+        const result = await checkFrame(frame);
+        if (result.valid) {
+          // Found a valid frame - show it immediately
+          setSatelliteFrames([result]);
+          setSatelliteFrameIndex(0);
+          setSatelliteLoading(false);
+
+          // Now load more frames in background (36 frames = 6 hours for popup)
+          const frameCount = 36;
+          const allFrames = [];
+          for (let j = 0; j < frameCount; j++) {
+            allFrames.push(generateFrameUrl(j * 10));
+          }
+
+          // Validate remaining frames in parallel
+          const results = await Promise.all(allFrames.map(checkFrame));
+          const validFrames = results.filter(f => f.valid);
+          if (validFrames.length > 0) {
+            setSatelliteFrames(validFrames);
+            setSatelliteFrameIndex(validFrames.length - 1);
+          }
+          return;
+        }
       }
+
+      // No valid frames found
+      setSatelliteFrames([]);
       setSatelliteLoading(false);
     };
 
-    validateFrames();
+    loadFrames();
   }, [isOpen, lat, lon, activeLayer, satelliteBand, satelliteSector, availableSectors]);
 
   // Initialize Leaflet map
