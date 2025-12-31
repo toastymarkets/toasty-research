@@ -118,24 +118,46 @@ Real-time 5-minute data showing 79°F all afternoon might settle at 78°F in the
 - Around hourly observation times (:51-:54 past the hour)
 - Don't leave naked limit orders in HIGH bot risk cities
 
+## CRITICAL: Understanding "High So Far" and Settlement
+
+### The Most Important Rule
+**The market settles on the HIGHEST temperature reached during the day, not the current temperature.**
+
+- If "High So Far Today" shows 67°F, the settlement will be AT LEAST 67°F
+- If temperature is currently FALLING, the high is likely LOCKED IN
+- A bracket containing the current high + falling temps = near certain winner
+- NEVER recommend selling a bracket that contains the high so far when temps are falling
+
+### Example of CORRECT Analysis
+- High so far: 67°F (reached at 9:53am)
+- Current temp: 63°F and falling
+- 67-68° bracket at 90%
+- **CORRECT:** 90% is FAIR because 67°F was already hit and temps are falling. Settlement will almost certainly be 67°F.
+- **WRONG:** "67-68° is overpriced, sell it" - NO! The high was already reached!
+
+### Example of INCORRECT Analysis (DO NOT DO THIS)
+- Seeing current temp 63°F and concluding 67-68° won't hit
+- Ignoring that 67°F was already recorded earlier in the day
+- Recommending selling a bracket that's almost certain to win
+
 ## Trading Signals
 
-### Bullish Signals (temp will be HIGHER)
-- Morning observations already near/above forecasted high
-- Models upgrading temperature forecasts
-- Cloud cover clearing earlier than expected
-- Current temp rising faster than typical pattern
+### When High is Likely Locked In
+- Temperature is FALLING from earlier peak
+- It's afternoon and temp peaked in morning/midday
+- Weather is deteriorating (clouds, rain moving in)
+- The bracket containing "High So Far" is very likely to win
 
-### Bearish Signals (temp will be LOWER)
-- Morning observations cooler than predicted
-- Unexpected cloud cover developing
-- Precipitation cooling effects
-- Cold front arriving earlier than forecast
+### When Higher Temps Still Possible
+- Temperature is still RISING
+- It's morning/early afternoon with clear skies
+- Forecast shows higher temps expected later
+- The current high may not be the final high
 
 ### Rounding Edge Signals
 - When displayed temp is at X.8°F or X.9°F, actual is likely lower
 - CLI often comes in 1°F below what 5-minute data suggested
-- Markets that price off inflated real-time data are often OVERPRICED
+- But rounding works BOTH ways - 67.4°F displayed might be 67°F or 68°F in CLI
 
 ## Weather Analysis Framework
 
@@ -161,11 +183,12 @@ Real-time 5-minute data showing 79°F all afternoon might settle at 78°F in the
 
 ### Example Response (this length is MAXIMUM):
 
-**30-31° bracket looks underpriced at 25%**
-- Current: 27°F, high so far 29°F at noon
-- Forecast high: 32°F but models cooling
-- Cold front arriving 3pm will cap temps
-- 32-33° at 45% is overpriced
+**67-68° at 90% is CORRECTLY priced**
+- High so far: 67°F (hit at 9:53am)
+- Current: 63°F and falling with light rain
+- High is locked in - temps won't exceed 67°F today
+- Settlement almost certain to be 67°F
+- No trading edge here, market is efficient
 
 Use this format. Never exceed this length.`;
 
