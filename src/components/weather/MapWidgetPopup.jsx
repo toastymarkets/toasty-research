@@ -8,35 +8,24 @@ import 'leaflet/dist/leaflet.css';
  * GOES-18 covers Western US, GOES-16 covers Eastern US
  */
 function getGOESConfig(lon, lat) {
-  // Determine satellite based on longitude (roughly -105° is the dividing line)
-  const isWest = lon < -105;
+  // Denver is at -104.66, include it in West
+  const isWest = lon < -104;
   const satellite = isWest ? 'GOES18' : 'GOES16';
   const satNum = isWest ? '18' : '16';
 
-  // Determine sector based on location
   let sector;
   if (isWest) {
     // GOES-18 sectors
-    if (lat > 42) {
-      sector = 'pnw'; // Pacific Northwest
-    } else if (lon < -115) {
-      sector = 'psw'; // Pacific Southwest (LA, SF)
-    } else {
-      sector = 'nr'; // Northern Rockies (Denver, SLC)
-    }
+    if (lat > 42) sector = 'pnw';           // Seattle, Portland
+    else if (lon < -115) sector = 'psw';    // LA, SF, San Diego
+    else sector = 'nr';                      // Denver, SLC, Phoenix
   } else {
     // GOES-16 sectors
-    if (lat > 40 && lon > -85) {
-      sector = 'ne'; // Northeast (NYC, Boston, Philly)
-    } else if (lat > 38 && lon < -85) {
-      sector = 'umv'; // Upper Mississippi Valley (Chicago, Detroit)
-    } else if (lat < 30) {
-      sector = 'se'; // Southeast (Miami)
-    } else if (lon < -90) {
-      sector = 'sp'; // Southern Plains (Houston, Austin, Dallas)
-    } else {
-      sector = 'ma'; // Mid-Atlantic (DC)
-    }
+    if (lat > 40 && lon > -85) sector = 'ne';      // NYC, Boston, Philly
+    else if (lat > 37 && lon < -82) sector = 'umv'; // Chicago, Detroit
+    else if (lat < 30 && lon > -90) sector = 'se';  // Miami
+    else if (lon < -90) sector = 'sp';              // Houston, Austin, Dallas
+    else sector = 'ma';                              // DC
   }
 
   return { satellite, satNum, sector };
@@ -47,7 +36,7 @@ function getGOESConfig(lon, lat) {
  * Local sectors use 1200x1200, regional sectors use 1800x1080
  */
 function getAvailableSectors(lon, lat) {
-  const isWest = lon < -105;
+  const isWest = lon < -104;
   const config = getGOESConfig(lon, lat);
 
   if (isWest) {
@@ -58,7 +47,7 @@ function getAvailableSectors(lon, lat) {
   } else {
     return [
       { id: config.sector, label: 'Local', size: '1200x1200' },
-      { id: 'taw', label: 'Atlantic', size: '1800x1080' },
+      { id: 'eus', label: 'East US', size: '1800x1080' },
     ];
   }
 }
