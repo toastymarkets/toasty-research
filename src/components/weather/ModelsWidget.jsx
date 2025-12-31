@@ -2,6 +2,7 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check } from 'lucide-react';
 import GlassWidget from './GlassWidget';
+import ErrorState from '../ui/ErrorState';
 import { useMultiModelForecast, MODELS } from '../../hooks/useMultiModelForecast';
 import { insertModelsToNotes } from '../../utils/noteInsertionEvents';
 
@@ -10,7 +11,7 @@ import { insertModelsToNotes } from '../../utils/noteInsertionEvents';
  * Compact view with detail modal on click
  */
 export default function ModelsWidget({ citySlug, loading: externalLoading = false }) {
-  const { forecasts, loading, error } = useMultiModelForecast(citySlug);
+  const { forecasts, loading, error, refetch } = useMultiModelForecast(citySlug);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (loading || externalLoading) {
@@ -26,9 +27,11 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
   if (error || !forecasts) {
     return (
       <GlassWidget title="MODELS" icon={Activity} size="small">
-        <div className="flex items-center justify-center h-full text-white/40 text-xs">
-          Unable to load models
-        </div>
+        <ErrorState
+          message={error || 'Unable to load models'}
+          onRetry={() => refetch(true)}
+          compact
+        />
       </GlassWidget>
     );
   }

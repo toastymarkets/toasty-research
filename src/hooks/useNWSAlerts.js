@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { getErrorMessage } from '../constants/errors';
 
 /**
  * Hook to fetch NWS alerts for a location
@@ -9,76 +10,76 @@ export function useNWSAlerts(lat, lon) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const fetchAlerts = useCallback(async () => {
     if (!lat || !lon) {
       setLoading(false);
       return;
     }
 
-    const fetchAlerts = async () => {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      try {
-        // Fetch alerts for the point
-        const response = await fetch(
-          `https://api.weather.gov/alerts/active?point=${lat},${lon}`,
-          {
-            headers: {
-              'User-Agent': 'Toasty Research App',
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch alerts: ${response.status}`);
+    try {
+      // Fetch alerts for the point
+      const response = await fetch(
+        `https://api.weather.gov/alerts/active?point=${lat},${lon}`,
+        {
+          headers: {
+            'User-Agent': 'Toasty Research App',
+          },
         }
+      );
 
-        const data = await response.json();
-
-        // Parse alerts
-        const parsedAlerts = (data.features || []).map((feature) => {
-          const props = feature.properties;
-          return {
-            id: props.id,
-            event: props.event,
-            headline: props.headline,
-            description: props.description,
-            instruction: props.instruction,
-            severity: props.severity, // Minor, Moderate, Severe, Extreme
-            urgency: props.urgency, // Immediate, Expected, Future, Past, Unknown
-            certainty: props.certainty,
-            onset: props.onset ? new Date(props.onset) : null,
-            expires: props.expires ? new Date(props.expires) : null,
-            senderName: props.senderName,
-            areaDesc: props.areaDesc,
-          };
-        });
-
-        // Sort by severity (Extreme first, then Severe, etc.)
-        const severityOrder = { Extreme: 0, Severe: 1, Moderate: 2, Minor: 3, Unknown: 4 };
-        parsedAlerts.sort((a, b) =>
-          (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4)
-        );
-
-        setAlerts(parsedAlerts);
-      } catch (err) {
-        console.error('Error fetching NWS alerts:', err);
-        setError(err.message);
-        setAlerts([]);
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch alerts: ${response.status}`);
       }
-    };
 
+      const data = await response.json();
+
+      // Parse alerts
+      const parsedAlerts = (data.features || []).map((feature) => {
+        const props = feature.properties;
+        return {
+          id: props.id,
+          event: props.event,
+          headline: props.headline,
+          description: props.description,
+          instruction: props.instruction,
+          severity: props.severity,
+          urgency: props.urgency,
+          certainty: props.certainty,
+          onset: props.onset ? new Date(props.onset) : null,
+          expires: props.expires ? new Date(props.expires) : null,
+          senderName: props.senderName,
+          areaDesc: props.areaDesc,
+        };
+      });
+
+      // Sort by severity (Extreme first, then Severe, etc.)
+      const severityOrder = { Extreme: 0, Severe: 1, Moderate: 2, Minor: 3, Unknown: 4 };
+      parsedAlerts.sort((a, b) =>
+        (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4)
+      );
+
+      setAlerts(parsedAlerts);
+    } catch (err) {
+      console.error('Error fetching NWS alerts:', err);
+      setError(getErrorMessage(err, 'weather'));
+      setAlerts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [lat, lon]);
+
+  useEffect(() => {
     fetchAlerts();
 
     // Refresh alerts every 5 minutes
     const interval = setInterval(fetchAlerts, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [lat, lon]);
+  }, [fetchAlerts]);
 
-  return { alerts, loading, error };
+  return { alerts, loading, error, refetch: fetchAlerts };
 }
 
 /**

@@ -5,6 +5,7 @@ import { useNWSAlerts, getAlertColor, getAlertIcon } from '../../hooks/useNWSAle
 import { useWeatherNews, formatNewsTime } from '../../hooks/useWeatherNews';
 import GlassWidget from './GlassWidget';
 import AlertsNewsModal from './AlertsNewsModal';
+import ErrorState from '../ui/ErrorState';
 
 /**
  * Format relative time
@@ -35,7 +36,7 @@ const formatTimeAgo = (date) => {
  * If no alerts, shows weather news instead
  */
 export default function AlertsWidget({ lat, lon, cityName }) {
-  const { alerts, loading, error } = useNWSAlerts(lat, lon);
+  const { alerts, loading, error, refetch } = useNWSAlerts(lat, lon);
   const { news, loading: newsLoading } = useWeatherNews(cityName, alerts.length === 0 && !loading);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -52,9 +53,11 @@ export default function AlertsWidget({ lat, lon, cityName }) {
   if (error) {
     return (
       <GlassWidget title="ALERTS" icon={AlertTriangle} size="large">
-        <div className="flex-1 flex items-center justify-center text-white/40 text-xs">
-          Unable to load alerts
-        </div>
+        <ErrorState
+          message={error}
+          onRetry={refetch}
+          compact
+        />
       </GlassWidget>
     );
   }

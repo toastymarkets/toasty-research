@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CACHE_DURATIONS } from '../constants/cache';
+import { getErrorMessage } from '../constants/errors';
 
 // City coordinates - using exact NWS station locations
 const CITY_COORDS = {
@@ -160,7 +161,7 @@ export function useMultiModelForecast(citySlug) {
       setError(null);
     } catch (err) {
       console.error('[MultiModel] Fetch error:', err);
-      setError(err.message);
+      setError(getErrorMessage(err, 'forecast'));
     } finally {
       setLoading(false);
     }

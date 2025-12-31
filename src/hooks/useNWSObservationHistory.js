@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getErrorMessage } from '../constants/errors';
 
 /**
  * Hook to fetch NWS observation history for a station
@@ -136,7 +137,7 @@ export function useNWSObservationHistory(stationId, hoursBack = 48) {
       setError(null);
     } catch (err) {
       console.error('[NWSObservationHistory] Fetch error:', err);
-      setError(err.message);
+      setError(getErrorMessage(err, 'weather'));
     } finally {
       setLoading(false);
     }
