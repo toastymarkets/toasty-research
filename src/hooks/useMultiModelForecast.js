@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { CACHE_DURATIONS } from '../constants/cache';
 
 // City coordinates - using exact NWS station locations
 const CITY_COORDS = {
@@ -32,9 +33,6 @@ const MODELS = [
   { id: 'jma_seamless', name: 'JMA', resolution: '20km', description: 'Japan Meteorological Agency', priority: 6, updateFreq: '6h', color: '#06B6D4' },
 ];
 
-// Cache duration: 15 minutes
-const CACHE_DURATION = 15 * 60 * 1000;
-
 /**
  * Hook to fetch multi-model weather forecasts from Open-Meteo
  */
@@ -59,7 +57,7 @@ export function useMultiModelForecast(citySlug) {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
           const { data, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < CACHE_DURATION) {
+          if (Date.now() - timestamp < CACHE_DURATIONS.FORECAST_MODELS) {
             setForecasts(data);
             setLastUpdated(new Date(timestamp));
             setLoading(false);
@@ -153,7 +151,9 @@ export function useMultiModelForecast(citySlug) {
 
       try {
         localStorage.setItem(cacheKey, JSON.stringify({ data: result, timestamp: Date.now() }));
-      } catch (e) { }
+      } catch (e) {
+        // localStorage may fail in private browsing - continue without caching
+      }
 
       setForecasts(result);
       setLastUpdated(new Date());

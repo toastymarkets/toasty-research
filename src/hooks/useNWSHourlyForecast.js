@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CITY_COORDS } from './useMultiModelForecast';
+import { CACHE_DURATIONS } from '../constants/cache';
 
-const CACHE_DURATION = 15 * 60 * 1000;
 const gridCache = {};
 
 /**
@@ -27,14 +27,16 @@ export function useNWSHourlyForecast(citySlug) {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
           const { data, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < CACHE_DURATION) {
+          if (Date.now() - timestamp < CACHE_DURATIONS.FORECAST_HOURLY) {
             setForecast(data);
             setUpdateTime(new Date(data.updateTime));
             setLoading(false);
             return;
           }
         }
-      } catch (e) { }
+      } catch (e) {
+        // localStorage may fail in private browsing - continue without cache
+      }
     }
 
     setLoading(true);
@@ -137,7 +139,9 @@ export function useNWSHourlyForecast(citySlug) {
 
       try {
         localStorage.setItem(cacheKey, JSON.stringify({ data: result, timestamp: Date.now() }));
-      } catch (e) { }
+      } catch (e) {
+        // localStorage may fail in private browsing - continue without caching
+      }
 
       setForecast(result);
       setUpdateTime(nwsUpdateTime);
