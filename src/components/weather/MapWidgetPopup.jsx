@@ -51,19 +51,14 @@ function getAvailableSectors(lon, lat) {
   const config = getGOESConfig(lon, lat);
 
   if (isWest) {
-    // GOES-18 regional sectors
     return [
       { id: config.sector, label: 'Local', size: '1200x1200' },
-      { id: 'tpw', label: 'Tropical Pacific', size: '1800x1080' },
-      { id: 'wus', label: 'West US', size: '1800x1080' },
+      { id: 'tpw', label: 'Pacific', size: '1800x1080' },
     ];
   } else {
-    // GOES-16 regional sectors
     return [
       { id: config.sector, label: 'Local', size: '1200x1200' },
-      { id: 'eus', label: 'East US', size: '1800x1080' },
-      { id: 'gm', label: 'Gulf of Mexico', size: '1800x1080' },
-      { id: 'car', label: 'Caribbean', size: '1800x1080' },
+      { id: 'taw', label: 'Atlantic', size: '1800x1080' },
     ];
   }
 }

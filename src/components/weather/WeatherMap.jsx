@@ -37,19 +37,14 @@ function getAvailableSectors(lon, lat) {
   const config = getGOESConfig(lon, lat);
 
   if (isWest) {
-    // GOES-18 regional sectors
     return [
       { id: config.sector, label: 'Local', size: '1200x1200' },
-      { id: 'tpw', label: 'Tropical Pacific', size: '1800x1080' },
-      { id: 'wus', label: 'West US', size: '1800x1080' },
+      { id: 'tpw', label: 'Pacific', size: '1800x1080' },
     ];
   } else {
-    // GOES-16 regional sectors
     return [
       { id: config.sector, label: 'Local', size: '1200x1200' },
-      { id: 'eus', label: 'East US', size: '1800x1080' },
-      { id: 'gm', label: 'Gulf of Mexico', size: '1800x1080' },
-      { id: 'car', label: 'Caribbean', size: '1800x1080' },
+      { id: 'taw', label: 'Atlantic', size: '1800x1080' },
     ];
   }
 }
@@ -70,7 +65,7 @@ export default function WeatherMap({
   const mapInstanceRef = useRef(null);
   const [L, setL] = useState(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('precipitation');
+  const [activeTab, setActiveTab] = useState('satellite');
 
   // Satellite state
   const [satelliteFrames, setSatelliteFrames] = useState([]);
@@ -271,8 +266,8 @@ export default function WeatherMap({
   }
 
   const tabs = [
-    { id: 'precipitation', icon: Cloud, label: 'Precip' },
     { id: 'satellite', icon: Satellite, label: 'Satellite' },
+    { id: 'precipitation', icon: Cloud, label: 'Precip' },
   ];
 
   return (
