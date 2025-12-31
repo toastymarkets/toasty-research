@@ -35,11 +35,24 @@ export default function GlassSidebar() {
   const marketsContext = useContext(KalshiMarketsContext);
   const marketsData = marketsContext?.marketsData || {};
 
-  // Helper to check if a market is live (unresolved)
-  const isMarketLive = (closeTime) => {
+  // Helper to check if a market is open (not yet closed)
+  const isMarketOpen = (closeTime) => {
     if (!closeTime) return false;
     const closeDate = closeTime instanceof Date ? closeTime : new Date(closeTime);
     return closeDate > new Date();
+  };
+
+  // Helper to check if a market is truly active (open AND competitive)
+  // A market at 99% is effectively resolved - outcome is known
+  const isMarketActive = (market) => {
+    if (!market?.closeTime) return false;
+    if (!isMarketOpen(market.closeTime)) return false;
+
+    // Check if top bracket is >= 99% (effectively resolved)
+    const topBracket = market.topBrackets?.[0];
+    if (topBracket?.yesPrice >= 99) return false;
+
+    return true;
   };
 
   // Update time every minute
@@ -60,7 +73,7 @@ export default function GlassSidebar() {
     };
   }, [isMobileOpen]);
 
-  // Filter and sort cities - prioritize live markets
+  // Filter and sort cities - prioritize active (competitive) markets
   const sortedCities = useMemo(() => {
     const filtered = CITIES.filter(city =>
       city.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -70,14 +83,20 @@ export default function GlassSidebar() {
       const aMarket = marketsData[a.slug];
       const bMarket = marketsData[b.slug];
 
-      const aLive = isMarketLive(aMarket?.closeTime);
-      const bLive = isMarketLive(bMarket?.closeTime);
+      const aActive = isMarketActive(aMarket);
+      const bActive = isMarketActive(bMarket);
+      const aOpen = isMarketOpen(aMarket?.closeTime);
+      const bOpen = isMarketOpen(bMarket?.closeTime);
 
-      // Live markets first
-      if (aLive && !bLive) return -1;
-      if (!aLive && bLive) return 1;
+      // 1. Active markets first (open + competitive)
+      if (aActive && !bActive) return -1;
+      if (!aActive && bActive) return 1;
 
-      // Then cities with markets (closed)
+      // 2. Then resolved markets (open but 99%)
+      if (aOpen && !bOpen) return -1;
+      if (!aOpen && bOpen) return 1;
+
+      // 3. Then cities with markets (closed)
       if (a.hasMarket && !b.hasMarket) return -1;
       if (!a.hasMarket && b.hasMarket) return 1;
 
@@ -108,7 +127,8 @@ export default function GlassSidebar() {
 
     // Get market data for this city
     const cityMarket = marketsData[city.slug];
-    const hasLiveMarket = isMarketLive(cityMarket?.closeTime);
+    const hasOpenMarket = isMarketOpen(cityMarket?.closeTime);
+    const hasActiveMarket = isMarketActive(cityMarket); // Open AND competitive (not 99%)
     const topBracket = cityMarket?.topBrackets?.[0];
 
     return (
@@ -138,7 +158,7 @@ export default function GlassSidebar() {
               <span className="text-[16px] font-semibold text-white drop-shadow-sm">
                 {city.name}
               </span>
-              {hasLiveMarket && (
+              {hasActiveMarket && (
                 <span className="relative flex h-2.5 w-2.5 ml-1">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
@@ -155,7 +175,7 @@ export default function GlassSidebar() {
             <span className="text-[13px] text-white/70 drop-shadow-sm">
               {localTime}
             </span>
-            {hasLiveMarket && cityMarket?.topBrackets?.[0] && (
+            {hasOpenMarket && cityMarket?.topBrackets?.[0] && (
               <span className={`
                 text-[11px] px-2 py-0.5 rounded whitespace-nowrap
                 ${cityMarket.topBrackets[0].yesPrice >= 70
@@ -175,7 +195,7 @@ export default function GlassSidebar() {
             <span className="text-[13px] text-white/90 drop-shadow-sm truncate max-w-[120px]">
               {weather.condition || 'Unknown'}
             </span>
-            {hasLiveMarket && cityMarket?.topBrackets?.[1] && (
+            {hasOpenMarket && cityMarket?.topBrackets?.[1] && (
               <span className={`
                 text-[11px] px-2 py-0.5 rounded whitespace-nowrap
                 ${cityMarket.topBrackets[1].yesPrice >= 70
@@ -188,7 +208,7 @@ export default function GlassSidebar() {
                 <span className="font-semibold text-white ml-1">{cityMarket.topBrackets[1].yesPrice}%</span>
               </span>
             )}
-            {!hasLiveMarket && weather.humidity != null && (
+            {!hasOpenMarket && weather.humidity != null && (
               <span className="text-[11px] text-white/60 drop-shadow-sm">
                 {weather.humidity}% RH
               </span>
