@@ -176,7 +176,7 @@ export default function HourlyForecast({
         icon={Clock}
         size="medium"
       >
-        <div className="flex gap-0 overflow-x-auto glass-scroll pb-1 -mx-1 px-1">
+        <div className="flex gap-0 overflow-x-auto glass-scroll pb-1 -mx-1 px-1 snap-x snap-mandatory">
           {displayData.map((obs, index) => {
             const isMostRecent = index === 0;
             const Icon = getConditionIcon(obs.description, isDaytime(obs.timestamp, timezone));
@@ -186,7 +186,7 @@ export default function HourlyForecast({
                 key={obs.time}
                 onClick={() => setSelectedIndex(index)}
                 className={`
-                  flex flex-col items-center min-w-[48px] py-1 px-0.5 rounded-xl
+                  flex flex-col items-center min-w-[48px] py-1 px-0.5 rounded-xl snap-start
                   transition-all hover:bg-white/10 active:scale-95
                   ${isMostRecent ? 'bg-white/10' : ''}
                 `}

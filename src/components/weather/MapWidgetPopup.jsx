@@ -373,7 +373,7 @@ export default function MapWidgetPopup({
           <div className="absolute top-0 left-0 right-0 z-[60] flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
             <button
               onClick={onClose}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             >
               <X className="w-5 h-5 text-white" />
             </button>
@@ -520,13 +520,13 @@ export default function MapWidgetPopup({
               <div className="flex items-center gap-3 mb-3">
                 <button
                   onClick={() => setIsPlaying(p => !p)}
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  className="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                   disabled={frames.length === 0}
                 >
                   {isPlaying ? (
-                    <Pause className="w-4 h-4 text-white" />
+                    <Pause className="w-5 h-5 text-white" />
                   ) : (
-                    <Play className="w-4 h-4 text-white" />
+                    <Play className="w-5 h-5 text-white" />
                   )}
                 </button>
                 <span className="text-sm text-white/80">
