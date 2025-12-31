@@ -264,6 +264,24 @@ export default function GlassSidebar() {
 
       {/* Desktop Sidebar */}
       <div className="hidden md:flex fixed left-3 top-3 bottom-3 w-72 flex-col z-40">
+        {/* Logo */}
+        <div className="px-2 pb-3 flex items-center gap-2">
+          <svg className="w-7 h-7" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="22" fill="white"/>
+            <g fill="white">
+              <rect x="46" y="8" width="8" height="16" rx="4"/>
+              <rect x="46" y="76" width="8" height="16" rx="4"/>
+              <rect x="8" y="46" width="16" height="8" rx="4"/>
+              <rect x="76" y="46" width="16" height="8" rx="4"/>
+              <rect x="16" y="16" width="8" height="14" rx="4" transform="rotate(-45 20 23)"/>
+              <rect x="76" y="16" width="8" height="14" rx="4" transform="rotate(45 80 23)"/>
+              <rect x="16" y="70" width="8" height="14" rx="4" transform="rotate(45 20 77)"/>
+              <rect x="76" y="70" width="8" height="14" rx="4" transform="rotate(-45 80 77)"/>
+            </g>
+          </svg>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Toasty</h1>
+        </div>
+
         {/* Cities Card */}
         <aside className="flex-1 bg-black/30 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden min-h-0">
           {renderCitiesPanel(false)}
@@ -291,8 +309,26 @@ export default function GlassSidebar() {
               <X className="w-5 h-5 text-white/70" />
             </button>
 
+            {/* Logo */}
+            <div className="px-4 pt-4 pb-3 flex items-center gap-2">
+              <svg className="w-7 h-7" viewBox="0 0 100 100" fill="none">
+                <circle cx="50" cy="50" r="22" fill="white"/>
+                <g fill="white">
+                  <rect x="46" y="8" width="8" height="16" rx="4"/>
+                  <rect x="46" y="76" width="8" height="16" rx="4"/>
+                  <rect x="8" y="46" width="16" height="8" rx="4"/>
+                  <rect x="76" y="46" width="16" height="8" rx="4"/>
+                  <rect x="16" y="16" width="8" height="14" rx="4" transform="rotate(-45 20 23)"/>
+                  <rect x="76" y="16" width="8" height="14" rx="4" transform="rotate(45 80 23)"/>
+                  <rect x="16" y="70" width="8" height="14" rx="4" transform="rotate(45 20 77)"/>
+                  <rect x="76" y="70" width="8" height="14" rx="4" transform="rotate(-45 80 77)"/>
+                </g>
+              </svg>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Toasty</h1>
+            </div>
+
             {/* Cities section */}
-            <div className="pt-14 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
               {renderCitiesPanel(true)}
             </div>
           </aside>
