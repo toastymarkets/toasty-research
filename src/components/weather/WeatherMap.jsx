@@ -269,12 +269,12 @@ export default function WeatherMap({
     return () => clearInterval(interval);
   }, [activeTab, satelliteReady]);
 
-  // Reset loading state when settings change
+  // Reset loading state when city or settings change
   useEffect(() => {
     loadingRef.current = false;
     framesRef.current = [];
     frameIndexRef.current = 0;
-  }, [satelliteBand, satelliteSector]);
+  }, [lat, lon, satelliteBand, satelliteSector]);
 
   // Update map center when lat/lon changes
   useEffect(() => {

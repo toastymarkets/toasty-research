@@ -240,12 +240,12 @@ export default function MapWidgetPopup({
     return () => clearInterval(interval);
   }, [isOpen, activeLayer, satelliteReady]);
 
-  // Reset loading state when settings change
+  // Reset loading state when city or settings change
   useEffect(() => {
     loadingRef.current = false;
     framesRef.current = [];
     frameIndexRef.current = 0;
-  }, [satelliteBand, satelliteSector]);
+  }, [lat, lon, satelliteBand, satelliteSector]);
 
   // Initialize Leaflet map
   useEffect(() => {
