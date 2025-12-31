@@ -566,8 +566,8 @@ export default function MapWidgetPopup({
             )}
           </div>
 
-        {/* Map Container */}
-        <div ref={mapRef} className="absolute inset-0 bg-gray-900" />
+        {/* Map Container - z-[1] creates stacking context to contain Leaflet's high z-indexes */}
+        <div ref={mapRef} className="absolute inset-0 bg-gray-900 z-[1]" />
 
         {/* Wind Canvas Overlay */}
         {activeLayer === 'wind' && (
