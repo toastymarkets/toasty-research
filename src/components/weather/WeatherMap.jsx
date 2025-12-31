@@ -179,22 +179,31 @@ export default function WeatherMap({
     const sector = satelliteSector; // Use selected sector
     const sectorConfig = availableSectors.find(s => s.id === sector);
     const imageSize = sectorConfig?.size || '1200x1200';
+    const isRegional = imageSize !== '1200x1200';
 
     const now = new Date();
     const frameUrls = [];
 
-    // GOES images update at minutes ending in 1 or 6 (01, 06, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56)
-    // Generate 12 hours of frames at 10-minute intervals (72 frames)
+    // Local sectors: update every 5 min at minutes ending in 1 or 6
+    // Regional sectors: update every 10 min at minutes ending in 0
     const frameCount = 72;
     const intervalMinutes = 10;
     for (let i = frameCount - 1; i >= 0; i--) {
       const frameTime = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
-      // Round to nearest GOES interval (minutes ending in 1 or 6)
       const mins = frameTime.getUTCMinutes();
-      const remainder = mins % 5;
-      const roundedMins = mins - remainder + (remainder < 3 ? 1 : 6);
-      frameTime.setUTCMinutes(roundedMins > 59 ? roundedMins - 60 : roundedMins);
-      if (roundedMins > 59) frameTime.setUTCHours(frameTime.getUTCHours() + 1);
+
+      let roundedMins;
+      if (isRegional) {
+        // Regional: round to nearest 10 (00, 10, 20, 30, 40, 50)
+        roundedMins = Math.round(mins / 10) * 10;
+      } else {
+        // Local: round to nearest GOES interval (minutes ending in 1 or 6)
+        const remainder = mins % 5;
+        roundedMins = mins - remainder + (remainder < 3 ? 1 : 6);
+      }
+
+      frameTime.setUTCMinutes(roundedMins >= 60 ? roundedMins - 60 : roundedMins);
+      if (roundedMins >= 60) frameTime.setUTCHours(frameTime.getUTCHours() + 1);
       frameTime.setSeconds(0);
 
       const year = frameTime.getUTCFullYear();
