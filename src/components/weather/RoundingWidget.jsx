@@ -131,17 +131,18 @@ export default function RoundingWidget({
 
           {/* Probability distribution */}
           {printed && (
-            <div className="w-full">
-              <div className="space-y-1">
-                {printed.values.map((item) => (
-                  <SelectableData
-                    key={item.temp}
-                    value={`${item.temp}°F (${item.probability}%)`}
-                    label={`${displayCelsius}°C → ${item.temp}°F`}
-                    source="Rounding"
-                    type="rounding"
-                  >
-                    <div className="flex items-center gap-2">
+            <SelectableData
+              value={printed.values.length === 1
+                ? `${printed.values[0].temp}°F`
+                : `${printed.min}-${printed.max}°F`}
+              label={`${displayCelsius}°C`}
+              source="Rounding"
+              type="rounding"
+            >
+              <div className="w-full">
+                <div className="space-y-1">
+                  {printed.values.map((item) => (
+                    <div key={item.temp} className="flex items-center gap-2">
                       <span className="text-sm font-medium w-12 text-white">
                         {item.temp}°F
                       </span>
@@ -155,10 +156,10 @@ export default function RoundingWidget({
                         {item.probability}%
                       </span>
                     </div>
-                  </SelectableData>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </SelectableData>
           )}
         </div>
       </GlassWidget>
