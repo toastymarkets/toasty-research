@@ -1,61 +1,82 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { X, Cloud, Play, Pause, Satellite } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 /**
  * Get GOES satellite configuration based on location
- * GOES-18: Pacific coast (pnw, psw only)
- * GOES-19: All other regions (replaced GOES-16, has more sectors)
  */
 function getGOESConfig(lon, lat) {
-  // GOES-18 only has pnw and psw sectors (Pacific coast)
-  // Use GOES-19 for everything else (it has all sectors including nr)
   const isPacificCoast = lon < -115 || (lat > 42 && lon < -104);
   const satellite = isPacificCoast ? 'GOES18' : 'GOES19';
-  const satNum = isPacificCoast ? '18' : '19';
 
   let sector;
-  if (lat > 42 && lon < -104) {
-    sector = 'pnw';                              // Seattle, Portland
-  } else if (lon < -115) {
-    sector = 'psw';                              // LA, SF, San Diego
-  } else if (lon < -104) {
-    sector = 'nr';                               // Denver, SLC (GOES-19)
-  } else if (lat > 40 && lon > -85) {
-    sector = 'ne';                               // NYC, Boston, Philly, DC
-  } else if (lat > 37 && lon < -82) {
-    sector = 'umv';                              // Chicago, Detroit
-  } else if (lat < 30 && lon > -90) {
-    sector = 'se';                               // Miami
-  } else if (lon < -90) {
-    sector = 'sp';                               // Houston, Austin, Dallas
-  } else {
-    sector = 'ne';                               // DC and others default to ne
-  }
+  if (lat > 42 && lon < -104) sector = 'pnw';
+  else if (lon < -115) sector = 'psw';
+  else if (lon < -104) sector = 'nr';
+  else if (lat > 40 && lon > -85) sector = 'ne';
+  else if (lat > 37 && lon < -82) sector = 'umv';
+  else if (lat < 30 && lon > -90) sector = 'se';
+  else if (lon < -90) sector = 'sp';
+  else sector = 'ne';
 
-  return { satellite, satNum, sector };
+  return { satellite, sector };
 }
 
 /**
- * Get available sectors for a location (local + regional views)
- * Local sectors use 1200x1200, regional sectors use 1800x1080
+ * Get available sectors for a location
  */
 function getAvailableSectors(lon, lat) {
   const config = getGOESConfig(lon, lat);
   const isPacificCoast = config.satellite === 'GOES18';
 
-  if (isPacificCoast) {
-    return [
-      { id: config.sector, label: 'Local', size: '1200x1200', satellite: 'GOES18' },
-      { id: 'tpw', label: 'Pacific', size: '1800x1080', satellite: 'GOES18' },
-    ];
-  } else {
-    return [
-      { id: config.sector, label: 'Local', size: '1200x1200', satellite: 'GOES19' },
-      { id: 'eus', label: 'East US', size: '1800x1080', satellite: 'GOES19' },
-    ];
+  return isPacificCoast
+    ? [
+        { id: config.sector, label: 'Local', size: '1200x1200', satellite: 'GOES18' },
+        { id: 'tpw', label: 'Pacific', size: '1800x1080', satellite: 'GOES18' },
+      ]
+    : [
+        { id: config.sector, label: 'Local', size: '1200x1200', satellite: 'GOES19' },
+        { id: 'eus', label: 'East US', size: '1800x1080', satellite: 'GOES19' },
+      ];
+}
+
+/**
+ * Generate GOES frame URL
+ */
+function generateFrameUrl(satellite, sector, band, imageSize, minutesAgo) {
+  const frameTime = new Date(Date.now() - minutesAgo * 60 * 1000);
+  const mins = frameTime.getUTCMinutes();
+  const isRegional = imageSize !== '1200x1200';
+
+  let roundedMins = isRegional
+    ? Math.round(mins / 10) * 10
+    : mins - (mins % 5) + (mins % 5 < 3 ? 1 : 6);
+
+  if (roundedMins >= 60) {
+    roundedMins -= 60;
+    frameTime.setUTCHours(frameTime.getUTCHours() + 1);
   }
+  frameTime.setUTCMinutes(roundedMins);
+  frameTime.setSeconds(0);
+
+  const year = frameTime.getUTCFullYear();
+  const dayOfYear = Math.floor((frameTime - new Date(Date.UTC(year, 0, 0))) / 86400000);
+  const timestamp = `${year}${String(dayOfYear).padStart(3, '0')}${String(frameTime.getUTCHours()).padStart(2, '0')}${String(roundedMins).padStart(2, '0')}`;
+
+  return `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${band}/${timestamp}_${satellite}-ABI-${sector}-${band}-${imageSize}.jpg`;
+}
+
+/**
+ * Preload image
+ */
+function preloadImage(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(url);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 
 /**
@@ -90,34 +111,30 @@ export default function MapWidgetPopup({
   const [frames, setFrames] = useState([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [satelliteFrames, setSatelliteFrames] = useState([]);
-  const [satelliteFrameIndex, setSatelliteFrameIndex] = useState(0);
-  const [satelliteLoading, setSatelliteLoading] = useState(false);
+
+  // Satellite state - optimized with refs for animation
+  const [satelliteImage, setSatelliteImage] = useState(null);
+  const [satelliteReady, setSatelliteReady] = useState(false);
   const [satelliteBand, setSatelliteBand] = useState(initialBand);
   const [satelliteSector, setSatelliteSector] = useState(initialSector || getGOESConfig(lon, lat).sector);
+  const framesRef = useRef([]);
+  const frameIndexRef = useRef(0);
+  const loadingRef = useRef(false);
 
-  // Get available sectors for this location (memoized to prevent infinite re-renders)
   const availableSectors = useMemo(() => getAvailableSectors(lon, lat), [lon, lat]);
 
-  // Sync active layer, band, and sector when popup opens
+  // Sync settings when popup opens
   useEffect(() => {
-    if (isOpen && initialLayer) {
-      setActiveLayer(initialLayer);
-    }
-    if (isOpen && initialBand) {
-      setSatelliteBand(initialBand);
-    }
-    if (isOpen && initialSector) {
-      setSatelliteSector(initialSector);
+    if (isOpen) {
+      if (initialLayer) setActiveLayer(initialLayer);
+      if (initialBand) setSatelliteBand(initialBand);
+      if (initialSector) setSatelliteSector(initialSector);
     }
   }, [isOpen, initialLayer, initialBand, initialSector]);
 
-  // Reset satellite state when city changes
+  // Reset sector when city changes
   useEffect(() => {
-    const newSector = getGOESConfig(lon, lat).sector;
-    setSatelliteSector(newSector);
-    setSatelliteFrames([]);
-    setSatelliteFrameIndex(0);
+    setSatelliteSector(getGOESConfig(lon, lat).sector);
   }, [lon, lat]);
 
   // Dynamically import Leaflet
@@ -155,91 +172,80 @@ export default function MapWidgetPopup({
   }, [isOpen]);
 
 
-  // Fetch GOES satellite imagery frames
+  // Load satellite imagery
   useEffect(() => {
     if (!isOpen || !lat || !lon || activeLayer !== 'satellite') return;
+    if (loadingRef.current) return;
 
-    setSatelliteLoading(true);
-    const sector = satelliteSector;
-    const sectorConfig = availableSectors.find(s => s.id === sector);
+    const sectorConfig = availableSectors.find(s => s.id === satelliteSector);
     const satellite = sectorConfig?.satellite || getGOESConfig(lon, lat).satellite;
     const imageSize = sectorConfig?.size || '1200x1200';
-    const isRegional = imageSize !== '1200x1200';
 
-    // Generate frame URL for a given time offset (minutes ago)
-    const generateFrameUrl = (minutesAgo) => {
-      const frameTime = new Date(Date.now() - minutesAgo * 60 * 1000);
-      const mins = frameTime.getUTCMinutes();
+    loadingRef.current = true;
 
-      let roundedMins;
-      if (isRegional) {
-        roundedMins = Math.round(mins / 10) * 10;
-      } else {
-        const remainder = mins % 5;
-        roundedMins = mins - remainder + (remainder < 3 ? 1 : 6);
-      }
-
-      frameTime.setUTCMinutes(roundedMins >= 60 ? roundedMins - 60 : roundedMins);
-      if (roundedMins >= 60) frameTime.setUTCHours(frameTime.getUTCHours() + 1);
-      frameTime.setSeconds(0);
-
-      const year = frameTime.getUTCFullYear();
-      const dayOfYear = Math.floor((frameTime - new Date(Date.UTC(year, 0, 0))) / (1000 * 60 * 60 * 24));
-      const hours = frameTime.getUTCHours().toString().padStart(2, '0');
-      const minsStr = frameTime.getUTCMinutes().toString().padStart(2, '0');
-      const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${minsStr}`;
-
-      return {
-        url: `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${satelliteBand}/${timestamp}_${satellite}-ABI-${sector}-${satelliteBand}-${imageSize}.jpg`,
-        time: frameTime,
-        timestamp
-      };
-    };
-
-    // Quick check for a single frame
-    const checkFrame = (frame) => new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve({ ...frame, valid: true });
-      img.onerror = () => resolve({ ...frame, valid: false });
-      img.src = frame.url;
-    });
-
-    const loadFrames = async () => {
-      // First, quickly find the most recent valid frame (check last 5)
-      for (let i = 0; i < 5; i++) {
-        const frame = generateFrameUrl(i * 10);
-        const result = await checkFrame(frame);
-        if (result.valid) {
-          // Found a valid frame - show it immediately
-          setSatelliteFrames([result]);
-          setSatelliteFrameIndex(0);
-          setSatelliteLoading(false);
-
-          // Now load more frames in background (36 frames = 6 hours for popup)
-          const frameCount = 36;
-          const allFrames = [];
-          for (let j = 0; j < frameCount; j++) {
-            allFrames.push(generateFrameUrl(j * 10));
-          }
-
-          // Validate remaining frames in parallel
-          const results = await Promise.all(allFrames.map(checkFrame));
-          const validFrames = results.filter(f => f.valid);
-          if (validFrames.length > 0) {
-            setSatelliteFrames(validFrames);
-            setSatelliteFrameIndex(validFrames.length - 1);
-          }
-          return;
+    const loadSatellite = async () => {
+      // Find most recent valid frame
+      let firstValidUrl = null;
+      for (let i = 0; i < 6; i++) {
+        const url = generateFrameUrl(satellite, satelliteSector, satelliteBand, imageSize, i * 10);
+        const result = await preloadImage(url);
+        if (result) {
+          firstValidUrl = result;
+          break;
         }
       }
 
-      // No valid frames found
-      setSatelliteFrames([]);
-      setSatelliteLoading(false);
+      if (!firstValidUrl) {
+        setSatelliteReady(false);
+        loadingRef.current = false;
+        return;
+      }
+
+      // Show first frame immediately
+      setSatelliteImage(firstValidUrl);
+      setSatelliteReady(true);
+
+      // Load animation frames in background (24 frames = 4 hours for popup)
+      const urls = [];
+      for (let i = 0; i < 24; i++) {
+        urls.push(generateFrameUrl(satellite, satelliteSector, satelliteBand, imageSize, i * 10));
+      }
+
+      const results = await Promise.all(urls.map(preloadImage));
+      const validUrls = results.filter(Boolean);
+
+      if (validUrls.length > 0) {
+        framesRef.current = validUrls;
+        frameIndexRef.current = validUrls.length - 1;
+      }
+
+      loadingRef.current = false;
     };
 
-    loadFrames();
+    loadSatellite();
   }, [isOpen, lat, lon, activeLayer, satelliteBand, satelliteSector, availableSectors]);
+
+  // Animate satellite frames
+  useEffect(() => {
+    if (!isOpen || activeLayer !== 'satellite' || !satelliteReady) return;
+
+    const animate = () => {
+      if (framesRef.current.length > 1) {
+        frameIndexRef.current = (frameIndexRef.current + 1) % framesRef.current.length;
+        setSatelliteImage(framesRef.current[frameIndexRef.current]);
+      }
+    };
+
+    const interval = setInterval(animate, 120);
+    return () => clearInterval(interval);
+  }, [isOpen, activeLayer, satelliteReady]);
+
+  // Reset loading state when settings change
+  useEffect(() => {
+    loadingRef.current = false;
+    framesRef.current = [];
+    frameIndexRef.current = 0;
+  }, [satelliteBand, satelliteSector]);
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -446,20 +452,18 @@ export default function MapWidgetPopup({
 
         {/* Satellite Overlay */}
         {activeLayer === 'satellite' && (
-          <div className="absolute inset-0 z-10 bg-black">
-            {satelliteLoading ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-white/60 text-sm">Loading satellite imagery...</div>
-              </div>
-            ) : satelliteFrames.length > 0 ? (
+          <div className="absolute inset-0 z-10 bg-black overflow-hidden">
+            {satelliteImage ? (
               <img
-                src={satelliteFrames[satelliteFrameIndex]?.url}
+                src={satelliteImage}
                 alt="GOES Satellite"
                 className="w-full h-full object-contain"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-white/60 text-sm">Satellite imagery unavailable</div>
+                <div className="text-white/40 text-sm">
+                  {satelliteReady === false ? 'Satellite imagery unavailable' : 'Loading...'}
+                </div>
               </div>
             )}
           </div>
