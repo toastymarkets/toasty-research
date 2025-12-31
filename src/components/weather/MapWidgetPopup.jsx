@@ -1,7 +1,46 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Cloud, Thermometer, Wind, Play, Pause } from 'lucide-react';
+import { X, Cloud, Thermometer, Wind, Play, Pause, Satellite } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+
+/**
+ * Get GOES satellite configuration based on longitude
+ * GOES-18 covers Western US, GOES-16 covers Eastern US
+ */
+function getGOESConfig(lon, lat) {
+  // Determine satellite based on longitude (roughly -105° is the dividing line)
+  const isWest = lon < -105;
+  const satellite = isWest ? 'GOES18' : 'GOES16';
+  const satNum = isWest ? '18' : '16';
+
+  // Determine sector based on location
+  let sector;
+  if (isWest) {
+    // GOES-18 sectors
+    if (lat > 42) {
+      sector = 'pnw'; // Pacific Northwest
+    } else if (lon < -115) {
+      sector = 'psw'; // Pacific Southwest (LA, SF)
+    } else {
+      sector = 'nr'; // Northern Rockies (Denver, SLC)
+    }
+  } else {
+    // GOES-16 sectors
+    if (lat > 40 && lon > -85) {
+      sector = 'ne'; // Northeast (NYC, Boston, Philly)
+    } else if (lat > 38 && lon < -85) {
+      sector = 'umv'; // Upper Mississippi Valley (Chicago, Detroit)
+    } else if (lat < 30) {
+      sector = 'se'; // Southeast (Miami)
+    } else if (lon < -90) {
+      sector = 'sp'; // Southern Plains (Houston, Austin, Dallas)
+    } else {
+      sector = 'ma'; // Mid-Atlantic (DC)
+    }
+  }
+
+  return { satellite, satNum, sector };
+}
 
 /**
  * MapWidgetPopup - Apple Weather inspired expandable map modal
@@ -28,6 +67,9 @@ export default function MapWidgetPopup({
   const [isPlaying, setIsPlaying] = useState(false);
   const [windData, setWindData] = useState(null);
   const [temperatureData, setTemperatureData] = useState(null);
+  const [satelliteFrames, setSatelliteFrames] = useState([]);
+  const [satelliteFrameIndex, setSatelliteFrameIndex] = useState(0);
+  const [satelliteLoading, setSatelliteLoading] = useState(false);
 
   // Dynamically import Leaflet
   useEffect(() => {
@@ -103,6 +145,74 @@ export default function MapWidgetPopup({
       })
       .catch(console.error);
   }, [isOpen, lat, lon, currentTemp]);
+
+  // Fetch GOES satellite imagery frames
+  useEffect(() => {
+    if (!isOpen || !lat || !lon || activeLayer !== 'satellite') return;
+
+    setSatelliteLoading(true);
+    const { satellite, satNum, sector } = getGOESConfig(lon, lat);
+
+    // Generate timestamps for last 2 hours (24 frames at 5-min intervals)
+    // GOES images update roughly every 5-10 minutes
+    const now = new Date();
+    const frameUrls = [];
+
+    // Try to load the last 24 frames (2 hours worth)
+    for (let i = 23; i >= 0; i--) {
+      const frameTime = new Date(now.getTime() - i * 5 * 60 * 1000);
+      // Round down to nearest 5 minutes
+      frameTime.setMinutes(Math.floor(frameTime.getMinutes() / 5) * 5);
+      frameTime.setSeconds(0);
+      frameTime.setMilliseconds(0);
+
+      // Format: YYYYDDDHHMMSS (day of year format)
+      const year = frameTime.getUTCFullYear();
+      const dayOfYear = Math.floor((frameTime - new Date(year, 0, 0)) / (1000 * 60 * 60 * 24));
+      const hours = frameTime.getUTCHours().toString().padStart(2, '0');
+      const mins = frameTime.getUTCMinutes().toString().padStart(2, '0');
+      const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${mins}`;
+
+      // GEOCOLOR is the visible/IR composite that looks best
+      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/GEOCOLOR/${timestamp}_${satellite}-ABI-${sector}-GEOCOLOR-1200x1200.jpg`;
+
+      frameUrls.push({
+        url,
+        time: frameTime,
+        timestamp,
+      });
+    }
+
+    // Validate which frames actually exist by trying to load them
+    const validateFrames = async () => {
+      const validFrames = [];
+
+      // Check frames in parallel but limit concurrency
+      const checkFrame = async (frame) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ ...frame, valid: true });
+          img.onerror = () => resolve({ ...frame, valid: false });
+          img.src = frame.url;
+        });
+      };
+
+      const results = await Promise.all(frameUrls.map(checkFrame));
+      const valid = results.filter(f => f.valid);
+
+      if (valid.length > 0) {
+        setSatelliteFrames(valid);
+        setSatelliteFrameIndex(valid.length - 1); // Start at most recent
+      } else {
+        // Fallback: try latest_times.json API from CIRA
+        console.warn('No GOES frames found via CDN, satellite view may be unavailable');
+        setSatelliteFrames([]);
+      }
+      setSatelliteLoading(false);
+    };
+
+    validateFrames();
+  }, [isOpen, lat, lon, activeLayer]);
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -253,14 +363,20 @@ export default function MapWidgetPopup({
 
   // Timeline playback
   useEffect(() => {
-    if (!isPlaying || frames.length === 0) return;
+    if (!isPlaying) return;
+
+    // Use appropriate frames based on active layer
+    const activeFrames = activeLayer === 'satellite' ? satelliteFrames : frames;
+    const setIndex = activeLayer === 'satellite' ? setSatelliteFrameIndex : setCurrentFrameIndex;
+
+    if (activeFrames.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentFrameIndex(prev => (prev + 1) % frames.length);
-    }, 500);
+      setIndex(prev => (prev + 1) % activeFrames.length);
+    }, activeLayer === 'satellite' ? 300 : 500); // Faster for satellite
 
     return () => clearInterval(interval);
-  }, [isPlaying, frames.length]);
+  }, [isPlaying, frames.length, satelliteFrames.length, activeLayer]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -295,8 +411,9 @@ export default function MapWidgetPopup({
   if (!isOpen) return null;
 
   const layers = [
-    { id: 'precipitation', icon: Cloud, label: 'Precipitation' },
-    { id: 'temperature', icon: Thermometer, label: 'Temperature' },
+    { id: 'precipitation', icon: Cloud, label: 'Precip' },
+    { id: 'satellite', icon: Satellite, label: 'Satellite' },
+    { id: 'temperature', icon: Thermometer, label: 'Temp' },
     { id: 'wind', icon: Wind, label: 'Wind' },
   ];
 
@@ -372,6 +489,27 @@ export default function MapWidgetPopup({
           </div>
         )}
 
+        {/* Satellite Overlay */}
+        {activeLayer === 'satellite' && (
+          <div className="absolute inset-0 z-10 bg-black">
+            {satelliteLoading ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-white/60 text-sm">Loading satellite imagery...</div>
+              </div>
+            ) : satelliteFrames.length > 0 ? (
+              <img
+                src={satelliteFrames[satelliteFrameIndex]?.url}
+                alt="GOES Satellite"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-white/60 text-sm">Satellite imagery unavailable</div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* City Marker */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
           <div className="flex flex-col items-center">
@@ -435,73 +573,105 @@ export default function MapWidgetPopup({
           </div>
         )}
 
+        {activeLayer === 'satellite' && satelliteFrames.length > 0 && (
+          <div className="absolute bottom-24 left-4 z-20">
+            <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
+              <div className="text-[10px] text-white/60 mb-1.5 font-medium">GOES Satellite</div>
+              <div className="text-sm font-semibold text-white">
+                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')}
+              </div>
+              <div className="text-[10px] text-white/50">
+                GEOCOLOR Composite
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Timeline Scrubber */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-4 pt-8 bg-gradient-to-t from-black/70 to-transparent">
-          {/* Frame indicator */}
-          <div className="flex items-center gap-3 mb-3">
-            <button
-              onClick={() => setIsPlaying(p => !p)}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              {isPlaying ? (
-                <Pause className="w-4 h-4 text-white" />
-              ) : (
-                <Play className="w-4 h-4 text-white" />
-              )}
-            </button>
-            <span className="text-sm text-white/80">
-              {currentFrame ? formatFrameTime(currentFrame) : '--:--'}
-            </span>
-            {currentFrame?.type === 'nowcast' && (
-              <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-300 text-xs">
-                Forecast
-              </span>
-            )}
-          </div>
+        {(() => {
+          // Dynamic frame selection based on layer
+          const isSatellite = activeLayer === 'satellite';
+          const activeFrames = isSatellite ? satelliteFrames : frames;
+          const activeIndex = isSatellite ? satelliteFrameIndex : currentFrameIndex;
+          const setActiveIndex = isSatellite ? setSatelliteFrameIndex : setCurrentFrameIndex;
+          const activeFrame = activeFrames[activeIndex];
 
-          {/* Scrubber track */}
-          <div className="relative h-1.5 bg-white/20 rounded-full">
-            {/* Now indicator */}
-            {nowIndex > 0 && (
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white/60"
-                style={{ left: `${(nowIndex / (frames.length - 1)) * 100}%` }}
-              />
-            )}
+          return (
+            <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-4 pt-8 bg-gradient-to-t from-black/70 to-transparent">
+              {/* Frame indicator */}
+              <div className="flex items-center gap-3 mb-3">
+                <button
+                  onClick={() => setIsPlaying(p => !p)}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  disabled={activeFrames.length === 0}
+                >
+                  {isPlaying ? (
+                    <Pause className="w-4 h-4 text-white" />
+                  ) : (
+                    <Play className="w-4 h-4 text-white" />
+                  )}
+                </button>
+                <span className="text-sm text-white/80">
+                  {activeFrame ? formatFrameTime(activeFrame) : '--:--'}
+                </span>
+                {!isSatellite && currentFrame?.type === 'nowcast' && (
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-300 text-xs">
+                    Forecast
+                  </span>
+                )}
+                {isSatellite && satelliteFrames.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-300 text-xs">
+                    GOES
+                  </span>
+                )}
+              </div>
 
-            {/* Progress fill */}
-            <div
-              className="absolute top-0 left-0 h-full rounded-full bg-white/50"
-              style={{ width: `${frames.length > 1 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0}%` }}
-            />
+              {/* Scrubber track */}
+              <div className="relative h-1.5 bg-white/20 rounded-full">
+                {/* Now indicator (precipitation only) */}
+                {!isSatellite && nowIndex > 0 && (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white/60"
+                    style={{ left: `${(nowIndex / (frames.length - 1)) * 100}%` }}
+                  />
+                )}
 
-            {/* Draggable thumb */}
-            <input
-              type="range"
-              min={0}
-              max={Math.max(0, frames.length - 1)}
-              value={currentFrameIndex}
-              onChange={(e) => {
-                setCurrentFrameIndex(parseInt(e.target.value, 10));
-                setIsPlaying(false);
-              }}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
+                {/* Progress fill */}
+                <div
+                  className="absolute top-0 left-0 h-full rounded-full bg-white/50"
+                  style={{ width: `${activeFrames.length > 1 ? (activeIndex / (activeFrames.length - 1)) * 100 : 0}%` }}
+                />
 
-            {/* Visual thumb */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white shadow-lg pointer-events-none"
-              style={{ left: `${frames.length > 1 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0}%` }}
-            />
-          </div>
+                {/* Draggable thumb */}
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(0, activeFrames.length - 1)}
+                  value={activeIndex}
+                  onChange={(e) => {
+                    setActiveIndex(parseInt(e.target.value, 10));
+                    setIsPlaying(false);
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={activeFrames.length === 0}
+                />
 
-          {/* Time labels */}
-          <div className="flex justify-between mt-2 text-[10px] text-white/50">
-            <span>-2h</span>
-            <span>Now</span>
-            <span>+30m</span>
-          </div>
-        </div>
+                {/* Visual thumb */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white shadow-lg pointer-events-none"
+                  style={{ left: `${activeFrames.length > 1 ? (activeIndex / (activeFrames.length - 1)) * 100 : 0}%` }}
+                />
+              </div>
+
+              {/* Time labels */}
+              <div className="flex justify-between mt-2 text-[10px] text-white/50">
+                <span>-2h</span>
+                <span>Now</span>
+                {!isSatellite && <span>+30m</span>}
+              </div>
+            </div>
+          );
+        })()}
         </div>
       </div>
     </div>
