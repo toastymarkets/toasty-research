@@ -309,22 +309,17 @@ export default function MapWidgetPopup({
     }
   }, [activeLayer]);
 
-  // Timeline playback
+  // Timeline playback for precipitation only (satellite uses its own animation)
   useEffect(() => {
-    if (!isPlaying) return;
-
-    // Use appropriate frames based on active layer
-    const activeFrames = activeLayer === 'satellite' ? satelliteFrames : frames;
-    const setIndex = activeLayer === 'satellite' ? setSatelliteFrameIndex : setCurrentFrameIndex;
-
-    if (activeFrames.length === 0) return;
+    if (!isPlaying || activeLayer === 'satellite') return;
+    if (frames.length === 0) return;
 
     const interval = setInterval(() => {
-      setIndex(prev => (prev + 1) % activeFrames.length);
-    }, activeLayer === 'satellite' ? 100 : 500); // 100ms per frame for smooth 12-hour satellite animation
+      setCurrentFrameIndex(prev => (prev + 1) % frames.length);
+    }, 500);
 
     return () => clearInterval(interval);
-  }, [isPlaying, frames.length, satelliteFrames.length, activeLayer]);
+  }, [isPlaying, frames.length, activeLayer]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -501,12 +496,12 @@ export default function MapWidgetPopup({
         )}
 
 
-        {activeLayer === 'satellite' && satelliteFrames.length > 0 && (
+        {activeLayer === 'satellite' && satelliteReady && (
           <div className="absolute bottom-24 left-4 z-[60]">
             <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
               <div className="text-[10px] text-white/60 mb-1.5 font-medium">GOES Satellite</div>
               <div className="text-sm font-semibold text-white">
-                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')}
+                {(availableSectors.find(s => s.id === satelliteSector)?.satellite || 'GOES19').replace('GOES', 'GOES-')}
               </div>
               <div className="text-[10px] text-white/50">
                 {availableSectors.find(s => s.id === satelliteSector)?.label || satelliteSector} • {satelliteBand}
@@ -515,14 +510,9 @@ export default function MapWidgetPopup({
           </div>
         )}
 
-        {/* Timeline Scrubber */}
-        {(() => {
-          // Dynamic frame selection based on layer
-          const isSatellite = activeLayer === 'satellite';
-          const activeFrames = isSatellite ? satelliteFrames : frames;
-          const activeIndex = isSatellite ? satelliteFrameIndex : currentFrameIndex;
-          const setActiveIndex = isSatellite ? setSatelliteFrameIndex : setCurrentFrameIndex;
-          const activeFrame = activeFrames[activeIndex];
+        {/* Timeline Scrubber - precipitation only, satellite auto-animates */}
+        {activeLayer !== 'satellite' && (() => {
+          const activeFrame = frames[currentFrameIndex];
 
           return (
             <div className="absolute bottom-0 left-0 right-0 z-[60] px-4 pb-4 pt-8 bg-gradient-to-t from-black/70 to-transparent">
@@ -531,7 +521,7 @@ export default function MapWidgetPopup({
                 <button
                   onClick={() => setIsPlaying(p => !p)}
                   className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                  disabled={activeFrames.length === 0}
+                  disabled={frames.length === 0}
                 >
                   {isPlaying ? (
                     <Pause className="w-4 h-4 text-white" />
@@ -542,22 +532,17 @@ export default function MapWidgetPopup({
                 <span className="text-sm text-white/80">
                   {activeFrame ? formatFrameTime(activeFrame) : '--:--'}
                 </span>
-                {!isSatellite && currentFrame?.type === 'nowcast' && (
+                {currentFrame?.type === 'nowcast' && (
                   <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-300 text-xs">
                     Forecast
-                  </span>
-                )}
-                {isSatellite && satelliteFrames.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-300 text-xs">
-                    GOES
                   </span>
                 )}
               </div>
 
               {/* Scrubber track */}
               <div className="relative h-1.5 bg-white/20 rounded-full">
-                {/* Now indicator (precipitation only) */}
-                {!isSatellite && nowIndex > 0 && (
+                {/* Now indicator */}
+                {nowIndex > 0 && (
                   <div
                     className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white/60"
                     style={{ left: `${(nowIndex / (frames.length - 1)) * 100}%` }}
@@ -567,35 +552,35 @@ export default function MapWidgetPopup({
                 {/* Progress fill */}
                 <div
                   className="absolute top-0 left-0 h-full rounded-full bg-white/50"
-                  style={{ width: `${activeFrames.length > 1 ? (activeIndex / (activeFrames.length - 1)) * 100 : 0}%` }}
+                  style={{ width: `${frames.length > 1 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0}%` }}
                 />
 
                 {/* Draggable thumb */}
                 <input
                   type="range"
                   min={0}
-                  max={Math.max(0, activeFrames.length - 1)}
-                  value={activeIndex}
+                  max={Math.max(0, frames.length - 1)}
+                  value={currentFrameIndex}
                   onChange={(e) => {
-                    setActiveIndex(parseInt(e.target.value, 10));
+                    setCurrentFrameIndex(parseInt(e.target.value, 10));
                     setIsPlaying(false);
                   }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  disabled={activeFrames.length === 0}
+                  disabled={frames.length === 0}
                 />
 
                 {/* Visual thumb */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white shadow-lg pointer-events-none"
-                  style={{ left: `${activeFrames.length > 1 ? (activeIndex / (activeFrames.length - 1)) * 100 : 0}%` }}
+                  style={{ left: `${frames.length > 1 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0}%` }}
                 />
               </div>
 
               {/* Time labels */}
               <div className="flex justify-between mt-2 text-[10px] text-white/50">
-                <span>{isSatellite ? '-12h' : '-2h'}</span>
+                <span>-2h</span>
                 <span>Now</span>
-                {!isSatellite && <span>+30m</span>}
+                <span>+30m</span>
               </div>
             </div>
           );
