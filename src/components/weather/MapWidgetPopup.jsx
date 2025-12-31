@@ -53,6 +53,7 @@ export default function MapWidgetPopup({
   lon,
   cityName,
   currentTemp,
+  initialLayer = 'precipitation',
 }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -61,7 +62,7 @@ export default function MapWidgetPopup({
   const radarLayerRef = useRef(null);
 
   const [L, setL] = useState(null);
-  const [activeLayer, setActiveLayer] = useState('precipitation');
+  const [activeLayer, setActiveLayer] = useState(initialLayer);
   const [frames, setFrames] = useState([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -70,6 +71,13 @@ export default function MapWidgetPopup({
   const [satelliteFrames, setSatelliteFrames] = useState([]);
   const [satelliteFrameIndex, setSatelliteFrameIndex] = useState(0);
   const [satelliteLoading, setSatelliteLoading] = useState(false);
+
+  // Sync active layer when popup opens with a specific tab
+  useEffect(() => {
+    if (isOpen && initialLayer) {
+      setActiveLayer(initialLayer);
+    }
+  }, [isOpen, initialLayer]);
 
   // Dynamically import Leaflet
   useEffect(() => {
@@ -692,4 +700,5 @@ MapWidgetPopup.propTypes = {
   lon: PropTypes.number.isRequired,
   cityName: PropTypes.string,
   currentTemp: PropTypes.number,
+  initialLayer: PropTypes.oneOf(['precipitation', 'satellite', 'temperature', 'wind']),
 };
