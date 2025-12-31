@@ -63,7 +63,7 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-3-5-20241022',
-        max_tokens: 1024,
+        max_tokens: 300,
         system: systemPrompt,
         messages: messages.map(m => ({
           role: m.role,
