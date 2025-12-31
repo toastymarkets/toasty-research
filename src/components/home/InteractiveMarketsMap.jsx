@@ -290,7 +290,7 @@ export default function InteractiveMarketsMap() {
 
       {/* Content Area - Map or Satellite */}
       {viewMode === 'markets' ? (
-        <div className="h-[450px] md:h-[400px] sm:h-[350px] rounded-2xl overflow-hidden
+        <div className="min-h-[300px] h-[min(60vh,450px)] md:h-[min(50vh,400px)] rounded-2xl overflow-hidden
                         border border-[var(--color-border)] shadow-lg markets-map-container relative">
           <MapContainer
             center={[39.8283, -98.5795]}

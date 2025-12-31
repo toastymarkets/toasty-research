@@ -70,7 +70,7 @@ export default function AllMarketsModal({
       />
 
       {/* Modal */}
-      <div className="fixed inset-4 md:inset-8 lg:inset-16 z-[100] flex items-center justify-center">
+      <div className="fixed inset-2 md:inset-8 lg:inset-16 z-[100] flex items-center justify-center">
         <div className="glass-elevated w-full max-w-4xl max-h-full overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">
