@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Calculator, ChevronUp, ChevronDown } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import RoundingModal from './RoundingModal';
+import SelectableData from '../widgets/SelectableData';
 import { findRange, findCelsiusRange, getPrintedRange } from '../../utils/roundingCalculator';
 
 /**
@@ -133,20 +134,28 @@ export default function RoundingWidget({
             <div className="w-full">
               <div className="space-y-1">
                 {printed.values.map((item) => (
-                  <div key={item.temp} className="flex items-center gap-2">
-                    <span className="text-sm font-medium w-12 text-white">
-                      {item.temp}°F
-                    </span>
-                    <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-blue-400/40"
-                        style={{ width: `${item.probability}%` }}
-                      />
+                  <SelectableData
+                    key={item.temp}
+                    value={`${item.temp}°F (${item.probability}%)`}
+                    label={`${displayCelsius}°C → ${item.temp}°F`}
+                    source="Rounding"
+                    type="rounding"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium w-12 text-white">
+                        {item.temp}°F
+                      </span>
+                      <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-blue-400/40"
+                          style={{ width: `${item.probability}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-white/50 w-10 text-right">
+                        {item.probability}%
+                      </span>
                     </div>
-                    <span className="text-[10px] text-white/50 w-10 text-right">
-                      {item.probability}%
-                    </span>
-                  </div>
+                  </SelectableData>
                 ))}
               </div>
             </div>

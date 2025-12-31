@@ -8,6 +8,7 @@ const TYPE_COLORS = {
   wind: 'bg-teal-500/10 text-teal-600 border-teal-500/20 dark:text-teal-400',
   pressure: 'bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400',
   observation: 'bg-slate-400/15 text-slate-300 border-slate-400/25 dark:text-slate-300',
+  rounding: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:text-indigo-400',
   default: 'bg-gray-500/10 text-gray-600 border-gray-500/20 dark:text-gray-400',
 };
 
