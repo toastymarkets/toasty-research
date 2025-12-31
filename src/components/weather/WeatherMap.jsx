@@ -50,6 +50,13 @@ export default function WeatherMap({
   const [satelliteFrames, setSatelliteFrames] = useState([]);
   const [satelliteIndex, setSatelliteIndex] = useState(0);
   const [satelliteLoading, setSatelliteLoading] = useState(false);
+  const [satelliteBand, setSatelliteBand] = useState('AirMass');
+
+  const SATELLITE_BANDS = [
+    { id: 'AirMass', label: 'AirMass' },
+    { id: 'GEOCOLOR', label: 'GeoColor' },
+    { id: 'Sandwich', label: 'Sandwich' },
+  ];
 
   // Dynamically import Leaflet
   useEffect(() => {
@@ -160,8 +167,7 @@ export default function WeatherMap({
       const minsStr = frameTime.getUTCMinutes().toString().padStart(2, '0');
       const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${minsStr}`;
 
-      // Use AirMass band for better cloud/weather visualization
-      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/AirMass/${timestamp}_${satellite}-ABI-${sector}-AirMass-1200x1200.jpg`;
+      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${satelliteBand}/${timestamp}_${satellite}-ABI-${sector}-${satelliteBand}-1200x1200.jpg`;
 
       frameUrls.push({ url, time: frameTime, timestamp });
     }
@@ -189,7 +195,7 @@ export default function WeatherMap({
     };
 
     validateFrames();
-  }, [activeTab, lat, lon]);
+  }, [activeTab, lat, lon, satelliteBand]);
 
   // Animate satellite frames
   useEffect(() => {
@@ -234,24 +240,45 @@ export default function WeatherMap({
       >
         <div className="relative flex-1 -mx-2 -mb-2 rounded-b-xl overflow-hidden">
           {/* Tab Toggle */}
-          <div className="absolute top-3 left-3 z-[1000] flex gap-1 p-1 rounded-full bg-black/40 backdrop-blur-sm">
-            {tabs.map(({ id, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={(e) => {
+          <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2">
+            <div className="flex gap-1 p-1 rounded-full bg-black/40 backdrop-blur-sm">
+              {tabs.map(({ id, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveTab(id);
+                  }}
+                  className={`p-1.5 rounded-full transition-all ${
+                    activeTab === id
+                      ? 'bg-white/20 text-white'
+                      : 'text-white/50 hover:text-white/80'
+                  }`}
+                  title={id === 'precipitation' ? 'Precipitation Radar' : 'Satellite Imagery'}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </button>
+              ))}
+            </div>
+
+            {/* Band selector (satellite only) */}
+            {activeTab === 'satellite' && (
+              <select
+                value={satelliteBand}
+                onChange={(e) => {
                   e.stopPropagation();
-                  setActiveTab(id);
+                  setSatelliteBand(e.target.value);
                 }}
-                className={`p-1.5 rounded-full transition-all ${
-                  activeTab === id
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/50 hover:text-white/80'
-                }`}
-                title={id === 'precipitation' ? 'Precipitation Radar' : 'Satellite Imagery'}
+                onClick={(e) => e.stopPropagation()}
+                className="px-2 py-1 text-[10px] rounded-full bg-black/40 backdrop-blur-sm text-white/80 border-none outline-none cursor-pointer"
               >
-                <Icon className="w-3.5 h-3.5" />
-              </button>
-            ))}
+                {SATELLITE_BANDS.map(({ id, label }) => (
+                  <option key={id} value={id} className="bg-gray-900">
+                    {label}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Precipitation Map */}
@@ -305,7 +332,7 @@ export default function WeatherMap({
               </div>
             ) : (
               <span className="text-[10px] text-white/70">
-                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')} AirMass
+                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')} {satelliteBand}
               </span>
             )}
           </div>
@@ -321,6 +348,8 @@ export default function WeatherMap({
         cityName={cityName}
         currentTemp={currentTemp}
         initialLayer={activeTab}
+        initialBand={satelliteBand}
+        onBandChange={setSatelliteBand}
       />
     </>
   );

@@ -46,6 +46,12 @@ function getGOESConfig(lon, lat) {
  * MapWidgetPopup - Apple Weather inspired expandable map modal
  * Features: Precipitation, Temperature, Wind layers with timeline playback
  */
+const SATELLITE_BANDS = [
+  { id: 'AirMass', label: 'AirMass' },
+  { id: 'GEOCOLOR', label: 'GeoColor' },
+  { id: 'Sandwich', label: 'Sandwich' },
+];
+
 export default function MapWidgetPopup({
   isOpen,
   onClose,
@@ -54,6 +60,8 @@ export default function MapWidgetPopup({
   cityName,
   currentTemp,
   initialLayer = 'precipitation',
+  initialBand = 'AirMass',
+  onBandChange,
 }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -71,13 +79,17 @@ export default function MapWidgetPopup({
   const [satelliteFrames, setSatelliteFrames] = useState([]);
   const [satelliteFrameIndex, setSatelliteFrameIndex] = useState(0);
   const [satelliteLoading, setSatelliteLoading] = useState(false);
+  const [satelliteBand, setSatelliteBand] = useState(initialBand);
 
-  // Sync active layer when popup opens with a specific tab
+  // Sync active layer and band when popup opens
   useEffect(() => {
     if (isOpen && initialLayer) {
       setActiveLayer(initialLayer);
     }
-  }, [isOpen, initialLayer]);
+    if (isOpen && initialBand) {
+      setSatelliteBand(initialBand);
+    }
+  }, [isOpen, initialLayer, initialBand]);
 
   // Dynamically import Leaflet
   useEffect(() => {
@@ -182,8 +194,8 @@ export default function MapWidgetPopup({
       const minsStr = frameTime.getUTCMinutes().toString().padStart(2, '0');
       const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${minsStr}`;
 
-      // Use AirMass band for better cloud/weather visualization
-      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/AirMass/${timestamp}_${satellite}-ABI-${sector}-AirMass-1200x1200.jpg`;
+      // Use selected band for satellite imagery
+      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${satelliteBand}/${timestamp}_${satellite}-ABI-${sector}-${satelliteBand}-1200x1200.jpg`;
 
       frameUrls.push({
         url,
@@ -221,7 +233,7 @@ export default function MapWidgetPopup({
     };
 
     validateFrames();
-  }, [isOpen, lat, lon, activeLayer]);
+  }, [isOpen, lat, lon, activeLayer, satelliteBand]);
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -454,7 +466,7 @@ export default function MapWidgetPopup({
           </div>
 
           {/* Layer Toggle - horizontal bar below header */}
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20">
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
             <div className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-black/50 backdrop-blur-md">
               {layers.map(({ id, icon: Icon, label }) => (
                 <button
@@ -473,6 +485,24 @@ export default function MapWidgetPopup({
                 </button>
               ))}
             </div>
+
+            {/* Band selector (satellite only) */}
+            {activeLayer === 'satellite' && (
+              <select
+                value={satelliteBand}
+                onChange={(e) => {
+                  setSatelliteBand(e.target.value);
+                  if (onBandChange) onBandChange(e.target.value);
+                }}
+                className="px-3 py-1.5 text-xs rounded-full bg-black/50 backdrop-blur-md text-white/80 border-none outline-none cursor-pointer"
+              >
+                {SATELLITE_BANDS.map(({ id, label }) => (
+                  <option key={id} value={id} className="bg-gray-900">
+                    {label}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
         {/* Map Container */}
@@ -590,7 +620,7 @@ export default function MapWidgetPopup({
                 {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')}
               </div>
               <div className="text-[10px] text-white/50">
-                AirMass RGB
+                {satelliteBand} RGB
               </div>
             </div>
           </div>
@@ -702,4 +732,6 @@ MapWidgetPopup.propTypes = {
   cityName: PropTypes.string,
   currentTemp: PropTypes.number,
   initialLayer: PropTypes.oneOf(['precipitation', 'satellite', 'temperature', 'wind']),
+  initialBand: PropTypes.oneOf(['AirMass', 'GEOCOLOR', 'Sandwich']),
+  onBandChange: PropTypes.func,
 };
