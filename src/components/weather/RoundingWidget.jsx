@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
 import { Calculator, ChevronUp, ChevronDown } from 'lucide-react';
 import GlassWidget from './GlassWidget';
-import RoundingModal from './RoundingModal';
 import SelectableData from '../widgets/SelectableData';
 import { findRange, findCelsiusRange, getPrintedRange } from '../../utils/roundingCalculator';
+
+// Lazy load the heavy modal component
+const RoundingModal = lazy(() => import('./RoundingModal'));
 
 /**
  * RoundingWidget - Shows the real temperature range based on NWS rounding
@@ -164,13 +166,15 @@ export default function RoundingWidget({
         </div>
       </GlassWidget>
 
-      {/* Modal */}
+      {/* Modal - Lazy loaded */}
       {isModalOpen && (
-        <RoundingModal
-          currentTemp={rangeData.displayedF}
-          observationType={observationType}
-          onClose={() => setIsModalOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <RoundingModal
+            currentTemp={rangeData.displayedF}
+            observationType={observationType}
+            onClose={() => setIsModalOpen(false)}
+          />
+        </Suspense>
       )}
     </>
   );

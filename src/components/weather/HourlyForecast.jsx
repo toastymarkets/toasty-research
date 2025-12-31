@@ -1,8 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
 import { Clock, Sun, Moon, Cloud, CloudRain, CloudSnow, CloudFog, CloudLightning } from 'lucide-react';
 import GlassWidget from './GlassWidget';
-import ObservationDetailModal from './ObservationDetailModal';
+
+// Lazy load the heavy modal component
+const ObservationDetailModal = lazy(() => import('./ObservationDetailModal'));
 
 // Shared unit preference key (same as modal)
 const UNIT_STORAGE_KEY = 'obs_units_metric';
@@ -241,19 +243,23 @@ export default function HourlyForecast({
         </div>
       </GlassWidget>
 
-      {/* Observation Detail Modal */}
-      <ObservationDetailModal
-        isOpen={selectedIndex !== null}
-        onClose={() => setSelectedIndex(null)}
-        observation={selectedObservation}
-        surroundingObservations={getSurroundingObservations}
-        allObservations={allObservations24h}
-        timezone={timezone}
-        useMetric={useMetric}
-        onToggleUnits={toggleUnits}
-        cityName={cityName}
-        stationId={stationId}
-      />
+      {/* Observation Detail Modal - Lazy loaded */}
+      {selectedIndex !== null && (
+        <Suspense fallback={null}>
+          <ObservationDetailModal
+            isOpen={true}
+            onClose={() => setSelectedIndex(null)}
+            observation={selectedObservation}
+            surroundingObservations={getSurroundingObservations}
+            allObservations={allObservations24h}
+            timezone={timezone}
+            useMetric={useMetric}
+            onToggleUnits={toggleUnits}
+            cityName={cityName}
+            stationId={stationId}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

@@ -13,7 +13,7 @@ export { default as WidgetGridV2 } from './WidgetGridV2';
 export { default as WeatherMap } from './WeatherMap';
 export { default as TemperatureChartModal } from './TemperatureChartModal';
 export { default as RoundingWidget } from './RoundingWidget';
-export { default as RoundingModal } from './RoundingModal';
+// RoundingModal is lazy-loaded by RoundingWidget, not exported here
 export { default as NearbyStations } from './NearbyStations';
 export { default as AlertsWidget } from './AlertsWidget';
 
