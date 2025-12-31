@@ -11,6 +11,8 @@ export { default as ModelsWidget } from './ModelsWidget';
 export { default as WidgetGrid } from './WidgetGrid';
 export { default as WeatherMap } from './WeatherMap';
 export { default as TemperatureChartModal } from './TemperatureChartModal';
+export { default as RoundingWidget } from './RoundingWidget';
+export { default as RoundingModal } from './RoundingModal';
 
 // Small Widgets
 export {

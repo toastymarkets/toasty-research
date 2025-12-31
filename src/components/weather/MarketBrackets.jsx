@@ -220,12 +220,13 @@ export default function MarketBrackets({
                     <button
                       onClick={(e) => handleBracketInsert(bracket, e)}
                       className="relative opacity-0 group-hover:opacity-100 mr-1.5
-                                 w-4 h-4 rounded-full bg-[var(--color-orange-main)]
-                                 flex items-center justify-center transition-opacity z-10
-                                 hover:scale-110 flex-shrink-0"
+                                 w-4 h-4 rounded-full bg-white/25 border border-white/20
+                                 flex items-center justify-center transition-all z-10
+                                 hover:scale-110 hover:bg-white/35 flex-shrink-0
+                                 backdrop-blur-sm shadow-sm"
                       title="Add to notes"
                     >
-                      <Plus size={10} strokeWidth={3} className="text-black" />
+                      <Plus size={10} strokeWidth={3} className="text-white/90" />
                     </button>
                   )}
 
