@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Search,
   X,
   Menu,
   MapPin,
@@ -24,7 +23,6 @@ const getLocalTime = (timezone) => {
 
 export default function GlassSidebar() {
   const { isMobileOpen, closeMobile, toggleMobile } = useSidebar();
-  const [searchQuery, setSearchQuery] = useState('');
   const [currentTime, setCurrentTime] = useState(Date.now());
   const location = useLocation();
 
@@ -73,13 +71,9 @@ export default function GlassSidebar() {
     };
   }, [isMobileOpen]);
 
-  // Filter and sort cities - prioritize active (competitive) markets
+  // Sort cities - prioritize active (competitive) markets
   const sortedCities = useMemo(() => {
-    const filtered = CITIES.filter(city =>
-      city.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    return filtered.sort((a, b) => {
+    return [...CITIES].sort((a, b) => {
       const aMarket = marketsData[a.slug];
       const bMarket = marketsData[b.slug];
 
@@ -103,7 +97,7 @@ export default function GlassSidebar() {
       // Within same category, sort by volume
       return (bMarket?.totalVolume || 0) - (aMarket?.totalVolume || 0);
     });
-  }, [searchQuery, marketsData]);
+  }, [marketsData]);
 
   // Check if a city is active
   const isCityActive = (citySlug) => location.pathname === `/city/${citySlug}`;
@@ -222,29 +216,9 @@ export default function GlassSidebar() {
   // Cities panel content
   const renderCitiesPanel = (isMobile = false) => (
     <div className="flex flex-col h-full">
-      {/* Search bar */}
-      <div className="p-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/10 border-0 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
-          />
-        </div>
-      </div>
-
       {/* Cities list */}
-      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-2">
-        {sortedCities.length > 0 ? (
-          sortedCities.map(city => renderCityItem(city, isMobile))
-        ) : (
-          <div className="text-center py-8 text-white/40 text-sm">
-            No cities found
-          </div>
-        )}
+      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2">
+        {sortedCities.map(city => renderCityItem(city, isMobile))}
       </div>
     </div>
   );
