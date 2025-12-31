@@ -8,6 +8,7 @@ import {
   simulateASOSForward,
   simulateMETARForward,
   formatRange,
+  getPrintedRange,
 } from '../../utils/roundingCalculator';
 
 /**
@@ -18,7 +19,7 @@ import {
  * 2. Calculator - Interactive tool with C/F and ASOS/METAR toggles
  */
 export default function RoundingModal({ currentTemp, observationType = 'asos', onClose }) {
-  const [activeTab, setActiveTab] = useState('explanation');
+  const [activeTab, setActiveTab] = useState('calculator');
   const [calcMode, setCalcMode] = useState(observationType); // 'asos' | 'metar'
   const [calcUnit, setCalcUnit] = useState('f'); // 'f' | 'c'
   const [calcInput, setCalcInput] = useState(currentTemp?.toString() || '70');
@@ -71,18 +72,6 @@ export default function RoundingModal({ currentTemp, observationType = 'asos', o
             {/* Tab Toggle */}
             <div className="flex bg-white/10 rounded-lg p-0.5 mt-3">
               <button
-                onClick={() => setActiveTab('explanation')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  activeTab === 'explanation'
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/50 hover:text-white/70'
-                }`}
-              >
-                <Info className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">How It Works</span>
-                <span className="sm:hidden">Info</span>
-              </button>
-              <button
                 onClick={() => setActiveTab('calculator')}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-all ${
                   activeTab === 'calculator'
@@ -93,6 +82,18 @@ export default function RoundingModal({ currentTemp, observationType = 'asos', o
                 <Calculator className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Calculator</span>
                 <span className="sm:hidden">Calc</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('explanation')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  activeTab === 'explanation'
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/50 hover:text-white/70'
+                }`}
+              >
+                <Info className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">How It Works</span>
+                <span className="sm:hidden">Info</span>
               </button>
               <button
                 onClick={() => setActiveTab('omo')}
@@ -542,44 +543,90 @@ function CalculatorTab({ input, onInputChange, mode, onModeChange, unit, onUnitC
               Actual Temperature Range
             </h3>
 
-            {unit === 'c' ? (
-              <>
-                {/* Celsius result */}
-                <div className="flex items-center justify-center gap-4 mb-3">
-                  <div className="text-center">
-                    <span className="text-2xl font-light text-blue-300">{rangeData.minC}°C</span>
+            {(() => {
+              // Calculate printed range for market outcomes
+              const minF = unit === 'c' ? rangeData.minF : rangeData.min;
+              const maxF = unit === 'c' ? rangeData.maxF : rangeData.max;
+              const printed = getPrintedRange(minF, maxF);
+
+              return (
+                <>
+                  {/* PRINTED RANGE - Most important for trading */}
+                  <div className={`mb-4 p-3 rounded-lg ${
+                    printed.isSplit
+                      ? 'bg-amber-500/15 border border-amber-500/30'
+                      : 'bg-green-500/15 border border-green-500/30'
+                  }`}>
+                    <div className="text-[10px] text-white/50 uppercase tracking-wide mb-2 text-center">
+                      Could Print As {printed.isSplit && `(${printed.count} outcomes)`}
+                    </div>
+
+                    {/* Probability Distribution */}
+                    <div className="space-y-2">
+                      {printed.values.map((item) => (
+                        <div key={item.temp} className="flex items-center gap-3">
+                          <span className={`text-lg font-semibold w-12 ${
+                            printed.isSplit ? 'text-amber-300' : 'text-green-300'
+                          }`}>
+                            {item.temp}°F
+                          </span>
+                          <div className="flex-1 h-5 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                printed.isSplit ? 'bg-amber-500/60' : 'bg-green-500/60'
+                              }`}
+                              style={{ width: `${item.probability}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium text-white/80 w-14 text-right">
+                            {item.probability}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {printed.isSplit && (
+                      <div className="text-[10px] text-amber-200/70 mt-3 text-center">
+                        Assumes uniform distribution within true range
+                      </div>
+                    )}
                   </div>
-                  <div className="w-16 h-1.5 bg-gradient-to-r from-blue-400 via-white to-red-400 rounded-full" />
-                  <div className="text-center">
-                    <span className="text-2xl font-light text-red-300">{rangeData.maxC}°C</span>
-                  </div>
-                </div>
-                <div className="text-center text-xs text-white/50">
-                  = {rangeData.minF}°F to {rangeData.maxF}°F
-                </div>
-                <div className="text-center mt-2">
-                  <span className="text-sm font-medium text-white">±{rangeData.uncertaintyC}°C</span>
-                  <span className="text-xs text-white/40 ml-2">(±{rangeData.uncertaintyF}°F)</span>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Fahrenheit result */}
-                <div className="flex items-center justify-center gap-4">
-                  <div className="text-center">
-                    <span className="text-2xl font-light text-blue-300">{rangeData.min}°F</span>
-                  </div>
-                  <div className="w-16 h-1.5 bg-gradient-to-r from-blue-400 via-white to-red-400 rounded-full" />
-                  <div className="text-center">
-                    <span className="text-2xl font-light text-red-300">{rangeData.max}°F</span>
-                  </div>
-                </div>
-                <div className="text-center mt-3">
-                  <span className="text-lg font-medium text-white">±{rangeData.uncertainty}°F</span>
-                  <span className="text-xs text-white/40 block mt-0.5">uncertainty</span>
-                </div>
-              </>
-            )}
+
+                  {/* True Range (decimal) */}
+                  {unit === 'c' ? (
+                    <>
+                      <div className="flex items-center justify-center gap-4 mb-2">
+                        <div className="text-center">
+                          <span className="text-lg font-light text-blue-300">{rangeData.minC}°C</span>
+                        </div>
+                        <div className="w-12 h-1 bg-gradient-to-r from-blue-400 via-white to-red-400 rounded-full" />
+                        <div className="text-center">
+                          <span className="text-lg font-light text-red-300">{rangeData.maxC}°C</span>
+                        </div>
+                      </div>
+                      <div className="text-center text-xs text-white/50">
+                        = {rangeData.minF}°F to {rangeData.maxF}°F (true range)
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-center gap-4">
+                        <div className="text-center">
+                          <span className="text-lg font-light text-blue-300">{rangeData.min}°F</span>
+                        </div>
+                        <div className="w-12 h-1 bg-gradient-to-r from-blue-400 via-white to-red-400 rounded-full" />
+                        <div className="text-center">
+                          <span className="text-lg font-light text-red-300">{rangeData.max}°F</span>
+                        </div>
+                      </div>
+                      <div className="text-center text-xs text-white/50 mt-1">
+                        true range (±{rangeData.uncertainty}°F)
+                      </div>
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Calculation Details */}

@@ -241,3 +241,57 @@ export function findRange(displayedF, observationType = 'asos') {
 export function formatRange(min, max) {
   return `${min.toFixed(1)}° – ${max.toFixed(1)}°`;
 }
+
+/**
+ * Get the range of whole °F values that could print given a true temperature range
+ * This is what matters for market outcomes - the actual displayed values
+ *
+ * @param {number} minF - Minimum true temperature in °F
+ * @param {number} maxF - Maximum true temperature in °F
+ * @returns {Object} Printed range info with probability distribution
+ */
+export function getPrintedRange(minF, maxF) {
+  // A whole number F will print if any part of its rounding window [F-0.5, F+0.5)
+  // overlaps with the true range [minF, maxF)
+
+  const printedMin = Math.ceil(minF - 0.4999);
+  const printedMax = Math.floor(maxF + 0.4999);
+
+  const totalRange = maxF - minF;
+
+  // Generate array of all possible printed values with probabilities
+  const values = [];
+  for (let f = printedMin; f <= printedMax; f++) {
+    // Each whole F "captures" temps in [F-0.5, F+0.5)
+    const windowMin = f - 0.5;
+    const windowMax = f + 0.5;
+
+    // Calculate overlap between true range and this F's window
+    const overlapMin = Math.max(minF, windowMin);
+    const overlapMax = Math.min(maxF, windowMax);
+    const overlap = Math.max(0, overlapMax - overlapMin);
+
+    // Probability = portion of true range that falls in this window
+    // Assumes uniform distribution within true range
+    const probability = totalRange > 0 ? overlap / totalRange : (f === printedMin ? 1 : 0);
+
+    values.push({
+      temp: f,
+      overlap: Math.round(overlap * 100) / 100,
+      probability: Math.round(probability * 1000) / 10, // e.g., 33.3%
+    });
+  }
+
+  return {
+    min: printedMin,
+    max: printedMax,
+    values,
+    count: values.length,
+    totalRange: Math.round(totalRange * 100) / 100,
+    formatted: values.length === 1
+      ? `${values[0].temp}°F only`
+      : `${printedMin}°F – ${printedMax}°F`,
+    // For market analysis: is this a "split" scenario?
+    isSplit: values.length > 1,
+  };
+}

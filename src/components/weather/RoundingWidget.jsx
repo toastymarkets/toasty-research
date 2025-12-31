@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Calculator } from 'lucide-react';
+import { Calculator, ChevronUp, ChevronDown } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import RoundingModal from './RoundingModal';
-import { findRange, formatRange } from '../../utils/roundingCalculator';
+import { findRange, findCelsiusRange, getPrintedRange } from '../../utils/roundingCalculator';
 
 /**
  * RoundingWidget - Shows the real temperature range based on NWS rounding
@@ -20,13 +20,31 @@ export default function RoundingWidget({
   loading = false
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [celsiusOffset, setCelsiusOffset] = useState(0);
 
   // Calculate the real range for the current temperature
-  const rangeData = currentTemp !== null && currentTemp !== undefined
+  const baseRangeData = currentTemp !== null && currentTemp !== undefined
     ? findRange(Math.round(currentTemp), observationType)
     : null;
 
-  const typeLabel = observationType === 'metar' ? 'METAR' : 'ASOS';
+  // Get the base Celsius value and apply offset
+  const baseCelsius = baseRangeData?.celsiusValue ?? 0;
+  const displayCelsius = baseCelsius + celsiusOffset;
+
+  // Calculate range for the displayed Celsius value (with offset)
+  const rangeData = baseRangeData
+    ? (celsiusOffset === 0 ? baseRangeData : findCelsiusRange(displayCelsius))
+    : null;
+
+  // Calculate printed range with probabilities
+  const printed = rangeData
+    ? getPrintedRange(
+        celsiusOffset === 0 ? rangeData.min : rangeData.minF,
+        celsiusOffset === 0 ? rangeData.max : rangeData.maxF
+      )
+    : null;
+
+  const isCurrent = celsiusOffset === 0;
 
   if (loading) {
     return (
@@ -60,33 +78,79 @@ export default function RoundingWidget({
         className="cursor-pointer"
         onClick={() => setIsModalOpen(true)}
       >
-        <div className="flex flex-col items-start justify-center flex-1">
-          {/* Type badge and displayed temperature */}
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded ${
-              observationType === 'metar'
-                ? 'bg-blue-500/20 text-blue-300'
-                : 'bg-orange-500/20 text-orange-300'
-            }`}>
-              {typeLabel}
-            </span>
+        <div className="flex flex-col items-center justify-center flex-1 w-full">
+          {/* Celsius stepper */}
+          <div className="flex items-center justify-between w-full mb-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCelsiusOffset(prev => prev - 1);
+              }}
+              className="p-2 rounded-lg bg-white/5 hover:bg-white/15 active:bg-white/25 transition-colors"
+              title="Previous °C"
+            >
+              <ChevronDown className="w-4 h-4 text-white/60" />
+            </button>
+
+            <div className="text-center">
+              <span className={`text-base font-semibold ${
+                isCurrent ? 'text-white' : 'text-blue-300'
+              }`}>
+                {displayCelsius}°C
+              </span>
+              <span className="text-sm font-light text-white/40 ml-1.5">
+                {Math.round((displayCelsius * 9/5) + 32)}°F
+              </span>
+            </div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCelsiusOffset(prev => prev + 1);
+              }}
+              className="p-2 rounded-lg bg-white/5 hover:bg-white/15 active:bg-white/25 transition-colors"
+              title="Next °C"
+            >
+              <ChevronUp className="w-4 h-4 text-white/60" />
+            </button>
           </div>
 
-          {/* Displayed temperature */}
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-light">{rangeData.displayedF}°</span>
-            <span className="text-[11px] text-glass-text-muted">displayed</span>
-          </div>
+          {/* Reset to current button (when offset) */}
+          {!isCurrent && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCelsiusOffset(0);
+              }}
+              className="text-[10px] text-white/40 hover:text-white/60 mb-2"
+            >
+              ← reset to {baseCelsius}°C
+            </button>
+          )}
 
-          {/* Real range */}
-          <span className="text-[11px] text-glass-text-secondary">
-            {formatRange(rangeData.min, rangeData.max)} actual
-          </span>
-
-          {/* Uncertainty */}
-          <span className="text-[10px] text-glass-text-muted mt-0.5">
-            ±{rangeData.uncertainty}°F uncertainty
-          </span>
+          {/* Probability distribution */}
+          {printed && (
+            <div className="w-full">
+              <div className="space-y-1">
+                {printed.values.map((item) => (
+                  <div key={item.temp} className="flex items-center gap-2">
+                    <span className="text-sm font-medium w-12 text-white">
+                      {item.temp}°F
+                    </span>
+                    <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-blue-400/40"
+                        style={{ width: `${item.probability}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-white/50 w-10 text-right">
+                      {item.probability}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </GlassWidget>
 
