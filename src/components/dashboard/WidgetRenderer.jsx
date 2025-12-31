@@ -1,5 +1,5 @@
-import { Suspense, useState } from 'react';
-import { X, GripVertical, RefreshCw } from 'lucide-react';
+import { Suspense, useState, useMemo } from 'react';
+import { X, RefreshCw } from 'lucide-react';
 import { getWidget } from '../../config/WidgetRegistry';
 import { CITY_BY_SLUG } from '../../config/cities';
 
@@ -30,8 +30,8 @@ export default function WidgetRenderer({
 
   const Component = widgetConfig.component;
 
-  // Resolve props based on widget requirements
-  const resolveProps = () => {
+  // Resolve props based on widget requirements - memoized to prevent unnecessary recalculations
+  const widgetProps = useMemo(() => {
     const props = {};
 
     widgetConfig.requiredProps.forEach(prop => {
@@ -57,9 +57,7 @@ export default function WidgetRenderer({
     });
 
     return props;
-  };
-
-  const widgetProps = resolveProps();
+  }, [widgetConfig.requiredProps, city, citySlug]);
 
   return (
     <div
