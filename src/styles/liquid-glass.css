@@ -678,3 +678,140 @@ body {
     transform: scale(1.1);
   }
 }
+
+/* ===== WIDGET GRID V2 - Apple Weather Style Layout ===== */
+
+.widget-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto auto auto auto;
+  gap: 8px;
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       alerts      smallstack"
+    "pressure     visibility   forecast    rounding";
+}
+
+/* Make all grid children stretch to fill their areas */
+.widget-grid-v2 > * {
+  height: 100%;
+  min-width: 0;
+}
+
+/* Ensure glass widgets inside grid areas fill height */
+.widget-grid-v2 .glass-widget {
+  height: 100%;
+}
+
+/* Small stack (wind + humidity stacked) */
+.widget-grid-v2 [style*="grid-area: smallstack"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.widget-grid-v2 [style*="grid-area: smallstack"] > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 1x1 small widgets - compact */
+.widget-grid-v2 [style*="grid-area: pressure"],
+.widget-grid-v2 [style*="grid-area: visibility"],
+.widget-grid-v2 [style*="grid-area: forecast"],
+.widget-grid-v2 [style*="grid-area: rounding"] {
+  min-height: 110px;
+}
+
+/* 1x1 medium widgets */
+.widget-grid-v2 [style*="grid-area: models"],
+.widget-grid-v2 [style*="grid-area: discussion"],
+.widget-grid-v2 [style*="grid-area: alerts"] {
+  min-height: 130px;
+}
+
+/* 1x2 tall widgets (span 2 rows) */
+.widget-grid-v2 [style*="grid-area: brackets"] {
+  min-height: 268px;
+}
+
+/* 2x2 large widgets */
+.widget-grid-v2 [style*="grid-area: map"] {
+  min-height: 268px;
+}
+
+.widget-grid-v2 [style*="grid-area: nearby"] {
+  min-height: 130px;
+}
+
+/* Tablet layout (3 columns) */
+@media (max-width: 1024px) {
+  .widget-grid-v2 {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto auto auto auto;
+    grid-template-areas:
+      "models       brackets     map"
+      "discussion   brackets     map"
+      "nearby       nearby       alerts"
+      "smallstack   smallstack   forecast"
+      "pressure     visibility   rounding";
+  }
+
+  .widget-grid-v2 [style*="grid-area: smallstack"] {
+    flex-direction: row;
+  }
+}
+
+/* Mobile layout (2 columns) */
+@media (max-width: 640px) {
+  .widget-grid-v2 {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      "brackets     brackets"
+      "map          map"
+      "models       discussion"
+      "nearby       nearby"
+      "alerts       smallstack"
+      "pressure     visibility"
+      "forecast     rounding";
+  }
+
+  .widget-grid-v2 [style*="grid-area: brackets"] {
+    min-height: 180px;
+  }
+
+  .widget-grid-v2 [style*="grid-area: map"],
+  .widget-grid-v2 [style*="grid-area: nearby"] {
+    min-height: 180px;
+  }
+
+  .widget-grid-v2 [style*="grid-area: smallstack"] {
+    flex-direction: column;
+  }
+}
+
+/* Extra small mobile (1 column) */
+@media (max-width: 480px) {
+  .widget-grid-v2 {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "brackets"
+      "map"
+      "models"
+      "discussion"
+      "nearby"
+      "alerts"
+      "smallstack"
+      "pressure"
+      "visibility"
+      "forecast"
+      "rounding";
+  }
+
+  .widget-grid-v2 [style*="grid-area: smallstack"] {
+    flex-direction: row;
+  }
+}

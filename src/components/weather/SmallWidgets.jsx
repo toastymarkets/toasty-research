@@ -199,6 +199,7 @@ export function WindWidget({
   observations = [],
   timezone = 'America/New_York',
   cityName,
+  compact = false, // New: compact mode for 1x1 grid cell
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -209,14 +210,53 @@ export function WindWidget({
 
   if (loading) {
     return (
-      <GlassWidget title="WIND" icon={Wind} size="medium">
+      <GlassWidget title="WIND" icon={Wind} size={compact ? 'small' : 'medium'}>
         <div className="flex items-center justify-center h-full animate-pulse">
-          <div className="w-20 h-20 bg-white/10 rounded-full" />
+          <div className={compact ? 'w-16 h-16' : 'w-20 h-20'} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
         </div>
       </GlassWidget>
     );
   }
 
+  // Compact mode: Large compass, minimal text
+  if (compact) {
+    return (
+      <>
+        <GlassWidget
+          title="WIND"
+          icon={Wind}
+          size="small"
+          className="cursor-pointer"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <div className="flex-1 flex flex-col items-center justify-center">
+            {/* Large prominent compass */}
+            <div className="w-[72px] h-[72px]">
+              <WindCompass direction={directionDeg} speed={speedMph} />
+            </div>
+            {/* Minimal direction label below */}
+            <div className="text-[10px] text-white/50 mt-1">
+              {getWindDirection(directionDeg)}
+            </div>
+          </div>
+        </GlassWidget>
+
+        {/* Wind Detail Modal */}
+        <WindDetailModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          currentSpeed={speedMph}
+          currentDirection={directionDeg}
+          currentGusts={gustsMph}
+          observations={observations}
+          timezone={timezone}
+          cityName={cityName}
+        />
+      </>
+    );
+  }
+
+  // Default mode: Compass + text data side by side
   return (
     <>
       <GlassWidget

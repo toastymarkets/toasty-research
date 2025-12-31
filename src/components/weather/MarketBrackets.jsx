@@ -23,12 +23,15 @@ const getKalshiUrl = (citySlug, cityName) => {
 /**
  * MarketBrackets - Kalshi temperature market widget
  * Displays real-time market brackets with prices and changes
+ * @param {string} variant - 'horizontal' (wide) or 'vertical' (tall/narrow)
  */
 export default function MarketBrackets({
   citySlug,
   cityName,
-  loading: externalLoading = false
+  loading: externalLoading = false,
+  variant = 'horizontal'
 }) {
+  const isVertical = variant === 'vertical';
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { brackets, closeTime, loading, error, seriesTicker } = useKalshiMarkets(citySlug, dayOffset);
@@ -155,10 +158,15 @@ export default function MarketBrackets({
     return '#1D4ED8'; // Deepest navy - unlikely
   };
 
+  // Title changes based on variant
+  const widgetTitle = isVertical
+    ? 'MARKET BRACKETS'
+    : `Highest temperature in ${cityName} ${dayLabel}?`;
+
   return (
     <>
     <GlassWidget
-      title={`Highest temperature in ${cityName} ${dayLabel}?`}
+      title={widgetTitle}
       icon={TrendingUp}
       size="large"
       className="h-full cursor-pointer"
@@ -166,11 +174,11 @@ export default function MarketBrackets({
     >
 
       {/* Day Toggle */}
-      <div className="pb-2">
+      <div className={isVertical ? 'pb-1' : 'pb-2'}>
         <div className="inline-flex bg-white/10 rounded-lg p-0.5">
           <button
             onClick={(e) => { e.stopPropagation(); setDayOffset(0); }}
-            className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+            className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
               dayOffset === 0 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
             }`}
           >
@@ -178,7 +186,7 @@ export default function MarketBrackets({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setDayOffset(1); }}
-            className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+            className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
               dayOffset === 1 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
             }`}
           >
@@ -286,4 +294,5 @@ MarketBrackets.propTypes = {
   citySlug: PropTypes.string.isRequired,
   cityName: PropTypes.string.isRequired,
   loading: PropTypes.bool,
+  variant: PropTypes.oneOf(['horizontal', 'vertical']),
 };
