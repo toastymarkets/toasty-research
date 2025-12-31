@@ -18,7 +18,7 @@ import {
   NWSForecastWidget,
   NWSDiscussionWidget,
   ModelsWidget,
-  WidgetGrid,
+  WidgetGridV2,
   WeatherMap,
   WindWidget,
   HumidityWidget,
@@ -26,6 +26,7 @@ import {
   VisibilityWidget,
   RoundingWidget,
   NearbyStations,
+  AlertsWidget,
 } from '../weather';
 
 // Kalshi market data
@@ -220,20 +221,26 @@ function CityDashboardContent({ city, citySlug }) {
         />
       </div>
 
-      {/* Widget Grid - compact */}
+      {/* Widget Grid V2 - CSS Grid with named areas */}
       <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 mt-2 pb-4">
-        <WidgetGrid>
-          {/* Market Brackets - Kalshi temperature markets */}
-          <WidgetGrid.Item span={2}>
+        <WidgetGridV2>
+          {/* Models Widget */}
+          <WidgetGridV2.Area area="models">
+            <ModelsWidget citySlug={citySlug} loading={forecastLoading} />
+          </WidgetGridV2.Area>
+
+          {/* Market Brackets - Vertical layout (spans 2 rows) */}
+          <WidgetGridV2.Area area="brackets">
             <MarketBrackets
               citySlug={citySlug}
               cityName={city.name}
               loading={forecastLoading}
+              variant="vertical"
             />
-          </WidgetGrid.Item>
+          </WidgetGridV2.Area>
 
-          {/* Weather Map */}
-          <WidgetGrid.Item span={2}>
+          {/* Weather Map (2x2) */}
+          <WidgetGridV2.Area area="map">
             <WeatherMap
               lat={city.lat}
               lon={city.lon}
@@ -241,29 +248,36 @@ function CityDashboardContent({ city, citySlug }) {
               cityName={city.name}
               currentTemp={currentTempF}
             />
-          </WidgetGrid.Item>
+          </WidgetGridV2.Area>
 
-          {/* Nearby Stations */}
-          <WidgetGrid.Item span={2}>
+          {/* NWS Forecast Discussion */}
+          <WidgetGridV2.Area area="discussion">
+            <NWSDiscussionWidget
+              lat={city.lat}
+              lon={city.lon}
+              citySlug={citySlug}
+            />
+          </WidgetGridV2.Area>
+
+          {/* Nearby Stations (2x2) */}
+          <WidgetGridV2.Area area="nearby">
             <NearbyStations
               citySlug={citySlug}
               cityName={city.name}
             />
-          </WidgetGrid.Item>
+          </WidgetGridV2.Area>
 
-          {/* Stacked Column: NWS Forecast + Models - equal height grid */}
-          <div className="grid grid-rows-2 gap-2 h-full">
-            <NWSForecastWidget
-              citySlug={citySlug}
+          {/* NWS Alerts (spans 2 rows) */}
+          <WidgetGridV2.Area area="alerts">
+            <AlertsWidget
               lat={city.lat}
               lon={city.lon}
-              timezone={city.timezone}
+              cityName={city.name}
             />
-            <ModelsWidget citySlug={citySlug} loading={forecastLoading} />
-          </div>
+          </WidgetGridV2.Area>
 
-          {/* Stacked Column: Wind + Humidity - equal height grid */}
-          <div className="grid grid-rows-2 gap-2 h-full">
+          {/* Wind + Humidity stacked */}
+          <WidgetGridV2.Area area="smallstack">
             <WindWidget
               speed={weatherDetails.windSpeed}
               direction={weatherDetails.windDirection}
@@ -271,41 +285,51 @@ function CityDashboardContent({ city, citySlug }) {
               observations={observations}
               timezone={city.timezone}
               cityName={city.name}
+              compact={true}
             />
             <HumidityWidget
               value={weatherDetails.humidity}
               dewPoint={weatherDetails.dewPoint}
               loading={weatherLoading}
             />
-          </div>
+          </WidgetGridV2.Area>
 
           {/* Pressure */}
-          <PressureWidget
-            value={weatherDetails.pressure}
-            trend="steady"
-            loading={weatherLoading}
-          />
+          <WidgetGridV2.Area area="pressure">
+            <PressureWidget
+              value={weatherDetails.pressure}
+              trend="steady"
+              loading={weatherLoading}
+            />
+          </WidgetGridV2.Area>
 
           {/* Visibility */}
-          <VisibilityWidget
-            value={weatherDetails.visibility}
-            loading={weatherLoading}
-          />
+          <WidgetGridV2.Area area="visibility">
+            <VisibilityWidget
+              value={weatherDetails.visibility}
+              loading={weatherLoading}
+            />
+          </WidgetGridV2.Area>
 
-          {/* NWS Forecast Discussion */}
-          <NWSDiscussionWidget
-            lat={city.lat}
-            lon={city.lon}
-            citySlug={citySlug}
-          />
+          {/* NWS Forecast */}
+          <WidgetGridV2.Area area="forecast">
+            <NWSForecastWidget
+              citySlug={citySlug}
+              lat={city.lat}
+              lon={city.lon}
+              timezone={city.timezone}
+            />
+          </WidgetGridV2.Area>
 
-          {/* Rounding Calculator - NWS temperature uncertainty */}
-          <RoundingWidget
-            currentTemp={currentTempF}
-            observationType={observationType}
-            loading={weatherLoading}
-          />
-        </WidgetGrid>
+          {/* Rounding Calculator */}
+          <WidgetGridV2.Area area="rounding">
+            <RoundingWidget
+              currentTemp={currentTempF}
+              observationType={observationType}
+              loading={weatherLoading}
+            />
+          </WidgetGridV2.Area>
+        </WidgetGridV2>
       </div>
       </div>
     </>
