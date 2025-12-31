@@ -60,13 +60,24 @@ export function gatherCopilotContext({
     };
   }
 
-  // Observations - need to find HIGH SO FAR from ALL observations, not just recent
+  // Observations - need to find HIGH SO FAR from TODAY's observations only
   // Note: observations from useNWSObservationHistory are already converted to Fahrenheit
+  // CRITICAL: Only consider observations from TODAY (midnight to now in local time)
   if (observations && observations.length > 0) {
-    // Find the HIGH temperature from ALL observations today (this is critical for settlement)
+    // Get today's date at midnight (local time for the city, or browser local time)
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+
+    // Filter to only today's observations
+    const todaysObs = observations.filter(obs => {
+      const obsTime = new Date(obs.timestamp || obs.time);
+      return obsTime >= todayMidnight;
+    });
+
+    // Find the HIGH temperature from TODAY's observations only
     let highTemp = null;
     let highTime = null;
-    for (const obs of observations) {
+    for (const obs of todaysObs) {
       const temp = obs.temperature ?? obs.temp;
       if (temp != null && (highTemp === null || temp > highTemp)) {
         highTemp = temp;
@@ -82,8 +93,8 @@ export function gatherCopilotContext({
       };
     }
 
-    // Recent observations (last 6 readings for trend analysis)
-    const recentObs = observations.slice(-6);
+    // Recent observations (last 6 readings from TODAY for trend analysis)
+    const recentObs = todaysObs.slice(-6);
     context.observations = recentObs.map(obs => ({
       time: formatObsTime(obs.timestamp || obs.time),
       temp: obs.temperature ?? obs.temp,
