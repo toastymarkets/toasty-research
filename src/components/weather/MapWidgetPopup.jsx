@@ -1,12 +1,94 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Cloud, Thermometer, Wind, Play, Pause } from 'lucide-react';
+import { X, Cloud, Play, Pause, Satellite } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+
+/**
+ * Get GOES satellite configuration based on location
+ */
+function getGOESConfig(lon, lat) {
+  const isPacificCoast = lon < -115 || (lat > 42 && lon < -104);
+  const satellite = isPacificCoast ? 'GOES18' : 'GOES19';
+
+  let sector;
+  if (lat > 42 && lon < -104) sector = 'pnw';
+  else if (lon < -115) sector = 'psw';
+  else if (lon < -104) sector = 'nr';
+  else if (lat > 40 && lon > -85) sector = 'ne';
+  else if (lat > 37 && lon < -82) sector = 'umv';
+  else if (lat < 30 && lon > -90) sector = 'se';
+  else if (lon < -90) sector = 'sp';
+  else sector = 'ne';
+
+  return { satellite, sector };
+}
+
+/**
+ * Get available sectors for a location
+ */
+function getAvailableSectors(lon, lat) {
+  const config = getGOESConfig(lon, lat);
+  const isPacificCoast = config.satellite === 'GOES18';
+
+  return isPacificCoast
+    ? [
+        { id: config.sector, label: 'Local', size: '1200x1200', satellite: 'GOES18' },
+        { id: 'tpw', label: 'Pacific', size: '1800x1080', satellite: 'GOES18' },
+      ]
+    : [
+        { id: config.sector, label: 'Local', size: '1200x1200', satellite: 'GOES19' },
+        { id: 'eus', label: 'East US', size: '1800x1080', satellite: 'GOES19' },
+      ];
+}
+
+/**
+ * Generate GOES frame URL
+ */
+function generateFrameUrl(satellite, sector, band, imageSize, minutesAgo) {
+  const frameTime = new Date(Date.now() - minutesAgo * 60 * 1000);
+  const mins = frameTime.getUTCMinutes();
+  const isRegional = imageSize !== '1200x1200';
+
+  let roundedMins = isRegional
+    ? Math.round(mins / 10) * 10
+    : mins - (mins % 5) + (mins % 5 < 3 ? 1 : 6);
+
+  if (roundedMins >= 60) {
+    roundedMins -= 60;
+    frameTime.setUTCHours(frameTime.getUTCHours() + 1);
+  }
+  frameTime.setUTCMinutes(roundedMins);
+  frameTime.setSeconds(0);
+
+  const year = frameTime.getUTCFullYear();
+  const dayOfYear = Math.floor((frameTime - new Date(Date.UTC(year, 0, 0))) / 86400000);
+  const timestamp = `${year}${String(dayOfYear).padStart(3, '0')}${String(frameTime.getUTCHours()).padStart(2, '0')}${String(roundedMins).padStart(2, '0')}`;
+
+  return `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${band}/${timestamp}_${satellite}-ABI-${sector}-${band}-${imageSize}.jpg`;
+}
+
+/**
+ * Preload image
+ */
+function preloadImage(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(url);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
 
 /**
  * MapWidgetPopup - Apple Weather inspired expandable map modal
  * Features: Precipitation, Temperature, Wind layers with timeline playback
  */
+const SATELLITE_BANDS = [
+  { id: 'AirMass', label: 'AirMass' },
+  { id: 'GEOCOLOR', label: 'GeoColor' },
+  { id: 'Sandwich', label: 'Sandwich' },
+];
+
 export default function MapWidgetPopup({
   isOpen,
   onClose,
@@ -14,20 +96,46 @@ export default function MapWidgetPopup({
   lon,
   cityName,
   currentTemp,
+  initialLayer = 'precipitation',
+  initialBand = 'AirMass',
+  initialSector,
+  onBandChange,
+  onSectorChange,
 }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
   const radarLayerRef = useRef(null);
 
   const [L, setL] = useState(null);
-  const [activeLayer, setActiveLayer] = useState('precipitation');
+  const [activeLayer, setActiveLayer] = useState(initialLayer);
   const [frames, setFrames] = useState([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [windData, setWindData] = useState(null);
-  const [temperatureData, setTemperatureData] = useState(null);
+
+  // Satellite state - optimized with refs for animation
+  const [satelliteImage, setSatelliteImage] = useState(null);
+  const [satelliteReady, setSatelliteReady] = useState(false);
+  const [satelliteBand, setSatelliteBand] = useState(initialBand);
+  const [satelliteSector, setSatelliteSector] = useState(initialSector || getGOESConfig(lon, lat).sector);
+  const framesRef = useRef([]);
+  const frameIndexRef = useRef(0);
+  const loadingRef = useRef(false);
+
+  const availableSectors = useMemo(() => getAvailableSectors(lon, lat), [lon, lat]);
+
+  // Sync settings when popup opens
+  useEffect(() => {
+    if (isOpen) {
+      if (initialLayer) setActiveLayer(initialLayer);
+      if (initialBand) setSatelliteBand(initialBand);
+      if (initialSector) setSatelliteSector(initialSector);
+    }
+  }, [isOpen, initialLayer, initialBand, initialSector]);
+
+  // Reset sector when city changes
+  useEffect(() => {
+    setSatelliteSector(getGOESConfig(lon, lat).sector);
+  }, [lon, lat]);
 
   // Dynamically import Leaflet
   useEffect(() => {
@@ -63,46 +171,81 @@ export default function MapWidgetPopup({
       .catch(console.error);
   }, [isOpen]);
 
-  // Fetch wind data from Open-Meteo
+
+  // Load satellite imagery
   useEffect(() => {
-    if (!isOpen || !lat || !lon) return;
+    if (!isOpen || !lat || !lon || activeLayer !== 'satellite') return;
+    if (loadingRef.current) return;
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=mph&timezone=auto&forecast_days=1`;
+    const sectorConfig = availableSectors.find(s => s.id === satelliteSector);
+    const satellite = sectorConfig?.satellite || getGOESConfig(lon, lat).satellite;
+    const imageSize = sectorConfig?.size || '1200x1200';
 
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data.hourly) {
-          const currentHour = new Date().getHours();
-          setWindData({
-            speed: data.hourly.wind_speed_10m[currentHour] || 0,
-            direction: data.hourly.wind_direction_10m[currentHour] || 0,
-            hourly: data.hourly,
-          });
+    loadingRef.current = true;
+
+    const loadSatellite = async () => {
+      // Find most recent valid frame
+      let firstValidUrl = null;
+      for (let i = 0; i < 6; i++) {
+        const url = generateFrameUrl(satellite, satelliteSector, satelliteBand, imageSize, i * 10);
+        const result = await preloadImage(url);
+        if (result) {
+          firstValidUrl = result;
+          break;
         }
-      })
-      .catch(console.error);
-  }, [isOpen, lat, lon]);
+      }
 
-  // Fetch temperature data from Open-Meteo
+      if (!firstValidUrl) {
+        setSatelliteReady(false);
+        loadingRef.current = false;
+        return;
+      }
+
+      // Show first frame immediately
+      setSatelliteImage(firstValidUrl);
+      setSatelliteReady(true);
+
+      // Load animation frames in background (24 frames = 4 hours for popup)
+      const urls = [];
+      for (let i = 0; i < 24; i++) {
+        urls.push(generateFrameUrl(satellite, satelliteSector, satelliteBand, imageSize, i * 10));
+      }
+
+      const results = await Promise.all(urls.map(preloadImage));
+      const validUrls = results.filter(Boolean);
+
+      if (validUrls.length > 0) {
+        framesRef.current = validUrls;
+        frameIndexRef.current = validUrls.length - 1;
+      }
+
+      loadingRef.current = false;
+    };
+
+    loadSatellite();
+  }, [isOpen, lat, lon, activeLayer, satelliteBand, satelliteSector, availableSectors]);
+
+  // Animate satellite frames
   useEffect(() => {
-    if (!isOpen || !lat || !lon) return;
+    if (!isOpen || activeLayer !== 'satellite' || !satelliteReady) return;
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`;
+    const animate = () => {
+      if (framesRef.current.length > 1) {
+        frameIndexRef.current = (frameIndexRef.current + 1) % framesRef.current.length;
+        setSatelliteImage(framesRef.current[frameIndexRef.current]);
+      }
+    };
 
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data.hourly) {
-          const currentHour = new Date().getHours();
-          setTemperatureData({
-            current: data.hourly.temperature_2m[currentHour] || currentTemp,
-            hourly: data.hourly,
-          });
-        }
-      })
-      .catch(console.error);
-  }, [isOpen, lat, lon, currentTemp]);
+    const interval = setInterval(animate, 120);
+    return () => clearInterval(interval);
+  }, [isOpen, activeLayer, satelliteReady]);
+
+  // Reset loading state when city or settings change
+  useEffect(() => {
+    loadingRef.current = false;
+    framesRef.current = [];
+    frameIndexRef.current = 0;
+  }, [lat, lon, satelliteBand, satelliteSector]);
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -166,101 +309,17 @@ export default function MapWidgetPopup({
     }
   }, [activeLayer]);
 
-  // Wind particle animation
+  // Timeline playback for precipitation only (satellite uses its own animation)
   useEffect(() => {
-    if (activeLayer !== 'wind' || !canvasRef.current || !windData) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-
-    // Wind vector components (convert direction to radians)
-    const windRad = (windData.direction * Math.PI) / 180;
-    const windU = Math.sin(windRad) * windData.speed * 0.3;
-    const windV = -Math.cos(windRad) * windData.speed * 0.3;
-
-    // Particles
-    const particles = [];
-    const particleCount = 400;
-
-    class Particle {
-      constructor() {
-        this.reset();
-      }
-
-      reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.age = 0;
-        this.maxAge = 80 + Math.random() * 60;
-      }
-
-      update() {
-        this.x += windU;
-        this.y += windV;
-        this.age++;
-
-        if (
-          this.age > this.maxAge ||
-          this.x < 0 || this.x > canvas.width ||
-          this.y < 0 || this.y > canvas.height
-        ) {
-          this.reset();
-        }
-      }
-
-      draw() {
-        const alpha = Math.max(0, 1 - this.age / this.maxAge) * 0.6;
-        ctx.fillStyle = `rgba(100, 210, 255, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
-    }
-
-    const animate = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach(p => {
-        p.update();
-        p.draw();
-      });
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [activeLayer, windData]);
-
-  // Timeline playback
-  useEffect(() => {
-    if (!isPlaying || frames.length === 0) return;
+    if (!isPlaying || activeLayer === 'satellite') return;
+    if (frames.length === 0) return;
 
     const interval = setInterval(() => {
       setCurrentFrameIndex(prev => (prev + 1) % frames.length);
     }, 500);
 
     return () => clearInterval(interval);
-  }, [isPlaying, frames.length]);
+  }, [isPlaying, frames.length, activeLayer]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -295,9 +354,8 @@ export default function MapWidgetPopup({
   if (!isOpen) return null;
 
   const layers = [
-    { id: 'precipitation', icon: Cloud, label: 'Precipitation' },
-    { id: 'temperature', icon: Thermometer, label: 'Temperature' },
-    { id: 'wind', icon: Wind, label: 'Wind' },
+    { id: 'satellite', icon: Satellite, label: 'Satellite' },
+    { id: 'precipitation', icon: Cloud, label: 'Precip' },
   ];
 
   return (
@@ -312,7 +370,7 @@ export default function MapWidgetPopup({
       <div className="absolute inset-0 flex items-center justify-center p-4 md:p-8 lg:p-12 pointer-events-none">
         <div className="relative w-full max-w-3xl h-full max-h-[600px] glass-elevated rounded-3xl overflow-hidden animate-scale-in flex flex-col pointer-events-auto">
           {/* Header */}
-          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
+          <div className="absolute top-0 left-0 right-0 z-[60] flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
             <button
               onClick={onClose}
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -328,7 +386,7 @@ export default function MapWidgetPopup({
           </div>
 
           {/* Layer Toggle - horizontal bar below header */}
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20">
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2">
             <div className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-black/50 backdrop-blur-md">
               {layers.map(({ id, icon: Icon, label }) => (
                 <button
@@ -347,28 +405,62 @@ export default function MapWidgetPopup({
                 </button>
               ))}
             </div>
+
+            {/* Sector and Band selectors (satellite only) */}
+            {activeLayer === 'satellite' && (
+              <>
+                <select
+                  value={satelliteSector}
+                  onChange={(e) => {
+                    setSatelliteSector(e.target.value);
+                    if (onSectorChange) onSectorChange(e.target.value);
+                  }}
+                  className="px-3 py-1.5 text-xs rounded-full bg-black/50 backdrop-blur-md text-white/80 border-none outline-none cursor-pointer"
+                >
+                  {availableSectors.map(({ id, label }) => (
+                    <option key={id} value={id} className="bg-gray-900">
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={satelliteBand}
+                  onChange={(e) => {
+                    setSatelliteBand(e.target.value);
+                    if (onBandChange) onBandChange(e.target.value);
+                  }}
+                  className="px-3 py-1.5 text-xs rounded-full bg-black/50 backdrop-blur-md text-white/80 border-none outline-none cursor-pointer"
+                >
+                  {SATELLITE_BANDS.map(({ id, label }) => (
+                    <option key={id} value={id} className="bg-gray-900">
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
 
-        {/* Map Container */}
-        <div ref={mapRef} className="absolute inset-0 bg-gray-900" />
+        {/* Map Container - z-[1] creates stacking context to contain Leaflet's high z-indexes */}
+        <div ref={mapRef} className="absolute inset-0 bg-gray-900 z-[1]" />
 
-        {/* Wind Canvas Overlay */}
-        {activeLayer === 'wind' && (
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0 pointer-events-none z-10"
-          />
-        )}
 
-        {/* Temperature Overlay */}
-        {activeLayer === 'temperature' && temperatureData && (
-          <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
-            <div className="glass-elevated px-8 py-6 rounded-2xl text-center">
-              <div className="text-6xl font-thin text-white mb-2">
-                {Math.round(temperatureData.current)}°
+        {/* Satellite Overlay */}
+        {activeLayer === 'satellite' && (
+          <div className="absolute inset-0 z-10 bg-black overflow-hidden">
+            {satelliteImage ? (
+              <img
+                src={satelliteImage}
+                alt="GOES Satellite"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-white/40 text-sm">
+                  {satelliteReady === false ? 'Satellite imagery unavailable' : 'Loading...'}
+                </div>
               </div>
-              <div className="text-white/60 text-sm">{cityName}</div>
-            </div>
+            )}
           </div>
         )}
 
@@ -386,7 +478,7 @@ export default function MapWidgetPopup({
 
         {/* Legend */}
         {activeLayer === 'precipitation' && (
-          <div className="absolute bottom-24 left-4 z-20">
+          <div className="absolute bottom-24 left-4 z-[60]">
             <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
               <div className="text-[10px] text-white/60 mb-1.5 font-medium">Precipitation</div>
               <div className="flex items-center gap-2">
@@ -403,116 +495,100 @@ export default function MapWidgetPopup({
           </div>
         )}
 
-        {activeLayer === 'temperature' && (
-          <div className="absolute bottom-24 left-4 z-20">
-            <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
-              <div className="text-[10px] text-white/60 mb-1.5 font-medium">Temperature</div>
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-24 h-2 rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #3B82F6, #10B981, #FBBF24, #F97316, #EF4444)' }}
-                />
-              </div>
-              <div className="flex justify-between text-[9px] text-white/50 mt-1">
-                <span>Cold</span>
-                <span>Hot</span>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {activeLayer === 'wind' && windData && (
-          <div className="absolute bottom-24 left-4 z-20">
+        {activeLayer === 'satellite' && satelliteReady && (
+          <div className="absolute bottom-24 left-4 z-[60]">
             <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
-              <div className="text-[10px] text-white/60 mb-1.5 font-medium">Wind Speed</div>
-              <div className="text-lg font-semibold text-white">
-                {Math.round(windData.speed)} mph
+              <div className="text-[10px] text-white/60 mb-1.5 font-medium">GOES Satellite</div>
+              <div className="text-sm font-semibold text-white">
+                {(availableSectors.find(s => s.id === satelliteSector)?.satellite || 'GOES19').replace('GOES', 'GOES-')}
               </div>
               <div className="text-[10px] text-white/50">
-                from {getWindDirection(windData.direction)}
+                {availableSectors.find(s => s.id === satelliteSector)?.label || satelliteSector} • {satelliteBand}
               </div>
             </div>
           </div>
         )}
 
-        {/* Timeline Scrubber */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-4 pt-8 bg-gradient-to-t from-black/70 to-transparent">
-          {/* Frame indicator */}
-          <div className="flex items-center gap-3 mb-3">
-            <button
-              onClick={() => setIsPlaying(p => !p)}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              {isPlaying ? (
-                <Pause className="w-4 h-4 text-white" />
-              ) : (
-                <Play className="w-4 h-4 text-white" />
-              )}
-            </button>
-            <span className="text-sm text-white/80">
-              {currentFrame ? formatFrameTime(currentFrame) : '--:--'}
-            </span>
-            {currentFrame?.type === 'nowcast' && (
-              <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-300 text-xs">
-                Forecast
-              </span>
-            )}
-          </div>
+        {/* Timeline Scrubber - precipitation only, satellite auto-animates */}
+        {activeLayer !== 'satellite' && (() => {
+          const activeFrame = frames[currentFrameIndex];
 
-          {/* Scrubber track */}
-          <div className="relative h-1.5 bg-white/20 rounded-full">
-            {/* Now indicator */}
-            {nowIndex > 0 && (
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white/60"
-                style={{ left: `${(nowIndex / (frames.length - 1)) * 100}%` }}
-              />
-            )}
+          return (
+            <div className="absolute bottom-0 left-0 right-0 z-[60] px-4 pb-4 pt-8 bg-gradient-to-t from-black/70 to-transparent">
+              {/* Frame indicator */}
+              <div className="flex items-center gap-3 mb-3">
+                <button
+                  onClick={() => setIsPlaying(p => !p)}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  disabled={frames.length === 0}
+                >
+                  {isPlaying ? (
+                    <Pause className="w-4 h-4 text-white" />
+                  ) : (
+                    <Play className="w-4 h-4 text-white" />
+                  )}
+                </button>
+                <span className="text-sm text-white/80">
+                  {activeFrame ? formatFrameTime(activeFrame) : '--:--'}
+                </span>
+                {currentFrame?.type === 'nowcast' && (
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-300 text-xs">
+                    Forecast
+                  </span>
+                )}
+              </div>
 
-            {/* Progress fill */}
-            <div
-              className="absolute top-0 left-0 h-full rounded-full bg-white/50"
-              style={{ width: `${frames.length > 1 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0}%` }}
-            />
+              {/* Scrubber track */}
+              <div className="relative h-1.5 bg-white/20 rounded-full">
+                {/* Now indicator */}
+                {nowIndex > 0 && (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white/60"
+                    style={{ left: `${(nowIndex / (frames.length - 1)) * 100}%` }}
+                  />
+                )}
 
-            {/* Draggable thumb */}
-            <input
-              type="range"
-              min={0}
-              max={Math.max(0, frames.length - 1)}
-              value={currentFrameIndex}
-              onChange={(e) => {
-                setCurrentFrameIndex(parseInt(e.target.value, 10));
-                setIsPlaying(false);
-              }}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
+                {/* Progress fill */}
+                <div
+                  className="absolute top-0 left-0 h-full rounded-full bg-white/50"
+                  style={{ width: `${frames.length > 1 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0}%` }}
+                />
 
-            {/* Visual thumb */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white shadow-lg pointer-events-none"
-              style={{ left: `${frames.length > 1 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0}%` }}
-            />
-          </div>
+                {/* Draggable thumb */}
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(0, frames.length - 1)}
+                  value={currentFrameIndex}
+                  onChange={(e) => {
+                    setCurrentFrameIndex(parseInt(e.target.value, 10));
+                    setIsPlaying(false);
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={frames.length === 0}
+                />
 
-          {/* Time labels */}
-          <div className="flex justify-between mt-2 text-[10px] text-white/50">
-            <span>-2h</span>
-            <span>Now</span>
-            <span>+30m</span>
-          </div>
-        </div>
+                {/* Visual thumb */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white shadow-lg pointer-events-none"
+                  style={{ left: `${frames.length > 1 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0}%` }}
+                />
+              </div>
+
+              {/* Time labels */}
+              <div className="flex justify-between mt-2 text-[10px] text-white/50">
+                <span>-2h</span>
+                <span>Now</span>
+                <span>+30m</span>
+              </div>
+            </div>
+          );
+        })()}
         </div>
       </div>
     </div>
   );
-}
-
-// Helper function for wind direction
-function getWindDirection(degrees) {
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
 }
 
 MapWidgetPopup.propTypes = {
@@ -522,4 +598,9 @@ MapWidgetPopup.propTypes = {
   lon: PropTypes.number.isRequired,
   cityName: PropTypes.string,
   currentTemp: PropTypes.number,
+  initialLayer: PropTypes.oneOf(['precipitation', 'satellite', 'temperature', 'wind']),
+  initialBand: PropTypes.oneOf(['AirMass', 'GEOCOLOR', 'Sandwich']),
+  initialSector: PropTypes.string,
+  onBandChange: PropTypes.func,
+  onSectorChange: PropTypes.func,
 };
