@@ -12,6 +12,8 @@ import {
 } from 'recharts';
 import { useKalshiCandlesticks, PERIODS } from '../../hooks/useKalshiCandlesticks';
 import { useKalshiOrderbook } from '../../hooks/useKalshiOrderbook';
+import { useKalshiMultiBracketHistory } from '../../hooks/useKalshiMultiBracketHistory';
+import MultiBracketChart from './MultiBracketChart';
 
 /**
  * MarketBracketsModal - Detailed view of Kalshi market brackets
@@ -26,6 +28,15 @@ export default function MarketBracketsModal({
   onClose,
 }) {
   const [expandedBracket, setExpandedBracket] = useState(null);
+  const [chartPeriod, setChartPeriod] = useState('1d');
+
+  // Fetch multi-bracket price history for the overview chart
+  const {
+    data: chartData,
+    legendData,
+    bracketColors,
+    loading: chartLoading,
+  } = useKalshiMultiBracketHistory(seriesTicker, brackets, chartPeriod, 4, true);
 
   // Format time remaining
   const formatTimeRemaining = () => {
@@ -135,8 +146,20 @@ export default function MarketBracketsModal({
             </div>
           </div>
 
+          {/* Multi-Bracket Price Chart */}
+          <div className="px-4 py-3 border-b border-white/10">
+            <MultiBracketChart
+              data={chartData}
+              legendData={legendData}
+              bracketColors={bracketColors}
+              period={chartPeriod}
+              onPeriodChange={setChartPeriod}
+              loading={chartLoading}
+            />
+          </div>
+
           {/* Brackets List */}
-          <div className="overflow-y-auto max-h-[55vh] glass-scroll">
+          <div className="overflow-y-auto max-h-[40vh] glass-scroll">
             {sortedBrackets.length === 0 ? (
               <div className="px-4 py-8 text-center text-white/40 text-sm">
                 No markets available for {dayLabel.toLowerCase()}
