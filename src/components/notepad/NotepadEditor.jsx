@@ -3,6 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useNotepad } from '../../context/NotepadContext';
 import { useDataChip } from '../../context/DataChipContext';
+import { useCopilot } from '../../context/CopilotContext';
 import { DataChipNode } from './extensions/DataChipNode';
 import { SlashCommands } from './extensions/SlashCommands';
 import { useEffect } from 'react';
@@ -12,6 +13,7 @@ import '../../styles/notepad.css';
 export default function NotepadEditor() {
   const { document, saveDocument } = useNotepad();
   const { editorRef } = useDataChip();
+  const copilot = useCopilot();
 
   const editor = useEditor({
     extensions: [
@@ -62,6 +64,18 @@ export default function NotepadEditor() {
       }
     };
   }, [editor, editorRef]);
+
+  // Connect editor to CopilotContext for AI insertions
+  useEffect(() => {
+    if (copilot?.setEditor && editor) {
+      copilot.setEditor(editor);
+    }
+    return () => {
+      if (copilot?.setEditor) {
+        copilot.setEditor(null);
+      }
+    };
+  }, [editor, copilot]);
 
   // Update editor content when document changes externally (e.g., after clear)
   useEffect(() => {

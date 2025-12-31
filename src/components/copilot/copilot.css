@@ -1,0 +1,259 @@
+/**
+ * Copilot Styles
+ * Orange-themed AI assistant with Claude Code-like animations
+ */
+
+/* Container */
+.copilot-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Input form */
+.copilot-input-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.copilot-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: white;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.copilot-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.copilot-input:focus {
+  border-color: rgba(249, 115, 22, 0.5);
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+}
+
+.copilot-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Send button */
+.copilot-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(249, 115, 22, 0.8);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.copilot-send-btn:hover:not(:disabled) {
+  background: rgba(249, 115, 22, 1);
+  transform: scale(1.05);
+}
+
+.copilot-send-btn:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+/* Thinking animation */
+.copilot-thinking {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.copilot-thinking-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    rgba(249, 115, 22, 0.1),
+    rgba(249, 115, 22, 0.2),
+    rgba(249, 115, 22, 0.1)
+  );
+  animation: copilot-glow 2s ease-in-out infinite;
+}
+
+@keyframes copilot-glow {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.copilot-thinking-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copilot-thinking-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.copilot-dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(249, 115, 22, 0.9);
+  border-radius: 50%;
+  animation: copilot-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes copilot-bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+}
+
+.copilot-thinking-text {
+  font-size: 13px;
+  color: rgba(249, 115, 22, 0.9);
+  font-weight: 500;
+}
+
+/* Streaming indicator */
+.copilot-streaming {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.copilot-streaming-dot {
+  width: 8px;
+  height: 8px;
+  background: rgba(249, 115, 22, 0.8);
+  border-radius: 50%;
+  animation: copilot-pulse 1s ease-in-out infinite;
+}
+
+@keyframes copilot-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.copilot-cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.copilot-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Error message */
+.copilot-error {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border-radius: 6px;
+}
+
+/* Suggestions */
+.copilot-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.copilot-suggestion-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.copilot-suggestion-chip:hover {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.copilot-suggestion-chip svg {
+  color: rgba(249, 115, 22, 0.8);
+  flex-shrink: 0;
+}
+
+/* AI-inserted content highlight (for notepad) */
+.ai-inserted-content {
+  position: relative;
+  background: rgba(249, 115, 22, 0.08);
+  border-left: 2px solid rgba(249, 115, 22, 0.5);
+  padding-left: 12px;
+  margin-left: -12px;
+  animation: fade-highlight 4s ease-out forwards;
+}
+
+@keyframes fade-highlight {
+  0% {
+    background: rgba(249, 115, 22, 0.15);
+    border-left-color: rgba(249, 115, 22, 0.8);
+  }
+  100% {
+    background: transparent;
+    border-left-color: transparent;
+  }
+}
+
+/* Copilot label in notepad */
+.copilot-label {
+  color: rgba(249, 115, 22, 0.9);
+  font-weight: 600;
+  font-size: 13px;
+}
