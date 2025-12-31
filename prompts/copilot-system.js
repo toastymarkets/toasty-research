@@ -226,9 +226,19 @@ export function buildSystemPrompt(context) {
     parts.push('**CURRENT TEMPERATURE: No data available** (Tell user no current data)');
   }
 
+  // HIGH SO FAR - This is THE most important data point for settlement analysis
+  if (context?.highSoFar) {
+    parts.push(`\n**⚠️ HIGH SO FAR TODAY: ${context.highSoFar.temp}°F** (reached at ${context.highSoFar.time})`);
+    parts.push(`This is the settlement-critical value. If temps are falling, this is likely the final high.`);
+  }
+
   if (context?.tempTrend) {
     const trend = context.tempTrend;
-    parts.push(`**Temperature Trend:** ${trend.direction} (${trend.change > 0 ? '+' : ''}${trend.change}°F over ${trend.hours}h)`);
+    let trendMsg = `**Temperature Trend:** ${trend.direction} (${trend.change > 0 ? '+' : ''}${trend.change}°F over ${trend.hours}h)`;
+    if (trend.fallingFromHigh) {
+      trendMsg += ` - FALLING FROM HIGH, settlement likely locked in`;
+    }
+    parts.push(trendMsg);
   }
 
   if (context?.markets?.topBrackets?.length > 0) {
@@ -247,13 +257,6 @@ export function buildSystemPrompt(context) {
       .map(o => `${o.time}: ${o.temp}°F`)
       .join(', ');
     parts.push(`**Recent Observations:** ${recent}`);
-
-    // Find today's high from observations
-    const temps = context.observations.map(o => o.temp).filter(t => t != null);
-    if (temps.length > 0) {
-      const highSoFar = Math.max(...temps);
-      parts.push(`**High So Far Today: ${highSoFar}°F**`);
-    }
   }
 
   if (context?.forecast?.length > 0) {

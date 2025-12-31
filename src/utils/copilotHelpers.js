@@ -60,17 +60,37 @@ export function gatherCopilotContext({
     };
   }
 
-  // Recent observations (summarized - last 6 hours)
+  // Observations - need to find HIGH SO FAR from ALL observations, not just recent
   // Note: observations from useNWSObservationHistory are already converted to Fahrenheit
   if (observations && observations.length > 0) {
-    const recentObs = observations.slice(-12); // Get last 12 (most recent, since array is oldest-first)
+    // Find the HIGH temperature from ALL observations today (this is critical for settlement)
+    let highTemp = null;
+    let highTime = null;
+    for (const obs of observations) {
+      const temp = obs.temperature ?? obs.temp;
+      if (temp != null && (highTemp === null || temp > highTemp)) {
+        highTemp = temp;
+        highTime = obs.timestamp || obs.time;
+      }
+    }
+
+    // Store the day's high - THIS IS THE MOST IMPORTANT DATA POINT
+    if (highTemp != null) {
+      context.highSoFar = {
+        temp: Math.round(highTemp * 10) / 10, // Round to 1 decimal
+        time: formatObsTime(highTime),
+      };
+    }
+
+    // Recent observations (last 6 readings for trend analysis)
+    const recentObs = observations.slice(-6);
     context.observations = recentObs.map(obs => ({
       time: formatObsTime(obs.timestamp || obs.time),
-      temp: obs.temperature ?? obs.temp, // Already in Fahrenheit from hook
+      temp: obs.temperature ?? obs.temp,
       humidity: obs.humidity,
-    })).reverse(); // Reverse so most recent is first
+    })).reverse(); // Most recent first
 
-    // Calculate trend (comparing most recent to oldest in our window)
+    // Calculate trend (comparing most recent to ~1 hour ago)
     if (recentObs.length >= 2) {
       const mostRecent = recentObs[recentObs.length - 1];
       const oldest = recentObs[0];
@@ -78,10 +98,13 @@ export function gatherCopilotContext({
       const oldTemp = oldest.temperature ?? oldest.temp;
       if (recentTemp != null && oldTemp != null) {
         const change = recentTemp - oldTemp;
+        const hours = Math.max(1, Math.round((new Date(mostRecent.timestamp) - new Date(oldest.timestamp)) / 3600000));
         context.tempTrend = {
           change: change.toFixed(1),
           direction: change > 0.5 ? 'rising' : change < -0.5 ? 'falling' : 'stable',
-          hours: Math.round((new Date(mostRecent.timestamp) - new Date(oldest.timestamp)) / 3600000),
+          hours: hours,
+          // Is temp falling FROM the high? This is critical info
+          fallingFromHigh: highTemp != null && recentTemp < highTemp - 1,
         };
       }
     }
