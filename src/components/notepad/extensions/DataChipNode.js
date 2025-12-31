@@ -11,6 +11,7 @@ export const DataChipNode = Node.create({
   addAttributes() {
     return {
       value: { default: '' },
+      secondary: { default: '' },
       label: { default: '' },
       source: { default: '' },
       timestamp: { default: '' },
@@ -24,6 +25,7 @@ export const DataChipNode = Node.create({
         tag: 'data-chip',
         getAttrs: (dom) => ({
           value: dom.getAttribute('data-value'),
+          secondary: dom.getAttribute('data-secondary'),
           label: dom.getAttribute('data-label'),
           source: dom.getAttribute('data-source'),
           timestamp: dom.getAttribute('data-timestamp'),
@@ -38,6 +40,7 @@ export const DataChipNode = Node.create({
       'data-chip',
       mergeAttributes(HTMLAttributes, {
         'data-value': HTMLAttributes.value,
+        'data-secondary': HTMLAttributes.secondary,
         'data-label': HTMLAttributes.label,
         'data-source': HTMLAttributes.source,
         'data-timestamp': HTMLAttributes.timestamp,

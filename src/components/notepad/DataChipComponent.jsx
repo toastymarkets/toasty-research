@@ -12,7 +12,7 @@ const TYPE_COLORS = {
 };
 
 export default function DataChipComponent({ node }) {
-  const { value, label, source, timestamp, type } = node.attrs;
+  const { value, secondary, label, source, timestamp, type } = node.attrs;
   const colorClasses = TYPE_COLORS[type] || TYPE_COLORS.default;
   const chipType = type || 'default';
 
@@ -21,6 +21,7 @@ export default function DataChipComponent({ node }) {
       <span className={`data-chip ${colorClasses}`} data-chip-type={chipType}>
         {label && <span className="data-chip-label">{label}</span>}
         <span className="data-chip-value">{value}</span>
+        {secondary && <span className="data-chip-secondary">{secondary}</span>}
         <span className="data-chip-meta">{source} • {timestamp}</span>
       </span>
     </NodeViewWrapper>

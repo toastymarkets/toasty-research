@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingUp, ExternalLink, ChevronRight } from 'lucide-react';
+import { TrendingUp, ExternalLink, ChevronRight, Plus } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
+import { useDataChip } from '../../context/DataChipContext';
 import GlassWidget from './GlassWidget';
 import MarketBracketsModal from './MarketBracketsModal';
 
@@ -31,9 +32,39 @@ export default function MarketBrackets({
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { brackets, closeTime, loading, error, seriesTicker } = useKalshiMarkets(citySlug, dayOffset);
+  const { insertDataChip, isAvailable: canInsertChip } = useDataChip();
 
   const dayLabel = dayOffset === 0 ? 'today' : 'tomorrow';
   const hasSeries = CITY_SERIES[citySlug];
+
+  // Condense label: "39° to 40°" -> "39-40°"
+  const condenseLabel = (label) => {
+    return label
+      .replace(/(\d+)°\s*(to|or)\s*(\d+)°/i, '$1-$3°')
+      .replace(/(\d+)°\s*or above/i, '≥$1°')
+      .replace(/(\d+)°\s*or below/i, '≤$1°');
+  };
+
+  // Handle inserting bracket data as a chip into notes
+  const handleBracketInsert = (bracket, e) => {
+    e.stopPropagation(); // Prevent modal from opening
+
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    insertDataChip({
+      value: condenseLabel(bracket.label),
+      secondary: `${bracket.yesPrice}%`,
+      label: 'Market Odds',
+      source: `Kalshi ${seriesTicker}`,
+      timestamp,
+      type: 'market',
+    });
+  };
 
   // Timer for market close
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -124,14 +155,6 @@ export default function MarketBrackets({
     return '#1D4ED8'; // Deepest navy - unlikely
   };
 
-  // Condense label: "39° to 40°" -> "39-40°"
-  const condenseLabel = (label) => {
-    return label
-      .replace(/(\d+)°\s*(to|or)\s*(\d+)°/i, '$1-$3°')
-      .replace(/(\d+)°\s*or above/i, '≥$1°')
-      .replace(/(\d+)°\s*or below/i, '≤$1°');
-  };
-
   return (
     <>
     <GlassWidget
@@ -179,7 +202,7 @@ export default function MarketBrackets({
               return (
                 <div
                   key={bracket.ticker || i}
-                  className={`relative flex items-center justify-between py-1.5 rounded-lg transition-all ${
+                  className={`group relative flex items-center justify-between py-1.5 px-1 rounded-lg transition-all ${
                     isLeader ? 'bg-white/10' : 'hover:bg-white/5'
                   }`}
                 >
@@ -192,8 +215,22 @@ export default function MarketBrackets({
                     }}
                   />
 
+                  {/* Quick Add Button */}
+                  {canInsertChip && (
+                    <button
+                      onClick={(e) => handleBracketInsert(bracket, e)}
+                      className="relative opacity-0 group-hover:opacity-100 mr-1.5
+                                 w-4 h-4 rounded-full bg-[var(--color-orange-main)]
+                                 flex items-center justify-center transition-opacity z-10
+                                 hover:scale-110 flex-shrink-0"
+                      title="Add to notes"
+                    >
+                      <Plus size={10} strokeWidth={3} className="text-black" />
+                    </button>
+                  )}
+
                   {/* Content */}
-                  <span className={`relative text-[12px] font-bold ${isLeader ? 'text-white' : 'text-white/70'}`}>
+                  <span className={`relative text-[12px] font-bold flex-1 ${isLeader ? 'text-white' : 'text-white/70'}`}>
                     {condenseLabel(bracket.label)}
                   </span>
 

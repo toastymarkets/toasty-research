@@ -6,6 +6,7 @@ import { useNWSWeather } from '../../hooks/useNWSWeather';
 import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
 import { useNWSObservationHistory } from '../../hooks/useNWSObservationHistory';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
+import { DataChipProvider } from '../../context/DataChipContext';
 import { DashboardWeatherBackground } from '../weather/DynamicWeatherBackground';
 
 // Weather Components
@@ -307,5 +308,9 @@ export default function CityDashboardNew() {
     );
   }
 
-  return <CityDashboardContent city={city} citySlug={citySlug} />;
+  return (
+    <DataChipProvider>
+      <CityDashboardContent city={city} citySlug={citySlug} />
+    </DataChipProvider>
+  );
 }
