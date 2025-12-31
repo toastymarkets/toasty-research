@@ -44,6 +44,7 @@ function getGOESConfig(lon, lat) {
 
 /**
  * Get available sectors for a location (local + regional views)
+ * Local sectors use 1200x1200, regional sectors use 1800x1080
  */
 function getAvailableSectors(lon, lat) {
   const isWest = lon < -105;
@@ -52,17 +53,17 @@ function getAvailableSectors(lon, lat) {
   if (isWest) {
     // GOES-18 regional sectors
     return [
-      { id: config.sector, label: 'Local' },
-      { id: 'tpw', label: 'Tropical Pacific' },
-      { id: 'wus', label: 'West US' },
+      { id: config.sector, label: 'Local', size: '1200x1200' },
+      { id: 'tpw', label: 'Tropical Pacific', size: '1800x1080' },
+      { id: 'wus', label: 'West US', size: '1800x1080' },
     ];
   } else {
     // GOES-16 regional sectors
     return [
-      { id: config.sector, label: 'Local' },
-      { id: 'eus', label: 'East US' },
-      { id: 'gm', label: 'Gulf of Mexico' },
-      { id: 'car', label: 'Caribbean' },
+      { id: config.sector, label: 'Local', size: '1200x1200' },
+      { id: 'eus', label: 'East US', size: '1800x1080' },
+      { id: 'gm', label: 'Gulf of Mexico', size: '1800x1080' },
+      { id: 'car', label: 'Caribbean', size: '1800x1080' },
     ];
   }
 }
@@ -207,6 +208,8 @@ export default function MapWidgetPopup({
     setSatelliteLoading(true);
     const { satellite } = getGOESConfig(lon, lat);
     const sector = satelliteSector; // Use selected sector
+    const sectorConfig = availableSectors.find(s => s.id === sector);
+    const imageSize = sectorConfig?.size || '1200x1200';
 
     const now = new Date();
     const frameUrls = [];
@@ -233,7 +236,7 @@ export default function MapWidgetPopup({
       const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${minsStr}`;
 
       // Use selected band for satellite imagery
-      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${satelliteBand}/${timestamp}_${satellite}-ABI-${sector}-${satelliteBand}-1200x1200.jpg`;
+      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/${satelliteBand}/${timestamp}_${satellite}-ABI-${sector}-${satelliteBand}-${imageSize}.jpg`;
 
       frameUrls.push({
         url,
@@ -271,7 +274,7 @@ export default function MapWidgetPopup({
     };
 
     validateFrames();
-  }, [isOpen, lat, lon, activeLayer, satelliteBand, satelliteSector]);
+  }, [isOpen, lat, lon, activeLayer, satelliteBand, satelliteSector, availableSectors]);
 
   // Initialize Leaflet map
   useEffect(() => {
