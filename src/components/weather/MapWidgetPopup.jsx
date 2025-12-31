@@ -159,30 +159,31 @@ export default function MapWidgetPopup({
     if (!isOpen || !lat || !lon || activeLayer !== 'satellite') return;
 
     setSatelliteLoading(true);
-    const { satellite, satNum, sector } = getGOESConfig(lon, lat);
+    const { satellite, sector } = getGOESConfig(lon, lat);
 
-    // Generate timestamps for last 2 hours (24 frames at 5-min intervals)
-    // GOES images update roughly every 5-10 minutes
     const now = new Date();
     const frameUrls = [];
 
-    // Try to load the last 24 frames (2 hours worth)
+    // GOES images update at minutes ending in 1 or 6 (01, 06, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56)
     for (let i = 23; i >= 0; i--) {
       const frameTime = new Date(now.getTime() - i * 5 * 60 * 1000);
-      // Round down to nearest 5 minutes
-      frameTime.setMinutes(Math.floor(frameTime.getMinutes() / 5) * 5);
+      // Round to nearest GOES interval (minutes ending in 1 or 6)
+      const mins = frameTime.getUTCMinutes();
+      const remainder = mins % 5;
+      const roundedMins = mins - remainder + (remainder < 3 ? 1 : 6);
+      frameTime.setUTCMinutes(roundedMins > 59 ? roundedMins - 60 : roundedMins);
+      if (roundedMins > 59) frameTime.setUTCHours(frameTime.getUTCHours() + 1);
       frameTime.setSeconds(0);
       frameTime.setMilliseconds(0);
 
-      // Format: YYYYDDDHHMMSS (day of year format)
       const year = frameTime.getUTCFullYear();
-      const dayOfYear = Math.floor((frameTime - new Date(year, 0, 0)) / (1000 * 60 * 60 * 24));
+      const dayOfYear = Math.floor((frameTime - new Date(Date.UTC(year, 0, 0))) / (1000 * 60 * 60 * 24));
       const hours = frameTime.getUTCHours().toString().padStart(2, '0');
-      const mins = frameTime.getUTCMinutes().toString().padStart(2, '0');
-      const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${mins}`;
+      const minsStr = frameTime.getUTCMinutes().toString().padStart(2, '0');
+      const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${minsStr}`;
 
-      // GEOCOLOR is the visible/IR composite that looks best
-      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/GEOCOLOR/${timestamp}_${satellite}-ABI-${sector}-GEOCOLOR-1200x1200.jpg`;
+      // Use AirMass band for better cloud/weather visualization
+      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/AirMass/${timestamp}_${satellite}-ABI-${sector}-AirMass-1200x1200.jpg`;
 
       frameUrls.push({
         url,
@@ -589,7 +590,7 @@ export default function MapWidgetPopup({
                 {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')}
               </div>
               <div className="text-[10px] text-white/50">
-                GEOCOLOR Composite
+                AirMass RGB
               </div>
             </div>
           </div>

@@ -143,18 +143,25 @@ export default function WeatherMap({
     const now = new Date();
     const frameUrls = [];
 
+    // GOES images update at minutes ending in 1 or 6 (01, 06, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56)
     for (let i = 23; i >= 0; i--) {
       const frameTime = new Date(now.getTime() - i * 5 * 60 * 1000);
-      frameTime.setMinutes(Math.floor(frameTime.getMinutes() / 5) * 5);
+      // Round to nearest GOES interval (minutes ending in 1 or 6)
+      const mins = frameTime.getUTCMinutes();
+      const remainder = mins % 5;
+      const roundedMins = mins - remainder + (remainder < 3 ? 1 : 6);
+      frameTime.setUTCMinutes(roundedMins > 59 ? roundedMins - 60 : roundedMins);
+      if (roundedMins > 59) frameTime.setUTCHours(frameTime.getUTCHours() + 1);
       frameTime.setSeconds(0);
 
       const year = frameTime.getUTCFullYear();
-      const dayOfYear = Math.floor((frameTime - new Date(year, 0, 0)) / (1000 * 60 * 60 * 24));
+      const dayOfYear = Math.floor((frameTime - new Date(Date.UTC(year, 0, 0))) / (1000 * 60 * 60 * 24));
       const hours = frameTime.getUTCHours().toString().padStart(2, '0');
-      const mins = frameTime.getUTCMinutes().toString().padStart(2, '0');
-      const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${mins}`;
+      const minsStr = frameTime.getUTCMinutes().toString().padStart(2, '0');
+      const timestamp = `${year}${dayOfYear.toString().padStart(3, '0')}${hours}${minsStr}`;
 
-      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/GEOCOLOR/${timestamp}_${satellite}-ABI-${sector}-GEOCOLOR-1200x1200.jpg`;
+      // Use AirMass band for better cloud/weather visualization
+      const url = `https://cdn.star.nesdis.noaa.gov/${satellite}/ABI/SECTOR/${sector}/AirMass/${timestamp}_${satellite}-ABI-${sector}-AirMass-1200x1200.jpg`;
 
       frameUrls.push({ url, time: frameTime, timestamp });
     }
@@ -298,7 +305,7 @@ export default function WeatherMap({
               </div>
             ) : (
               <span className="text-[10px] text-white/70">
-                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')} GEOCOLOR
+                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')} AirMass
               </span>
             )}
           </div>
