@@ -495,7 +495,7 @@ export default function MapWidgetPopup({
       <div className="absolute inset-0 flex items-center justify-center p-4 md:p-8 lg:p-12 pointer-events-none">
         <div className="relative w-full max-w-3xl h-full max-h-[600px] glass-elevated rounded-3xl overflow-hidden animate-scale-in flex flex-col pointer-events-auto">
           {/* Header */}
-          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
+          <div className="absolute top-0 left-0 right-0 z-[60] flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
             <button
               onClick={onClose}
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -511,7 +511,7 @@ export default function MapWidgetPopup({
           </div>
 
           {/* Layer Toggle - horizontal bar below header */}
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2">
             <div className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-black/50 backdrop-blur-md">
               {layers.map(({ id, icon: Icon, label }) => (
                 <button
@@ -624,7 +624,7 @@ export default function MapWidgetPopup({
 
         {/* Legend */}
         {activeLayer === 'precipitation' && (
-          <div className="absolute bottom-24 left-4 z-20">
+          <div className="absolute bottom-24 left-4 z-[60]">
             <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
               <div className="text-[10px] text-white/60 mb-1.5 font-medium">Precipitation</div>
               <div className="flex items-center gap-2">
@@ -642,7 +642,7 @@ export default function MapWidgetPopup({
         )}
 
         {activeLayer === 'temperature' && (
-          <div className="absolute bottom-24 left-4 z-20">
+          <div className="absolute bottom-24 left-4 z-[60]">
             <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
               <div className="text-[10px] text-white/60 mb-1.5 font-medium">Temperature</div>
               <div className="flex items-center gap-2">
@@ -660,7 +660,7 @@ export default function MapWidgetPopup({
         )}
 
         {activeLayer === 'wind' && windData && (
-          <div className="absolute bottom-24 left-4 z-20">
+          <div className="absolute bottom-24 left-4 z-[60]">
             <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
               <div className="text-[10px] text-white/60 mb-1.5 font-medium">Wind Speed</div>
               <div className="text-lg font-semibold text-white">
@@ -674,7 +674,7 @@ export default function MapWidgetPopup({
         )}
 
         {activeLayer === 'satellite' && satelliteFrames.length > 0 && (
-          <div className="absolute bottom-24 left-4 z-20">
+          <div className="absolute bottom-24 left-4 z-[60]">
             <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
               <div className="text-[10px] text-white/60 mb-1.5 font-medium">GOES Satellite</div>
               <div className="text-sm font-semibold text-white">
@@ -697,7 +697,7 @@ export default function MapWidgetPopup({
           const activeFrame = activeFrames[activeIndex];
 
           return (
-            <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-4 pt-8 bg-gradient-to-t from-black/70 to-transparent">
+            <div className="absolute bottom-0 left-0 right-0 z-[60] px-4 pb-4 pt-8 bg-gradient-to-t from-black/70 to-transparent">
               {/* Frame indicator */}
               <div className="flex items-center gap-3 mb-3">
                 <button
