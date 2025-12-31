@@ -359,6 +359,7 @@ export default function NearbyStations({ citySlug, cityName }) {
               style={{ height: '100%', width: '100%' }}
               scrollWheelZoom={false}
               zoomControl={false}
+              attributionControl={false}
             >
               <TileLayer
                 attribution='&copy; CartoDB'

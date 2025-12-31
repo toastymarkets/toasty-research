@@ -218,7 +218,7 @@ export function WindWidget({
     );
   }
 
-  // Compact mode: Large compass, minimal text
+  // Compact mode: Compass with succinct wind info
   if (compact) {
     return (
       <>
@@ -230,14 +230,19 @@ export function WindWidget({
           onClick={() => setIsModalOpen(true)}
         >
           <div className="flex-1 flex flex-col items-center justify-center">
-            {/* Large prominent compass */}
-            <div className="w-[72px] h-[72px]">
+            {/* Prominent compass */}
+            <div className="w-[56px] h-[56px]">
               <WindCompass direction={directionDeg} speed={speedMph} />
             </div>
-            {/* Minimal direction label below */}
-            <div className="text-[10px] text-white/50 mt-1">
-              {getWindDirection(directionDeg)}
+            {/* Succinct wind info: "WSW 6mph" */}
+            <div className="text-sm font-medium text-white mt-1">
+              {getWindDirection(directionDeg)} {speedMph}mph
             </div>
+            {gustsMph && (
+              <div className="text-[10px] text-white/50">
+                Gusts {gustsMph}
+              </div>
+            )}
           </div>
         </GlassWidget>
 

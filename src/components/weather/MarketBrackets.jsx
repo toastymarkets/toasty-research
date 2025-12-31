@@ -182,7 +182,7 @@ export default function MarketBrackets({
               dayOffset === 0 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
             }`}
           >
-            Today
+            Tdy
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setDayOffset(1); }}
@@ -190,7 +190,7 @@ export default function MarketBrackets({
               dayOffset === 1 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
             }`}
           >
-            Tomorrow
+            Tmw
           </button>
         </div>
       </div>
