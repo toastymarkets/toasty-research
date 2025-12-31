@@ -124,6 +124,7 @@ export default function InteractiveMarketsMap() {
   const navigate = useNavigate();
   const [hoveredCity, setHoveredCity] = useState(null);
   const [cityWeather, setCityWeather] = useState({});
+  const [weatherLoading, setWeatherLoading] = useState(true);
   const isMobile = window.innerWidth < 768;
 
   // View mode state
@@ -205,6 +206,7 @@ export default function InteractiveMarketsMap() {
     };
 
     const fetchAllWeather = async () => {
+      setWeatherLoading(true);
       const weatherData = {};
       await Promise.all(
         MARKET_CITIES.map(async (city) => {
@@ -215,6 +217,7 @@ export default function InteractiveMarketsMap() {
         })
       );
       setCityWeather(weatherData);
+      setWeatherLoading(false);
     };
 
     fetchAllWeather();
@@ -339,8 +342,10 @@ export default function InteractiveMarketsMap() {
                         <div className="text-xl font-bold text-orange-500">
                           {Math.round((cityWeather[city.slug].currentTemp * 9/5) + 32)}°
                         </div>
+                      ) : weatherLoading ? (
+                        <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto" />
                       ) : (
-                        <div className="text-xs">...</div>
+                        <div className="text-xs text-gray-400">--</div>
                       )}
                     </div>
                   </div>
