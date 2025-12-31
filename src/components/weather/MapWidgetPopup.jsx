@@ -43,6 +43,31 @@ function getGOESConfig(lon, lat) {
 }
 
 /**
+ * Get available sectors for a location (local + regional views)
+ */
+function getAvailableSectors(lon, lat) {
+  const isWest = lon < -105;
+  const config = getGOESConfig(lon, lat);
+
+  if (isWest) {
+    // GOES-18 regional sectors
+    return [
+      { id: config.sector, label: 'Local' },
+      { id: 'tpw', label: 'Tropical Pacific' },
+      { id: 'wus', label: 'West US' },
+    ];
+  } else {
+    // GOES-16 regional sectors
+    return [
+      { id: config.sector, label: 'Local' },
+      { id: 'eus', label: 'East US' },
+      { id: 'gm', label: 'Gulf of Mexico' },
+      { id: 'car', label: 'Caribbean' },
+    ];
+  }
+}
+
+/**
  * MapWidgetPopup - Apple Weather inspired expandable map modal
  * Features: Precipitation, Temperature, Wind layers with timeline playback
  */
@@ -61,7 +86,9 @@ export default function MapWidgetPopup({
   currentTemp,
   initialLayer = 'precipitation',
   initialBand = 'AirMass',
+  initialSector,
   onBandChange,
+  onSectorChange,
 }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -80,8 +107,12 @@ export default function MapWidgetPopup({
   const [satelliteFrameIndex, setSatelliteFrameIndex] = useState(0);
   const [satelliteLoading, setSatelliteLoading] = useState(false);
   const [satelliteBand, setSatelliteBand] = useState(initialBand);
+  const [satelliteSector, setSatelliteSector] = useState(initialSector || getGOESConfig(lon, lat).sector);
 
-  // Sync active layer and band when popup opens
+  // Get available sectors for this location
+  const availableSectors = getAvailableSectors(lon, lat);
+
+  // Sync active layer, band, and sector when popup opens
   useEffect(() => {
     if (isOpen && initialLayer) {
       setActiveLayer(initialLayer);
@@ -89,7 +120,10 @@ export default function MapWidgetPopup({
     if (isOpen && initialBand) {
       setSatelliteBand(initialBand);
     }
-  }, [isOpen, initialLayer, initialBand]);
+    if (isOpen && initialSector) {
+      setSatelliteSector(initialSector);
+    }
+  }, [isOpen, initialLayer, initialBand, initialSector]);
 
   // Dynamically import Leaflet
   useEffect(() => {
@@ -171,14 +205,18 @@ export default function MapWidgetPopup({
     if (!isOpen || !lat || !lon || activeLayer !== 'satellite') return;
 
     setSatelliteLoading(true);
-    const { satellite, sector } = getGOESConfig(lon, lat);
+    const { satellite } = getGOESConfig(lon, lat);
+    const sector = satelliteSector; // Use selected sector
 
     const now = new Date();
     const frameUrls = [];
 
     // GOES images update at minutes ending in 1 or 6 (01, 06, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56)
-    for (let i = 23; i >= 0; i--) {
-      const frameTime = new Date(now.getTime() - i * 5 * 60 * 1000);
+    // Generate 12 hours of frames at 10-minute intervals (72 frames)
+    const frameCount = 72;
+    const intervalMinutes = 10;
+    for (let i = frameCount - 1; i >= 0; i--) {
+      const frameTime = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
       // Round to nearest GOES interval (minutes ending in 1 or 6)
       const mins = frameTime.getUTCMinutes();
       const remainder = mins % 5;
@@ -233,7 +271,7 @@ export default function MapWidgetPopup({
     };
 
     validateFrames();
-  }, [isOpen, lat, lon, activeLayer, satelliteBand]);
+  }, [isOpen, lat, lon, activeLayer, satelliteBand, satelliteSector]);
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -394,7 +432,7 @@ export default function MapWidgetPopup({
 
     const interval = setInterval(() => {
       setIndex(prev => (prev + 1) % activeFrames.length);
-    }, activeLayer === 'satellite' ? 300 : 500); // Faster for satellite
+    }, activeLayer === 'satellite' ? 100 : 500); // 100ms per frame for smooth 12-hour satellite animation
 
     return () => clearInterval(interval);
   }, [isPlaying, frames.length, satelliteFrames.length, activeLayer]);
@@ -486,22 +524,38 @@ export default function MapWidgetPopup({
               ))}
             </div>
 
-            {/* Band selector (satellite only) */}
+            {/* Sector and Band selectors (satellite only) */}
             {activeLayer === 'satellite' && (
-              <select
-                value={satelliteBand}
-                onChange={(e) => {
-                  setSatelliteBand(e.target.value);
-                  if (onBandChange) onBandChange(e.target.value);
-                }}
-                className="px-3 py-1.5 text-xs rounded-full bg-black/50 backdrop-blur-md text-white/80 border-none outline-none cursor-pointer"
-              >
-                {SATELLITE_BANDS.map(({ id, label }) => (
-                  <option key={id} value={id} className="bg-gray-900">
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  value={satelliteSector}
+                  onChange={(e) => {
+                    setSatelliteSector(e.target.value);
+                    if (onSectorChange) onSectorChange(e.target.value);
+                  }}
+                  className="px-3 py-1.5 text-xs rounded-full bg-black/50 backdrop-blur-md text-white/80 border-none outline-none cursor-pointer"
+                >
+                  {availableSectors.map(({ id, label }) => (
+                    <option key={id} value={id} className="bg-gray-900">
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={satelliteBand}
+                  onChange={(e) => {
+                    setSatelliteBand(e.target.value);
+                    if (onBandChange) onBandChange(e.target.value);
+                  }}
+                  className="px-3 py-1.5 text-xs rounded-full bg-black/50 backdrop-blur-md text-white/80 border-none outline-none cursor-pointer"
+                >
+                  {SATELLITE_BANDS.map(({ id, label }) => (
+                    <option key={id} value={id} className="bg-gray-900">
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </>
             )}
           </div>
 
@@ -620,7 +674,7 @@ export default function MapWidgetPopup({
                 {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')}
               </div>
               <div className="text-[10px] text-white/50">
-                {satelliteBand} RGB
+                {availableSectors.find(s => s.id === satelliteSector)?.label || satelliteSector} • {satelliteBand}
               </div>
             </div>
           </div>
@@ -704,7 +758,7 @@ export default function MapWidgetPopup({
 
               {/* Time labels */}
               <div className="flex justify-between mt-2 text-[10px] text-white/50">
-                <span>-2h</span>
+                <span>{isSatellite ? '-12h' : '-2h'}</span>
                 <span>Now</span>
                 {!isSatellite && <span>+30m</span>}
               </div>
@@ -733,5 +787,7 @@ MapWidgetPopup.propTypes = {
   currentTemp: PropTypes.number,
   initialLayer: PropTypes.oneOf(['precipitation', 'satellite', 'temperature', 'wind']),
   initialBand: PropTypes.oneOf(['AirMass', 'GEOCOLOR', 'Sandwich']),
+  initialSector: PropTypes.string,
   onBandChange: PropTypes.func,
+  onSectorChange: PropTypes.func,
 };

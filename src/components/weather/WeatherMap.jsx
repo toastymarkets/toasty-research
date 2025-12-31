@@ -29,6 +29,31 @@ function getGOESConfig(lon, lat) {
 }
 
 /**
+ * Get available sectors for a location (local + regional views)
+ */
+function getAvailableSectors(lon, lat) {
+  const isWest = lon < -105;
+  const config = getGOESConfig(lon, lat);
+
+  if (isWest) {
+    // GOES-18 regional sectors
+    return [
+      { id: config.sector, label: 'Local' },
+      { id: 'tpw', label: 'Tropical Pacific' },
+      { id: 'wus', label: 'West US' },
+    ];
+  } else {
+    // GOES-16 regional sectors
+    return [
+      { id: config.sector, label: 'Local' },
+      { id: 'eus', label: 'East US' },
+      { id: 'gm', label: 'Gulf of Mexico' },
+      { id: 'car', label: 'Caribbean' },
+    ];
+  }
+}
+
+/**
  * WeatherMap - Interactive weather map widget with Precipitation/Satellite tabs
  */
 export default function WeatherMap({
@@ -51,6 +76,10 @@ export default function WeatherMap({
   const [satelliteIndex, setSatelliteIndex] = useState(0);
   const [satelliteLoading, setSatelliteLoading] = useState(false);
   const [satelliteBand, setSatelliteBand] = useState('AirMass');
+  const [satelliteSector, setSatelliteSector] = useState(() => getGOESConfig(lon, lat).sector);
+
+  // Get available sectors for this location
+  const availableSectors = getAvailableSectors(lon, lat);
 
   const SATELLITE_BANDS = [
     { id: 'AirMass', label: 'AirMass' },
@@ -145,14 +174,18 @@ export default function WeatherMap({
     if (activeTab !== 'satellite' || !lat || !lon) return;
 
     setSatelliteLoading(true);
-    const { satellite, sector } = getGOESConfig(lon, lat);
+    const { satellite } = getGOESConfig(lon, lat);
+    const sector = satelliteSector; // Use selected sector
 
     const now = new Date();
     const frameUrls = [];
 
     // GOES images update at minutes ending in 1 or 6 (01, 06, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56)
-    for (let i = 23; i >= 0; i--) {
-      const frameTime = new Date(now.getTime() - i * 5 * 60 * 1000);
+    // Generate 12 hours of frames at 10-minute intervals (72 frames)
+    const frameCount = 72;
+    const intervalMinutes = 10;
+    for (let i = frameCount - 1; i >= 0; i--) {
+      const frameTime = new Date(now.getTime() - i * intervalMinutes * 60 * 1000);
       // Round to nearest GOES interval (minutes ending in 1 or 6)
       const mins = frameTime.getUTCMinutes();
       const remainder = mins % 5;
@@ -195,7 +228,7 @@ export default function WeatherMap({
     };
 
     validateFrames();
-  }, [activeTab, lat, lon, satelliteBand]);
+  }, [activeTab, lat, lon, satelliteBand, satelliteSector]);
 
   // Animate satellite frames
   useEffect(() => {
@@ -203,7 +236,7 @@ export default function WeatherMap({
 
     const interval = setInterval(() => {
       setSatelliteIndex(prev => (prev + 1) % satelliteFrames.length);
-    }, 400);
+    }, 100); // 100ms per frame for smooth 12-hour animation
 
     return () => clearInterval(interval);
   }, [activeTab, satelliteFrames.length]);
@@ -261,23 +294,40 @@ export default function WeatherMap({
               ))}
             </div>
 
-            {/* Band selector (satellite only) */}
+            {/* Sector and Band selectors (satellite only) */}
             {activeTab === 'satellite' && (
-              <select
-                value={satelliteBand}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  setSatelliteBand(e.target.value);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="px-2 py-1 text-[10px] rounded-full bg-black/40 backdrop-blur-sm text-white/80 border-none outline-none cursor-pointer"
-              >
-                {SATELLITE_BANDS.map(({ id, label }) => (
-                  <option key={id} value={id} className="bg-gray-900">
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  value={satelliteSector}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setSatelliteSector(e.target.value);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="px-2 py-1 text-[10px] rounded-full bg-black/40 backdrop-blur-sm text-white/80 border-none outline-none cursor-pointer"
+                >
+                  {availableSectors.map(({ id, label }) => (
+                    <option key={id} value={id} className="bg-gray-900">
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={satelliteBand}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setSatelliteBand(e.target.value);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="px-2 py-1 text-[10px] rounded-full bg-black/40 backdrop-blur-sm text-white/80 border-none outline-none cursor-pointer"
+                >
+                  {SATELLITE_BANDS.map(({ id, label }) => (
+                    <option key={id} value={id} className="bg-gray-900">
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </>
             )}
           </div>
 
@@ -332,7 +382,7 @@ export default function WeatherMap({
               </div>
             ) : (
               <span className="text-[10px] text-white/70">
-                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')} {satelliteBand}
+                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')} • {availableSectors.find(s => s.id === satelliteSector)?.label || satelliteSector}
               </span>
             )}
           </div>
@@ -349,7 +399,9 @@ export default function WeatherMap({
         currentTemp={currentTemp}
         initialLayer={activeTab}
         initialBand={satelliteBand}
+        initialSector={satelliteSector}
         onBandChange={setSatelliteBand}
+        onSectorChange={setSatelliteSector}
       />
     </>
   );
