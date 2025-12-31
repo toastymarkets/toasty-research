@@ -177,6 +177,10 @@ function CityDashboardContent({ city, citySlug }) {
         <NotesSidebar
           storageKey={notepadStorageKey}
           cityName={city.name}
+          city={city}
+          weather={weather}
+          markets={marketData}
+          observations={observations}
         />
       </div>
 
