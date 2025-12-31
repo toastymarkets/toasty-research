@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Cloud, X, Sun, CloudRain, CloudSnow, Wind, ChevronRight, Plus, Check } from 'lucide-react';
 import GlassWidget from './GlassWidget';
+import ErrorState from '../ui/ErrorState';
 import { insertForecastToNotes } from '../../utils/noteInsertionEvents';
+import { getErrorMessage } from '../../constants/errors';
 
 /**
  * NWSForecastWidget - Shows NWS forecast summary with clickable detail modal
@@ -95,7 +97,7 @@ export default function NWSForecastWidget({
       setError(null);
     } catch (err) {
       console.error('[NWSForecastWidget] Error:', err);
-      setError(err.message);
+      setError(getErrorMessage(err, 'forecast'));
     } finally {
       setLoading(false);
     }
@@ -129,9 +131,11 @@ export default function NWSForecastWidget({
   if (error || !forecast) {
     return (
       <GlassWidget title="FORECAST" icon={Cloud} size="small">
-        <div className="flex items-center justify-center h-full text-white/40 text-sm">
-          Unable to load forecast
-        </div>
+        <ErrorState
+          message={error || 'Unable to load forecast'}
+          onRetry={fetchForecast}
+          compact
+        />
       </GlassWidget>
     );
   }

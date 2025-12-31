@@ -3,6 +3,7 @@ import { ThemeProvider } from './hooks/useTheme';
 import { SidebarProvider } from './context/SidebarContext';
 import { NotesSidebarProvider } from './context/NotesSidebarContext';
 import { KalshiMarketsProvider } from './hooks/useAllKalshiMarkets';
+import { ToastProvider } from './context/ToastContext';
 import DynamicBackground from './components/layout/DynamicBackground';
 import GlassSidebar from './components/layout/GlassSidebar';
 import HomePageMarkets from './components/home/HomePageMarkets';
@@ -13,6 +14,7 @@ import ResearchNotePage from './components/research/ResearchNotePage';
 function App() {
   return (
     <ThemeProvider>
+      <ToastProvider>
       <KalshiMarketsProvider>
         <SidebarProvider>
           <NotesSidebarProvider>
@@ -40,6 +42,7 @@ function App() {
           </NotesSidebarProvider>
         </SidebarProvider>
       </KalshiMarketsProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

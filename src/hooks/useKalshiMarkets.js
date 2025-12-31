@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getErrorMessage } from '../constants/errors';
 
 /**
  * Kalshi API - uses proxy to bypass CORS
@@ -139,7 +140,7 @@ export function useKalshiMarkets(citySlug, dayOffset = 0) {
       setError(null);
       setHasInitialData(true);
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, 'market'));
       setBrackets([]);
     } finally {
       setLoading(false);

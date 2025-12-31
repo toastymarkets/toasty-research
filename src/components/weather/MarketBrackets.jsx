@@ -4,6 +4,7 @@ import { TrendingUp, ExternalLink, ChevronRight, Plus } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import { useDataChip } from '../../context/DataChipContext';
 import GlassWidget from './GlassWidget';
+import ErrorState from '../ui/ErrorState';
 
 // Lazy load the heavy modal component
 const MarketBracketsModal = lazy(() => import('./MarketBracketsModal'));
@@ -36,7 +37,7 @@ export default function MarketBrackets({
   const isVertical = variant === 'vertical';
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { brackets, closeTime, loading, error, seriesTicker } = useKalshiMarkets(citySlug, dayOffset);
+  const { brackets, closeTime, loading, error, seriesTicker, refetch } = useKalshiMarkets(citySlug, dayOffset);
   const { insertDataChip, isAvailable: canInsertChip } = useDataChip();
 
   const dayLabel = dayOffset === 0 ? 'today' : 'tomorrow';
@@ -133,9 +134,11 @@ export default function MarketBrackets({
   if (error) {
     return (
       <GlassWidget title="MARKET BRACKETS" icon={TrendingUp} size="large">
-        <div className="flex items-center justify-center h-full text-red-400 text-sm">
-          {error}
-        </div>
+        <ErrorState
+          message={error}
+          onRetry={() => refetch(true)}
+          compact
+        />
       </GlassWidget>
     );
   }

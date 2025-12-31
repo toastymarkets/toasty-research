@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
 import { Clock, Sun, Moon, Cloud, CloudRain, CloudSnow, CloudFog, CloudLightning } from 'lucide-react';
 import GlassWidget from './GlassWidget';
+import StaleDataIndicator from '../ui/StaleDataIndicator';
 
 // Lazy load the heavy modal component
 const ObservationDetailModal = lazy(() => import('./ObservationDetailModal'));
@@ -129,19 +130,6 @@ export default function HourlyForecast({
     return reversed.slice(0, 72);
   }, [allObservations24h]);
 
-  // Format last updated time
-  const lastUpdatedText = useMemo(() => {
-    if (!lastUpdated) return null;
-    const date = lastUpdated instanceof Date ? lastUpdated : new Date(lastUpdated);
-    const now = new Date();
-    const diffMinutes = Math.round((now - date) / (1000 * 60));
-
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    const diffHours = Math.round(diffMinutes / 60);
-    return `${diffHours}h ago`;
-  }, [lastUpdated]);
-
   // Get surrounding observations for the modal (5 before, selected, 5 after)
   const getSurroundingObservations = useMemo(() => {
     if (selectedIndex === null || displayData.length === 0) return [];
@@ -224,10 +212,17 @@ export default function HourlyForecast({
 
         {/* Station info, unit toggle, and tap hint */}
         <div className="flex items-center justify-between mt-1 px-1">
-          <span className="text-[10px] text-glass-text-muted">
-            {stationId ? `Station: ${stationId}` : ''}
-            {lastUpdatedText ? ` • ${lastUpdatedText}` : ''}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-glass-text-muted">
+              {stationId ? `Station: ${stationId}` : ''}
+            </span>
+            {lastUpdated && (
+              <StaleDataIndicator
+                timestamp={lastUpdated}
+                staleThresholdMinutes={15}
+              />
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={(e) => {

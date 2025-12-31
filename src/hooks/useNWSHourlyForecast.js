@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CITY_COORDS } from './useMultiModelForecast';
 import { CACHE_DURATIONS } from '../constants/cache';
+import { getErrorMessage } from '../constants/errors';
 
 const gridCache = {};
 
@@ -148,7 +149,7 @@ export function useNWSHourlyForecast(citySlug) {
       setError(null);
     } catch (err) {
       console.error('[NWSHourlyForecast] Fetch error:', err);
-      setError(err.message);
+      setError(getErrorMessage(err, 'forecast'));
     } finally {
       setLoading(false);
     }

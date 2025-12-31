@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { CITY_BY_SLUG, CITY_BY_ID } from '../config/cities';
+import { getErrorMessage } from '../constants/errors';
 
 /**
  * Fetch current observations from NWS station
@@ -61,10 +62,10 @@ export const useNWSWeather = (stationId) => {
             icon: observation.icon,
           });
         } else {
-          setError('Failed to fetch weather data');
+          setError(getErrorMessage(null, 'weather'));
         }
       } catch (err) {
-        setError(err.message);
+        setError(getErrorMessage(err, 'weather'));
       } finally {
         setLoading(false);
       }
@@ -76,7 +77,33 @@ export const useNWSWeather = (stationId) => {
     return () => clearInterval(interval);
   }, [stationId]);
 
-  return { weather, loading, error };
+  const refetch = () => {
+    if (stationId) {
+      setLoading(true);
+      setError(null);
+      fetchStationObservation(stationId).then(observation => {
+        if (observation) {
+          setWeather({
+            temperature: observation.temperature,
+            humidity: observation.relativeHumidity,
+            windSpeed: observation.windSpeed,
+            windDirection: observation.windDirection,
+            textDescription: observation.textDescription,
+            timestamp: observation.timestamp,
+            icon: observation.icon,
+          });
+        } else {
+          setError(getErrorMessage(null, 'weather'));
+        }
+        setLoading(false);
+      }).catch(err => {
+        setError(getErrorMessage(err, 'weather'));
+        setLoading(false);
+      });
+    }
+  };
+
+  return { weather, loading, error, refetch };
 };
 
 /**
@@ -185,7 +212,7 @@ export const useNWSForecastDiscussion = (cityId) => {
           officeName: cityConfig.forecastOffice,
         });
       } catch (err) {
-        setError(err.message);
+        setError(getErrorMessage(err, 'forecast'));
       } finally {
         setLoading(false);
       }
@@ -197,7 +224,7 @@ export const useNWSForecastDiscussion = (cityId) => {
     return () => clearInterval(interval);
   }, [cityId]);
 
-  return { discussion, loading, error };
+  return { discussion, loading, error, refetch: () => { setLoading(true); } };
 };
 
 export default useNWSWeather;
