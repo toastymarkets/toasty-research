@@ -6,27 +6,33 @@ import GlassWidget from './GlassWidget';
 import MapWidgetPopup from './MapWidgetPopup';
 
 /**
- * Get GOES satellite configuration based on longitude
- * GOES-18 covers Western US, GOES-16 covers Eastern US
+ * Get GOES satellite configuration based on location
+ * GOES-18: Pacific coast (pnw, psw only)
+ * GOES-19: All other regions (replaced GOES-16, has more sectors)
  */
 function getGOESConfig(lon, lat) {
-  // Denver is at -104.66, include it in West
-  const isWest = lon < -104;
-  const satellite = isWest ? 'GOES18' : 'GOES16';
+  // GOES-18 only has pnw and psw sectors (Pacific coast)
+  // Use GOES-19 for everything else (it has all sectors including nr)
+  const isPacificCoast = lon < -115 || (lat > 42 && lon < -104);
+  const satellite = isPacificCoast ? 'GOES18' : 'GOES19';
 
   let sector;
-  if (isWest) {
-    // GOES-18 sectors
-    if (lat > 42) sector = 'pnw';           // Seattle, Portland
-    else if (lon < -115) sector = 'psw';    // LA, SF, San Diego
-    else sector = 'nr';                      // Denver, SLC, Phoenix
+  if (lat > 42 && lon < -104) {
+    sector = 'pnw';                              // Seattle, Portland
+  } else if (lon < -115) {
+    sector = 'psw';                              // LA, SF, San Diego
+  } else if (lon < -104) {
+    sector = 'nr';                               // Denver, SLC (GOES-19)
+  } else if (lat > 40 && lon > -85) {
+    sector = 'ne';                               // NYC, Boston, Philly, DC
+  } else if (lat > 37 && lon < -82) {
+    sector = 'umv';                              // Chicago, Detroit
+  } else if (lat < 30 && lon > -90) {
+    sector = 'se';                               // Miami
+  } else if (lon < -90) {
+    sector = 'sp';                               // Houston, Austin, Dallas
   } else {
-    // GOES-16 sectors
-    if (lat > 40 && lon > -85) sector = 'ne';      // NYC, Boston, Philly
-    else if (lat > 37 && lon < -82) sector = 'umv'; // Chicago, Detroit
-    else if (lat < 30 && lon > -90) sector = 'se';  // Miami
-    else if (lon < -90) sector = 'sp';              // Houston, Austin, Dallas
-    else sector = 'ma';                              // DC
+    sector = 'ne';                               // DC and others default to ne
   }
 
   return { satellite, sector };
@@ -37,18 +43,18 @@ function getGOESConfig(lon, lat) {
  * Local sectors use 1200x1200, regional sectors use 1800x1080
  */
 function getAvailableSectors(lon, lat) {
-  const isWest = lon < -104;
   const config = getGOESConfig(lon, lat);
+  const isPacificCoast = config.satellite === 'GOES18';
 
-  if (isWest) {
+  if (isPacificCoast) {
     return [
-      { id: config.sector, label: 'Local', size: '1200x1200' },
-      { id: 'tpw', label: 'Pacific', size: '1800x1080' },
+      { id: config.sector, label: 'Local', size: '1200x1200', satellite: 'GOES18' },
+      { id: 'tpw', label: 'Pacific', size: '1800x1080', satellite: 'GOES18' },
     ];
   } else {
     return [
-      { id: config.sector, label: 'Local', size: '1200x1200' },
-      { id: 'eus', label: 'East US', size: '1800x1080' },
+      { id: config.sector, label: 'Local', size: '1200x1200', satellite: 'GOES19' },
+      { id: 'eus', label: 'East US', size: '1800x1080', satellite: 'GOES19' },
     ];
   }
 }
@@ -174,9 +180,9 @@ export default function WeatherMap({
     if (activeTab !== 'satellite' || !lat || !lon) return;
 
     setSatelliteLoading(true);
-    const { satellite } = getGOESConfig(lon, lat);
     const sector = satelliteSector; // Use selected sector
     const sectorConfig = availableSectors.find(s => s.id === sector);
+    const satellite = sectorConfig?.satellite || getGOESConfig(lon, lat).satellite;
     const imageSize = sectorConfig?.size || '1200x1200';
     const isRegional = imageSize !== '1200x1200';
 
@@ -393,7 +399,7 @@ export default function WeatherMap({
               </div>
             ) : (
               <span className="text-[10px] text-white/70">
-                {getGOESConfig(lon, lat).satellite.replace('GOES', 'GOES-')} • {availableSectors.find(s => s.id === satelliteSector)?.label || satelliteSector}
+                {(availableSectors.find(s => s.id === satelliteSector)?.satellite || 'GOES19').replace('GOES', 'GOES-')} • {availableSectors.find(s => s.id === satelliteSector)?.label || satelliteSector}
               </span>
             )}
           </div>
