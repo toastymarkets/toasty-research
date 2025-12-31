@@ -29,35 +29,59 @@ export function gatherCopilotContext({
 
   // Current weather
   if (weather) {
+    // NWS returns temperature as { value: celsius, unitCode: "..." }
+    // Need to extract value and convert to Fahrenheit
+    let tempF = null;
+    if (weather.temperature?.value != null) {
+      // Convert from Celsius to Fahrenheit
+      tempF = Math.round((weather.temperature.value * 9/5) + 32);
+    } else if (typeof weather.temperature === 'number') {
+      tempF = weather.temperature;
+    } else if (weather.temp != null) {
+      tempF = weather.temp;
+    }
+
+    // Same for humidity - NWS returns as object
+    let humidity = null;
+    if (weather.humidity?.value != null) {
+      humidity = Math.round(weather.humidity.value);
+    } else if (weather.relativeHumidity?.value != null) {
+      humidity = Math.round(weather.relativeHumidity.value);
+    } else if (typeof weather.humidity === 'number') {
+      humidity = weather.humidity;
+    }
+
     context.weather = {
-      temp: weather.temperature ?? weather.temp,
+      temp: tempF,
       condition: weather.condition || weather.textDescription,
-      humidity: weather.humidity ?? weather.relativeHumidity,
-      windSpeed: weather.windSpeed,
-      windDirection: weather.windDirection,
+      humidity: humidity,
+      windSpeed: weather.windSpeed?.value ?? weather.windSpeed,
+      windDirection: weather.windDirection?.value ?? weather.windDirection,
     };
   }
 
   // Recent observations (summarized - last 6 hours)
+  // Note: observations from useNWSObservationHistory are already converted to Fahrenheit
   if (observations && observations.length > 0) {
-    const recentObs = observations.slice(0, 12); // ~6 hours at 30min intervals
+    const recentObs = observations.slice(-12); // Get last 12 (most recent, since array is oldest-first)
     context.observations = recentObs.map(obs => ({
       time: formatObsTime(obs.timestamp || obs.time),
-      temp: obs.temperature ?? obs.temp,
-      humidity: obs.humidity ?? obs.relativeHumidity,
-    }));
+      temp: obs.temperature ?? obs.temp, // Already in Fahrenheit from hook
+      humidity: obs.humidity,
+    })).reverse(); // Reverse so most recent is first
 
-    // Calculate trend
+    // Calculate trend (comparing most recent to oldest in our window)
     if (recentObs.length >= 2) {
-      const first = recentObs[0];
-      const last = recentObs[recentObs.length - 1];
-      const firstTemp = first.temperature ?? first.temp;
-      const lastTemp = last.temperature ?? last.temp;
-      if (firstTemp != null && lastTemp != null) {
+      const mostRecent = recentObs[recentObs.length - 1];
+      const oldest = recentObs[0];
+      const recentTemp = mostRecent.temperature ?? mostRecent.temp;
+      const oldTemp = oldest.temperature ?? oldest.temp;
+      if (recentTemp != null && oldTemp != null) {
+        const change = recentTemp - oldTemp;
         context.tempTrend = {
-          change: (firstTemp - lastTemp).toFixed(1),
-          direction: firstTemp > lastTemp ? 'rising' : firstTemp < lastTemp ? 'falling' : 'stable',
-          hours: Math.round((new Date(recentObs[0].timestamp) - new Date(recentObs[recentObs.length - 1].timestamp)) / 3600000),
+          change: change.toFixed(1),
+          direction: change > 0.5 ? 'rising' : change < -0.5 ? 'falling' : 'stable',
+          hours: Math.round((new Date(mostRecent.timestamp) - new Date(oldest.timestamp)) / 3600000),
         };
       }
     }
