@@ -5,50 +5,13 @@
  * Uses Claude API with streaming for typewriter effect
  */
 
+import { buildSystemPrompt } from '../prompts/copilot-system.js';
+
 export const config = {
   runtime: 'edge',
 };
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-
-/**
- * Build system prompt with context
- */
-function buildSystemPrompt(context) {
-  const parts = [
-    `You are a weather research copilot for Kalshi temperature prediction market trading.`,
-    `You help users analyze weather data, understand market odds, and build trading theses.`,
-    `Be concise and actionable. Focus on insights that help with trading decisions.`,
-    `When writing notes or reports, format clearly with headers and bullet points.`,
-    ``,
-  ];
-
-  if (context?.city) {
-    parts.push(`Current city: ${context.city.name}`);
-  }
-
-  if (context?.weather) {
-    const w = context.weather;
-    parts.push(`Current conditions: ${w.temp}°F, ${w.condition || ''}, ${w.humidity}% humidity`);
-  }
-
-  if (context?.markets?.topBrackets?.length > 0) {
-    const brackets = context.markets.topBrackets
-      .slice(0, 3)
-      .map(b => `${b.label}: ${b.yesPrice}%`)
-      .join(', ');
-    parts.push(`Top market brackets: ${brackets}`);
-  }
-
-  if (context?.observations?.length > 0) {
-    const recent = context.observations.slice(0, 3)
-      .map(o => `${o.time}: ${o.temp}°F`)
-      .join(', ');
-    parts.push(`Recent observations: ${recent}`);
-  }
-
-  return parts.join('\n');
-}
 
 export default async function handler(req) {
   // Handle CORS preflight
