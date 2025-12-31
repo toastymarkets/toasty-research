@@ -1,6 +1,5 @@
 import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2, ChevronDown, Clock, X, ExternalLink } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { DataChipProvider } from '../../context/DataChipContext';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 import NotepadEditor from '../notepad/NotepadEditor';
@@ -416,9 +415,8 @@ export default function NotesSidebar({ storageKey, cityName }) {
           ${isCollapsed ? 'translate-x-[calc(100%+12px)]' : 'translate-x-0'}
         `}
       >
-        <DataChipProvider>
-          <NotepadProvider storageKey={storageKey}>
-            <div className="h-full flex flex-col">
+        <NotepadProvider storageKey={storageKey}>
+          <div className="h-full flex flex-col">
               {/* Header */}
               <div className="p-3">
                 <div className="flex items-center justify-between">
@@ -482,9 +480,8 @@ export default function NotesSidebar({ storageKey, cityName }) {
                   <ResearchLog />
                 </div>
               </div>
-            </div>
-          </NotepadProvider>
-        </DataChipProvider>
+          </div>
+        </NotepadProvider>
       </aside>
     </>
   );

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { X, ChevronDown, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, ChevronDown, ExternalLink, TrendingUp, TrendingDown, Plus } from 'lucide-react';
+import { useDataChip } from '../../context/DataChipContext';
 import {
   ResponsiveContainer,
   LineChart,
@@ -211,6 +212,7 @@ MarketBracketsModal.propTypes = {
  */
 function BracketRow({ bracket, seriesTicker, isExpanded, onToggle, isLeading }) {
   const [period, setPeriod] = useState('1h');
+  const { insertDataChip, isAvailable: canInsertChip } = useDataChip();
 
   // Fetch candlesticks when expanded
   const { candles, loading: candlesLoading } = useKalshiCandlesticks(
@@ -226,13 +228,45 @@ function BracketRow({ bracket, seriesTicker, isExpanded, onToggle, isLeading }) 
     isExpanded
   );
 
-  // Condense label (e.g., "38° to 39°" -> "38-39°")
+  // Condense label (e.g., "38° to 39°" -> "38-39°F")
   const condenseLabel = (label) => {
-    const match = label.match(/(\d+)°?\s*to\s*(\d+)°?/i);
-    if (match) {
-      return `${match[1]}-${match[2]}°`;
+    // Handle range: "38° to 39°" -> "38-39°F"
+    const rangeMatch = label.match(/(\d+)°?\s*to\s*(\d+)°?/i);
+    if (rangeMatch) {
+      return `${rangeMatch[1]}-${rangeMatch[2]}°F`;
+    }
+    // Handle "or above"
+    const aboveMatch = label.match(/(\d+)°?\s*(or above|and above|\+)/i);
+    if (aboveMatch) {
+      return `≥${aboveMatch[1]}°F`;
+    }
+    // Handle "or below"
+    const belowMatch = label.match(/(\d+)°?\s*(or below|and below)/i);
+    if (belowMatch) {
+      return `≤${belowMatch[1]}°F`;
     }
     return label;
+  };
+
+  // Handle inserting bracket data as a chip into notes
+  const handleBracketInsert = (e) => {
+    e.stopPropagation(); // Prevent row expansion
+
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    insertDataChip({
+      value: condenseLabel(bracket.label),
+      secondary: `${bracket.yesPrice}%`,
+      label: 'Market Odds',
+      source: `Kalshi ${seriesTicker}`,
+      timestamp,
+      type: 'market',
+    });
   };
 
   return (
@@ -240,11 +274,25 @@ function BracketRow({ bracket, seriesTicker, isExpanded, onToggle, isLeading }) 
       {/* Main Row - Clickable */}
       <button
         onClick={onToggle}
-        className={`w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors ${
+        className={`group relative w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors ${
           isLeading ? 'bg-white/[0.03]' : ''
         }`}
       >
-        <div className="flex items-center gap-3">
+        {/* Quick Add Button */}
+        {canInsertChip && (
+          <button
+            onClick={handleBracketInsert}
+            className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100
+                       w-4 h-4 rounded-full bg-[var(--color-orange-main)]
+                       flex items-center justify-center transition-opacity z-10
+                       hover:scale-110"
+            title="Add to notes"
+          >
+            <Plus size={10} strokeWidth={3} className="text-black" />
+          </button>
+        )}
+
+        <div className={`flex items-center gap-3 ${canInsertChip ? 'ml-3' : ''}`}>
           <ChevronDown
             className={`w-4 h-4 text-white/40 transition-transform ${
               isExpanded ? '' : '-rotate-90'
