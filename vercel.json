@@ -1,5 +1,11 @@
 {
   "framework": "vite",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- .",
   "rewrites": [
     {
       "source": "/api/kalshi/:path*",
