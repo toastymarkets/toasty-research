@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import PropTypes from 'prop-types';
 import {
   Sun,
@@ -29,7 +29,7 @@ const UV_LEVELS = [
   { max: 15, label: 'Extreme', color: '#BF5AF2' },
 ];
 
-export function UVIndexWidget({ value = 0, loading = false }) {
+export const UVIndexWidget = memo(function UVIndexWidget({ value = 0, loading = false }) {
   const level = UV_LEVELS.find(l => value <= l.max) || UV_LEVELS[UV_LEVELS.length - 1];
   const percentage = Math.min((value / 11) * 100, 100);
 
@@ -65,7 +65,7 @@ export function UVIndexWidget({ value = 0, loading = false }) {
       </div>
     </GlassWidget>
   );
-}
+});
 
 UVIndexWidget.propTypes = {
   value: PropTypes.number,
@@ -191,7 +191,7 @@ const WindCompass = ({ direction = 0, speed = 0 }) => {
   );
 };
 
-export function WindWidget({
+export const WindWidget = memo(function WindWidget({
   speed = 0,
   direction = 0,
   gusts = null,
@@ -315,7 +315,7 @@ export function WindWidget({
       />
     </>
   );
-}
+});
 
 WindWidget.propTypes = {
   speed: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
@@ -328,7 +328,7 @@ WindWidget.propTypes = {
 };
 
 // ============ HUMIDITY WIDGET ============
-export function HumidityWidget({ value = 0, dewPoint = null, loading = false }) {
+export const HumidityWidget = memo(function HumidityWidget({ value = 0, dewPoint = null, loading = false }) {
   // Handle NWS format
   const humidityValue = typeof value === 'object' ? Math.round(value.value) : Math.round(value);
   const dewPointValue = dewPoint ? (typeof dewPoint === 'object' ? Math.round((dewPoint.value * 9/5) + 32) : Math.round(dewPoint)) : null;
@@ -358,7 +358,7 @@ export function HumidityWidget({ value = 0, dewPoint = null, loading = false }) 
       </div>
     </GlassWidget>
   );
-}
+});
 
 HumidityWidget.propTypes = {
   value: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
@@ -373,7 +373,7 @@ const getTrendIcon = (trend) => {
   return Minus;
 };
 
-export function PressureWidget({ value = 0, trend = 'steady', loading = false }) {
+export const PressureWidget = memo(function PressureWidget({ value = 0, trend = 'steady', loading = false }) {
   // Convert Pa to inHg if needed (NWS returns Pa)
   const pressureInHg = typeof value === 'object'
     ? (value.value / 3386.39).toFixed(2)
@@ -408,7 +408,7 @@ export function PressureWidget({ value = 0, trend = 'steady', loading = false })
       </div>
     </GlassWidget>
   );
-}
+});
 
 PressureWidget.propTypes = {
   value: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
@@ -417,7 +417,7 @@ PressureWidget.propTypes = {
 };
 
 // ============ VISIBILITY WIDGET ============
-export function VisibilityWidget({ value = 10, loading = false }) {
+export const VisibilityWidget = memo(function VisibilityWidget({ value = 10, loading = false }) {
   // Convert meters to miles if needed
   const visibilityMiles = typeof value === 'object'
     ? (value.value / 1609.34).toFixed(1)
@@ -449,7 +449,7 @@ export function VisibilityWidget({ value = 10, loading = false }) {
       </div>
     </GlassWidget>
   );
-}
+});
 
 VisibilityWidget.propTypes = {
   value: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
@@ -457,7 +457,7 @@ VisibilityWidget.propTypes = {
 };
 
 // ============ FEELS LIKE WIDGET ============
-export function FeelsLikeWidget({ actual = 0, feelsLike = 0, loading = false }) {
+export const FeelsLikeWidget = memo(function FeelsLikeWidget({ actual = 0, feelsLike = 0, loading = false }) {
   // Convert Celsius to Fahrenheit if needed
   const actualF = typeof actual === 'object' ? Math.round((actual.value * 9/5) + 32) : Math.round(actual);
   const feelsLikeF = typeof feelsLike === 'object' ? Math.round((feelsLike.value * 9/5) + 32) : Math.round(feelsLike);
@@ -486,7 +486,7 @@ export function FeelsLikeWidget({ actual = 0, feelsLike = 0, loading = false }) 
       </div>
     </GlassWidget>
   );
-}
+});
 
 FeelsLikeWidget.propTypes = {
   actual: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
@@ -495,7 +495,7 @@ FeelsLikeWidget.propTypes = {
 };
 
 // ============ MARKET INSIGHT WIDGET ============
-export function MarketInsightWidget({ marketData, forecastHigh, loading = false }) {
+export const MarketInsightWidget = memo(function MarketInsightWidget({ marketData, forecastHigh, loading = false }) {
   // Extract the most likely bracket from market data
   const topBracket = marketData?.topBrackets?.[0];
   const marketError = marketData?.error;
@@ -559,7 +559,7 @@ export function MarketInsightWidget({ marketData, forecastHigh, loading = false 
       </div>
     </GlassWidget>
   );
-}
+});
 
 MarketInsightWidget.propTypes = {
   marketData: PropTypes.shape({

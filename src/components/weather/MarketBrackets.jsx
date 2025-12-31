@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
 import { TrendingUp, ExternalLink, ChevronRight, Plus } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import { useDataChip } from '../../context/DataChipContext';
 import GlassWidget from './GlassWidget';
-import MarketBracketsModal from './MarketBracketsModal';
+
+// Lazy load the heavy modal component
+const MarketBracketsModal = lazy(() => import('./MarketBracketsModal'));
 
 /**
  * Generate Kalshi market URL for a city
@@ -274,17 +276,19 @@ export default function MarketBrackets({
       </div>
     </GlassWidget>
 
-    {/* Detail Modal */}
+    {/* Detail Modal - Lazy loaded */}
     {isModalOpen && (
-      <MarketBracketsModal
-        brackets={brackets}
-        cityName={cityName}
-        seriesTicker={seriesTicker}
-        closeTime={closeTime}
-        dayOffset={dayOffset}
-        onDayChange={setDayOffset}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <MarketBracketsModal
+          brackets={brackets}
+          cityName={cityName}
+          seriesTicker={seriesTicker}
+          closeTime={closeTime}
+          dayOffset={dayOffset}
+          onDayChange={setDayOffset}
+          onClose={() => setIsModalOpen(false)}
+        />
+      </Suspense>
     )}
     </>
   );

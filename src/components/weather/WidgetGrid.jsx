@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import PropTypes from 'prop-types';
 
 /**
@@ -29,7 +30,7 @@ WidgetGrid.propTypes = {
 /**
  * WidgetGrid.Item - Wrapper for grid items with size control
  */
-function WidgetGridItem({ children, span = 1, className = '' }) {
+const WidgetGridItem = memo(function WidgetGridItem({ children, span = 1, className = '' }) {
   // On mobile (grid-cols-1), all items are full width
   // On xs+ (grid-cols-2), span-2 items take full width
   // On sm+ (grid-cols-3), span-2 items take 2 cols, span-3 takes full
@@ -46,7 +47,7 @@ function WidgetGridItem({ children, span = 1, className = '' }) {
       {children}
     </div>
   );
-}
+});
 
 WidgetGridItem.propTypes = {
   children: PropTypes.node,

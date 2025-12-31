@@ -1,38 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useKalshiMarketsFromContext } from '../../hooks/useAllKalshiMarkets.jsx';
 
-export default function CityCard({ city }) {
+const CityCard = memo(function CityCard({ city }) {
   const { topBrackets, totalVolume, closeTime, loading, error } = useKalshiMarketsFromContext(city.slug);
   const [timer, setTimer] = useState(null);
 
+  // Memoized timer update function to prevent recreating on each render
+  const updateTimer = useCallback(() => {
+    if (!closeTime) {
+      setTimer(null);
+      return;
+    }
+
+    const now = new Date();
+    const diff = closeTime.getTime() - now.getTime();
+
+    if (diff <= 0) {
+      setTimer({ hours: 0, minutes: 0, seconds: 0, formatted: 'Closed' });
+      return;
+    }
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    setTimer({ hours, minutes, seconds, formatted: `${hours}h ${minutes}m ${seconds}s` });
+  }, [closeTime]);
+
   // Update timer every second based on market close time
   useEffect(() => {
-    const updateTimer = () => {
-      if (!closeTime) {
-        setTimer(null);
-        return;
-      }
-
-      const now = new Date();
-      const diff = closeTime.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        setTimer({ hours: 0, minutes: 0, seconds: 0, formatted: 'Closed' });
-        return;
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      setTimer({ hours, minutes, seconds, formatted: `${hours}h ${minutes}m ${seconds}s` });
-    };
-
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [closeTime]);
+  }, [updateTimer]);
 
   const formatVolume = (vol) => {
     if (!vol) return '--';
@@ -52,6 +53,7 @@ export default function CityCard({ city }) {
           <img
             src={city.image}
             alt={city.name}
+            loading="lazy"
             className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
           />
         )}
@@ -111,16 +113,20 @@ export default function CityCard({ city }) {
             </span>
           )}
           <button
-            className="w-6 h-6 rounded-full border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:border-orange-500 hover:text-orange-500 transition-colors"
+            className="w-11 h-11 -m-2 rounded-full flex items-center justify-center text-[var(--color-text-muted)] hover:text-orange-500 transition-colors"
             onClick={(e) => {
               e.preventDefault();
               // Could open a quick-add modal
             }}
           >
-            <Plus size={14} />
+            <span className="w-6 h-6 rounded-full border border-[var(--color-border)] flex items-center justify-center hover:border-orange-500">
+              <Plus size={14} />
+            </span>
           </button>
         </div>
       </div>
     </Link>
   );
-}
+});
+
+export default CityCard;
