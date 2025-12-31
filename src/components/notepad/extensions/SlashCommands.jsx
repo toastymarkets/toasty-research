@@ -15,7 +15,15 @@ import {
   Calendar,
   Clock,
   CalendarClock,
+  Sparkles,
 } from 'lucide-react';
+
+// AI command handler - will be set by the editor
+let aiCommandHandler = null;
+
+export const setAICommandHandler = (handler) => {
+  aiCommandHandler = handler;
+};
 
 // Define all available commands
 const commands = [

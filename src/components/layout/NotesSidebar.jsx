@@ -2,17 +2,20 @@ import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2, ChevronDown, C
 import { Link, useLocation } from 'react-router-dom';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
-import { CopilotProvider, useCopilot } from '../../context/CopilotContext';
+import { CopilotProvider } from '../../context/CopilotContext';
 import NotepadEditor from '../notepad/NotepadEditor';
-import CopilotInput from '../copilot/CopilotInput';
 import ConfirmPopover from '../ui/ConfirmPopover';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { DataChipNode } from '../notepad/extensions/DataChipNode';
-import { gatherCopilotContext, getSuggestedPrompts } from '../../utils/copilotHelpers';
+import { gatherCopilotContext } from '../../utils/copilotHelpers';
+
+// Context to pass copilot data to NotepadEditor
+const CopilotDataContext = createContext(null);
+export const useCopilotData = () => useContext(CopilotDataContext);
 
 /**
  * Header controls component with save indicator and action buttons
@@ -113,10 +116,11 @@ function HeaderControls() {
  * Notepad content wrapper that uses the context
  */
 function NotepadContent() {
+  const copilotContext = useCopilotData();
   return (
     <div className="h-full flex flex-col notepad-compact">
       <div className="flex-1 overflow-auto">
-        <NotepadEditor />
+        <NotepadEditor context={copilotContext} />
       </div>
     </div>
   );
@@ -373,9 +377,8 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
   const { isCollapsed, toggle, expand } = useNotesSidebar();
   const [activeView, setActiveView] = useState('notes'); // 'notes' | 'log'
 
-  // Gather context for copilot
+  // Gather context for copilot (used by /ai slash command)
   const copilotContext = gatherCopilotContext({ city, weather, markets, observations });
-  const suggestedPrompts = getSuggestedPrompts(copilotContext);
 
   // Auto-switch to Notes tab when data is inserted from widgets
   useEffect(() => {
@@ -424,6 +427,7 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
       >
         <NotepadProvider storageKey={storageKey}>
           <CopilotProvider>
+          <CopilotDataContext.Provider value={copilotContext}>
           <div className="h-full flex flex-col">
               {/* Header */}
               <div className="p-3">
@@ -488,15 +492,8 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
                   <ResearchLog />
                 </div>
               </div>
-
-              {/* Copilot input - only visible in notes view */}
-              {activeView === 'notes' && (
-                <CopilotInput
-                  context={copilotContext}
-                  suggestedPrompts={suggestedPrompts}
-                />
-              )}
           </div>
+          </CopilotDataContext.Provider>
           </CopilotProvider>
         </NotepadProvider>
       </aside>

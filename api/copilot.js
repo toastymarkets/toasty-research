@@ -112,61 +112,84 @@ export default async function handler(req) {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Claude API error:', error);
-      return new Response(JSON.stringify({ error: 'AI request failed' }), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' },
+      console.error('Claude API error:', response.status, error);
+      return new Response(`data: ${JSON.stringify({ type: 'error', message: `Claude API error: ${response.status} - ${error}` })}\n\n`, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Access-Control-Allow-Origin': '*',
+        },
       });
     }
 
-    // Transform Claude's SSE format to our format
+    // Create a ReadableStream that transforms Claude's SSE format to our format
     const encoder = new TextEncoder();
+    const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
-    const transformStream = new TransformStream({
-      async transform(chunk, controller) {
-        const text = decoder.decode(chunk);
-        const lines = text.split('\n');
+    const stream = new ReadableStream({
+      async start(controller) {
+        let buffer = '';
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
-              continue;
+              controller.close();
+              return;
             }
 
-            try {
-              const parsed = JSON.parse(data);
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
 
-              // Handle content_block_delta events (text chunks)
-              if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ type: 'text', content: parsed.delta.text })}\n\n`)
-                );
-              }
+            // Keep the last potentially incomplete line in the buffer
+            buffer = lines.pop() || '';
 
-              // Handle message_stop event
-              if (parsed.type === 'message_stop') {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
-              }
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6).trim();
+                if (data === '[DONE]') {
+                  continue;
+                }
 
-              // Handle errors
-              if (parsed.type === 'error') {
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ type: 'error', message: parsed.error?.message || 'Unknown error' })}\n\n`)
-                );
+                try {
+                  const parsed = JSON.parse(data);
+
+                  // Handle content_block_delta events (text chunks)
+                  if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ type: 'text', content: parsed.delta.text })}\n\n`)
+                    );
+                  }
+
+                  // Handle message_stop event
+                  if (parsed.type === 'message_stop') {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+                  }
+
+                  // Handle errors
+                  if (parsed.type === 'error') {
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ type: 'error', message: parsed.error?.message || 'Unknown error' })}\n\n`)
+                    );
+                  }
+                } catch (e) {
+                  // Ignore parse errors for incomplete chunks
+                }
               }
-            } catch (e) {
-              // Ignore parse errors for incomplete chunks
             }
           }
+        } catch (err) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`));
+          controller.close();
         }
       },
+      cancel() {
+        reader.cancel();
+      }
     });
-
-    // Pipe the response through our transform
-    const stream = response.body.pipeThrough(transformStream);
 
     return new Response(stream, {
       headers: {
@@ -178,10 +201,13 @@ export default async function handler(req) {
     });
 
   } catch (error) {
-    console.error('Copilot error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
+    console.error('Copilot error:', error.message, error.stack);
+    return new Response(`data: ${JSON.stringify({ type: 'error', message: `Server error: ${error.message}` })}\n\n`, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   }
 }

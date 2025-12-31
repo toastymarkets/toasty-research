@@ -5,15 +5,29 @@ import { useNotepad } from '../../context/NotepadContext';
 import { useDataChip } from '../../context/DataChipContext';
 import { useCopilot } from '../../context/CopilotContext';
 import { DataChipNode } from './extensions/DataChipNode';
-import { SlashCommands } from './extensions/SlashCommands';
-import { useEffect } from 'react';
+import SlashCommands from './extensions/SlashCommands';
+import { AIPromptExtension, setAISubmitHandler } from './extensions/AIPromptExtension';
+import CopilotSuggestions from '../copilot/CopilotSuggestions';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { subscribeToNoteInsertions } from '../../utils/noteInsertionEvents';
 import '../../styles/notepad.css';
+import '../copilot/copilot.css';
 
-export default function NotepadEditor() {
+export default function NotepadEditor({ context }) {
   const { document, saveDocument } = useNotepad();
   const { editorRef } = useDataChip();
   const copilot = useCopilot();
+
+  // AI state
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const abortControllerRef = useRef(null);
+  const contextRef = useRef(context);
+
+  // Keep context ref updated
+  useEffect(() => {
+    contextRef.current = context;
+  }, [context]);
 
   const editor = useEditor({
     extensions: [
@@ -32,12 +46,13 @@ export default function NotepadEditor() {
       }),
       DataChipNode,
       SlashCommands,
+      AIPromptExtension,
       Placeholder.configure({
         placeholder: ({ node }) => {
           if (node.type.name === 'heading') {
             return 'Heading...';
           }
-          return 'Type / for commands, or just start writing...';
+          return 'Type /ai followed by your question, then Enter...';
         },
       }),
     ],
@@ -52,6 +67,132 @@ export default function NotepadEditor() {
       saveDocument(json);
     },
   });
+
+  // Handle AI prompt submission (called by AIPromptExtension)
+  const handleAISubmit = useCallback(async (prompt, editorInstance) => {
+    const ed = editorInstance || editor;
+    if (!ed || !prompt.trim()) return;
+
+    setIsThinking(true);
+
+    // Insert the prompt as a styled line
+    ed.chain()
+      .focus()
+      .insertContent([
+        { type: 'paragraph', content: [
+          { type: 'text', marks: [{ type: 'bold' }], text: '✨ ' },
+          { type: 'text', marks: [{ type: 'italic' }], text: prompt },
+        ]},
+      ])
+      .run();
+
+    // Create abort controller
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const response = await fetch('/api/copilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          context: contextRef.current || {},
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      setIsThinking(false);
+      setIsStreaming(true);
+
+      // Add new paragraph for response
+      ed.chain().focus().insertContent([{ type: 'paragraph' }]).run();
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.type === 'text' && data.content) {
+                // Insert the new content
+                ed.chain()
+                  .focus()
+                  .insertContent(data.content)
+                  .run();
+              } else if (data.type === 'error') {
+                throw new Error(data.message || 'Stream error');
+              }
+            } catch (e) {
+              // Ignore parse errors for incomplete chunks
+              if (e.message && !e.message.includes('JSON')) {
+                throw e;
+              }
+            }
+          }
+        }
+      }
+
+      // Add paragraph after response
+      ed.chain().focus().insertContent([{ type: 'paragraph' }]).run();
+
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        // User cancelled
+        ed.chain()
+          .focus()
+          .insertContent([
+            { type: 'paragraph', content: [
+              { type: 'text', marks: [{ type: 'italic' }], text: '(cancelled)' },
+            ]},
+          ])
+          .run();
+      } else {
+        console.error('Copilot error:', err);
+        ed.chain()
+          .focus()
+          .insertContent([
+            { type: 'paragraph', content: [
+              { type: 'text', text: `Error: ${err.message}` },
+            ]},
+          ])
+          .run();
+      }
+    } finally {
+      setIsThinking(false);
+      setIsStreaming(false);
+      abortControllerRef.current = null;
+    }
+  }, [editor]);
+
+  // Cancel AI generation
+  const handleAICancel = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setIsThinking(false);
+    setIsStreaming(false);
+  }, []);
+
+  // Set up AI submit handler for the AIPromptExtension
+  useEffect(() => {
+    setAISubmitHandler(handleAISubmit);
+
+    return () => {
+      setAISubmitHandler(null);
+    };
+  }, [handleAISubmit]);
 
   // Connect editor to DataChipContext ref for external insertions
   useEffect(() => {
@@ -116,8 +257,35 @@ export default function NotepadEditor() {
   }
 
   return (
-    <div className="notepad-wrapper h-full">
-      <EditorContent editor={editor} className="h-full" />
+    <div className="notepad-wrapper h-full flex flex-col">
+      <div className="flex-1 overflow-auto">
+        <EditorContent editor={editor} className="h-full" />
+      </div>
+
+      {/* Streaming/Thinking indicator */}
+      {(isThinking || isStreaming) && (
+        <div className="px-3 pb-2">
+          <div className="copilot-streaming-indicator">
+            <span className="dot" />
+            <span>{isThinking ? 'Thinking...' : 'Writing...'}</span>
+            <button
+              onClick={handleAICancel}
+              className="ml-auto text-white/50 hover:text-white text-xs"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick prompt suggestions */}
+      {!isThinking && !isStreaming && (
+        <CopilotSuggestions
+          context={context}
+          onSelect={handleAISubmit}
+          disabled={isThinking || isStreaming}
+        />
+      )}
     </div>
   );
 }

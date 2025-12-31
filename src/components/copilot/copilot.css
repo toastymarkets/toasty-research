@@ -195,13 +195,73 @@
   border-radius: 6px;
 }
 
-/* Suggestions */
+/* Suggestions container */
 .copilot-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(249, 115, 22, 0.03);
+}
+
+.copilot-suggestions-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(249, 115, 22, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.copilot-suggestions-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
+.copilot-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.copilot-chip:hover:not(:disabled) {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.copilot-chip:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.copilot-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.copilot-chip svg {
+  color: rgba(249, 115, 22, 0.8);
+  flex-shrink: 0;
+}
+
+/* Legacy chip style for backwards compatibility */
 .copilot-suggestion-chip {
   display: flex;
   align-items: center;
@@ -256,4 +316,115 @@
   color: rgba(249, 115, 22, 0.9);
   font-weight: 600;
   font-size: 13px;
+}
+
+/* Inline prompt container */
+.copilot-prompt-container {
+  margin: 8px 0;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.05));
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 12px;
+  animation: prompt-appear 0.2s ease-out;
+}
+
+@keyframes prompt-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.copilot-prompt-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.copilot-prompt-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 14px;
+  outline: none;
+}
+
+.copilot-prompt-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.copilot-prompt-input:disabled {
+  opacity: 0.5;
+}
+
+.copilot-prompt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.copilot-prompt-submit {
+  background: rgba(249, 115, 22, 0.8);
+  color: white;
+}
+
+.copilot-prompt-submit:hover:not(:disabled) {
+  background: rgba(249, 115, 22, 1);
+}
+
+.copilot-prompt-submit:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+.copilot-prompt-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.copilot-prompt-cancel:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.copilot-prompt-hint {
+  padding: 4px 12px 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Streaming indicator in editor */
+.copilot-streaming-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(249, 115, 22, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  color: rgba(249, 115, 22, 0.9);
+  margin: 4px 0;
+}
+
+.copilot-streaming-indicator .dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(249, 115, 22, 0.8);
+  border-radius: 50%;
+  animation: copilot-pulse 1s ease-in-out infinite;
 }
