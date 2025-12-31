@@ -87,6 +87,14 @@ export default function WeatherMap({
   // Get available sectors for this location (memoized to prevent infinite re-renders)
   const availableSectors = useMemo(() => getAvailableSectors(lon, lat), [lon, lat]);
 
+  // Reset satellite state when city changes
+  useEffect(() => {
+    const newSector = getGOESConfig(lon, lat).sector;
+    setSatelliteSector(newSector);
+    setSatelliteFrames([]);
+    setSatelliteIndex(0);
+  }, [lon, lat]);
+
   const SATELLITE_BANDS = [
     { id: 'AirMass', label: 'AirMass' },
     { id: 'GEOCOLOR', label: 'GeoColor' },

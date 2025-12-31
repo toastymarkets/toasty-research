@@ -112,6 +112,14 @@ export default function MapWidgetPopup({
     }
   }, [isOpen, initialLayer, initialBand, initialSector]);
 
+  // Reset satellite state when city changes
+  useEffect(() => {
+    const newSector = getGOESConfig(lon, lat).sector;
+    setSatelliteSector(newSector);
+    setSatelliteFrames([]);
+    setSatelliteFrameIndex(0);
+  }, [lon, lat]);
+
   // Dynamically import Leaflet
   useEffect(() => {
     if (isOpen) {
