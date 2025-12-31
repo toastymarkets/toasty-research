@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import { useState, memo, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
 import {
   Sun,
@@ -14,7 +14,9 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
-import WindDetailModal from './WindDetailModal';
+
+// Lazy load modal with Recharts
+const WindDetailModal = lazy(() => import('./WindDetailModal'));
 
 /**
  * Small Weather Widgets - Apple Weather inspired compact widgets
@@ -246,17 +248,21 @@ export const WindWidget = memo(function WindWidget({
           </div>
         </GlassWidget>
 
-        {/* Wind Detail Modal */}
-        <WindDetailModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          currentSpeed={speedMph}
-          currentDirection={directionDeg}
-          currentGusts={gustsMph}
-          observations={observations}
-          timezone={timezone}
-          cityName={cityName}
-        />
+        {/* Wind Detail Modal - Lazy loaded */}
+        {isModalOpen && (
+          <Suspense fallback={null}>
+            <WindDetailModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              currentSpeed={speedMph}
+              currentDirection={directionDeg}
+              currentGusts={gustsMph}
+              observations={observations}
+              timezone={timezone}
+              cityName={cityName}
+            />
+          </Suspense>
+        )}
       </>
     );
   }
@@ -302,17 +308,21 @@ export const WindWidget = memo(function WindWidget({
         </div>
       </GlassWidget>
 
-      {/* Wind Detail Modal */}
-      <WindDetailModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        currentSpeed={speedMph}
-        currentDirection={directionDeg}
-        currentGusts={gustsMph}
-        observations={observations}
-        timezone={timezone}
-        cityName={cityName}
-      />
+      {/* Wind Detail Modal - Lazy loaded */}
+      {isModalOpen && (
+        <Suspense fallback={null}>
+          <WindDetailModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            currentSpeed={speedMph}
+            currentDirection={directionDeg}
+            currentGusts={gustsMph}
+            observations={observations}
+            timezone={timezone}
+            cityName={cityName}
+          />
+        </Suspense>
+      )}
     </>
   );
 });
