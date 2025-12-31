@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { X, Cloud, Thermometer, Wind, Play, Pause, Satellite } from 'lucide-react';
+import { X, Cloud, Play, Pause, Satellite } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 /**
@@ -88,8 +88,6 @@ export default function MapWidgetPopup({
 }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
   const radarLayerRef = useRef(null);
 
   const [L, setL] = useState(null);
@@ -97,8 +95,6 @@ export default function MapWidgetPopup({
   const [frames, setFrames] = useState([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [windData, setWindData] = useState(null);
-  const [temperatureData, setTemperatureData] = useState(null);
   const [satelliteFrames, setSatelliteFrames] = useState([]);
   const [satelliteFrameIndex, setSatelliteFrameIndex] = useState(0);
   const [satelliteLoading, setSatelliteLoading] = useState(false);
@@ -155,46 +151,6 @@ export default function MapWidgetPopup({
       .catch(console.error);
   }, [isOpen]);
 
-  // Fetch wind data from Open-Meteo
-  useEffect(() => {
-    if (!isOpen || !lat || !lon) return;
-
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=mph&timezone=auto&forecast_days=1`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data.hourly) {
-          const currentHour = new Date().getHours();
-          setWindData({
-            speed: data.hourly.wind_speed_10m[currentHour] || 0,
-            direction: data.hourly.wind_direction_10m[currentHour] || 0,
-            hourly: data.hourly,
-          });
-        }
-      })
-      .catch(console.error);
-  }, [isOpen, lat, lon]);
-
-  // Fetch temperature data from Open-Meteo
-  useEffect(() => {
-    if (!isOpen || !lat || !lon) return;
-
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data.hourly) {
-          const currentHour = new Date().getHours();
-          setTemperatureData({
-            current: data.hourly.temperature_2m[currentHour] || currentTemp,
-            hourly: data.hourly,
-          });
-        }
-      })
-      .catch(console.error);
-  }, [isOpen, lat, lon, currentTemp]);
 
   // Fetch GOES satellite imagery frames
   useEffect(() => {
@@ -342,91 +298,6 @@ export default function MapWidgetPopup({
     }
   }, [activeLayer]);
 
-  // Wind particle animation
-  useEffect(() => {
-    if (activeLayer !== 'wind' || !canvasRef.current || !windData) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-
-    // Wind vector components (convert direction to radians)
-    const windRad = (windData.direction * Math.PI) / 180;
-    const windU = Math.sin(windRad) * windData.speed * 0.3;
-    const windV = -Math.cos(windRad) * windData.speed * 0.3;
-
-    // Particles
-    const particles = [];
-    const particleCount = 400;
-
-    class Particle {
-      constructor() {
-        this.reset();
-      }
-
-      reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.age = 0;
-        this.maxAge = 80 + Math.random() * 60;
-      }
-
-      update() {
-        this.x += windU;
-        this.y += windV;
-        this.age++;
-
-        if (
-          this.age > this.maxAge ||
-          this.x < 0 || this.x > canvas.width ||
-          this.y < 0 || this.y > canvas.height
-        ) {
-          this.reset();
-        }
-      }
-
-      draw() {
-        const alpha = Math.max(0, 1 - this.age / this.maxAge) * 0.6;
-        ctx.fillStyle = `rgba(100, 210, 255, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
-    }
-
-    const animate = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach(p => {
-        p.update();
-        p.draw();
-      });
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [activeLayer, windData]);
-
   // Timeline playback
   useEffect(() => {
     if (!isPlaying) return;
@@ -477,10 +348,8 @@ export default function MapWidgetPopup({
   if (!isOpen) return null;
 
   const layers = [
-    { id: 'precipitation', icon: Cloud, label: 'Precip' },
     { id: 'satellite', icon: Satellite, label: 'Satellite' },
-    { id: 'temperature', icon: Thermometer, label: 'Temp' },
-    { id: 'wind', icon: Wind, label: 'Wind' },
+    { id: 'precipitation', icon: Cloud, label: 'Precip' },
   ];
 
   return (
@@ -569,25 +438,6 @@ export default function MapWidgetPopup({
         {/* Map Container - z-[1] creates stacking context to contain Leaflet's high z-indexes */}
         <div ref={mapRef} className="absolute inset-0 bg-gray-900 z-[1]" />
 
-        {/* Wind Canvas Overlay */}
-        {activeLayer === 'wind' && (
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0 pointer-events-none z-10"
-          />
-        )}
-
-        {/* Temperature Overlay */}
-        {activeLayer === 'temperature' && temperatureData && (
-          <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
-            <div className="glass-elevated px-8 py-6 rounded-2xl text-center">
-              <div className="text-6xl font-thin text-white mb-2">
-                {Math.round(temperatureData.current)}°
-              </div>
-              <div className="text-white/60 text-sm">{cityName}</div>
-            </div>
-          </div>
-        )}
 
         {/* Satellite Overlay */}
         {activeLayer === 'satellite' && (
@@ -641,37 +491,6 @@ export default function MapWidgetPopup({
           </div>
         )}
 
-        {activeLayer === 'temperature' && (
-          <div className="absolute bottom-24 left-4 z-[60]">
-            <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
-              <div className="text-[10px] text-white/60 mb-1.5 font-medium">Temperature</div>
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-24 h-2 rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #3B82F6, #10B981, #FBBF24, #F97316, #EF4444)' }}
-                />
-              </div>
-              <div className="flex justify-between text-[9px] text-white/50 mt-1">
-                <span>Cold</span>
-                <span>Hot</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeLayer === 'wind' && windData && (
-          <div className="absolute bottom-24 left-4 z-[60]">
-            <div className="px-3 py-2 rounded-xl bg-black/50 backdrop-blur-sm">
-              <div className="text-[10px] text-white/60 mb-1.5 font-medium">Wind Speed</div>
-              <div className="text-lg font-semibold text-white">
-                {Math.round(windData.speed)} mph
-              </div>
-              <div className="text-[10px] text-white/50">
-                from {getWindDirection(windData.direction)}
-              </div>
-            </div>
-          </div>
-        )}
 
         {activeLayer === 'satellite' && satelliteFrames.length > 0 && (
           <div className="absolute bottom-24 left-4 z-[60]">
@@ -776,13 +595,6 @@ export default function MapWidgetPopup({
       </div>
     </div>
   );
-}
-
-// Helper function for wind direction
-function getWindDirection(degrees) {
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
 }
 
 MapWidgetPopup.propTypes = {
