@@ -24,7 +24,7 @@ import {
   HumidityWidget,
   PressureWidget,
   VisibilityWidget,
-  MarketInsightWidget,
+  RoundingWidget,
 } from '../weather';
 
 // Kalshi market data
@@ -79,6 +79,14 @@ function CityDashboardContent({ city, citySlug }) {
     if (weather?.temperature?.value == null) return null;
     return Math.round((weather.temperature.value * 9/5) + 32);
   }, [weather]);
+
+  // Determine observation type based on latest observation's rawMessage
+  // METAR = has rawMessage (hourly), ASOS = no rawMessage (5-minute)
+  const observationType = useMemo(() => {
+    if (!observations || observations.length === 0) return 'asos';
+    const latest = observations[observations.length - 1];
+    return latest?.rawMessage ? 'metar' : 'asos';
+  }, [observations]);
 
   // Generate 10-day forecast from hourly data
   const tenDayForecast = useMemo(() => {
@@ -278,11 +286,11 @@ function CityDashboardContent({ city, citySlug }) {
             citySlug={citySlug}
           />
 
-          {/* Market Insight - Kalshi prediction data */}
-          <MarketInsightWidget
-            marketData={marketData}
-            forecastHigh={forecast?.todayHigh}
-            loading={forecastLoading}
+          {/* Rounding Calculator - NWS temperature uncertainty */}
+          <RoundingWidget
+            currentTemp={currentTempF}
+            observationType={observationType}
+            loading={weatherLoading}
           />
         </WidgetGrid>
       </div>
