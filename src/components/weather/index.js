@@ -13,6 +13,7 @@ export { default as WeatherMap } from './WeatherMap';
 export { default as TemperatureChartModal } from './TemperatureChartModal';
 export { default as RoundingWidget } from './RoundingWidget';
 export { default as RoundingModal } from './RoundingModal';
+export { default as NearbyStations } from './NearbyStations';
 
 // Small Widgets
 export {
