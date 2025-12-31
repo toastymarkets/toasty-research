@@ -25,6 +25,7 @@ import {
   PressureWidget,
   VisibilityWidget,
   RoundingWidget,
+  NearbyStations,
 } from '../weather';
 
 // Kalshi market data
@@ -242,33 +243,41 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGrid.Item>
 
-          {/* NWS Forecast */}
-          <NWSForecastWidget
-            citySlug={citySlug}
-            lat={city.lat}
-            lon={city.lon}
-            timezone={city.timezone}
-          />
+          {/* Nearby Stations */}
+          <WidgetGrid.Item span={2}>
+            <NearbyStations
+              citySlug={citySlug}
+              cityName={city.name}
+            />
+          </WidgetGrid.Item>
 
-          {/* Multi-Model Forecasts */}
-          <ModelsWidget citySlug={citySlug} loading={forecastLoading} />
+          {/* Stacked Column: NWS Forecast + Models - equal height grid */}
+          <div className="grid grid-rows-2 gap-2 h-full">
+            <NWSForecastWidget
+              citySlug={citySlug}
+              lat={city.lat}
+              lon={city.lon}
+              timezone={city.timezone}
+            />
+            <ModelsWidget citySlug={citySlug} loading={forecastLoading} />
+          </div>
 
-          {/* Wind */}
-          <WindWidget
-            speed={weatherDetails.windSpeed}
-            direction={weatherDetails.windDirection}
-            loading={weatherLoading}
-            observations={observations}
-            timezone={city.timezone}
-            cityName={city.name}
-          />
-
-          {/* Humidity */}
-          <HumidityWidget
-            value={weatherDetails.humidity}
-            dewPoint={weatherDetails.dewPoint}
-            loading={weatherLoading}
-          />
+          {/* Stacked Column: Wind + Humidity - equal height grid */}
+          <div className="grid grid-rows-2 gap-2 h-full">
+            <WindWidget
+              speed={weatherDetails.windSpeed}
+              direction={weatherDetails.windDirection}
+              loading={weatherLoading}
+              observations={observations}
+              timezone={city.timezone}
+              cityName={city.name}
+            />
+            <HumidityWidget
+              value={weatherDetails.humidity}
+              dewPoint={weatherDetails.dewPoint}
+              loading={weatherLoading}
+            />
+          </div>
 
           {/* Pressure */}
           <PressureWidget
