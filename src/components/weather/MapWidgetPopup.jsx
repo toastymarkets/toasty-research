@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Cloud, Play, Pause, Satellite } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
