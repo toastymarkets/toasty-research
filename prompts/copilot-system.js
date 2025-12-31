@@ -22,6 +22,13 @@ export const COPILOT_SYSTEM_PROMPT = `You are a weather research copilot for Kal
 - One trading idea per response
 - If asked for details, still stay brief
 
+## CRITICAL: Use ONLY Provided Data
+- NEVER make up or guess temperature readings
+- ONLY use the exact values from "Current Session Context" below
+- If no weather data is provided, say "No current data available"
+- NEVER hallucinate specific temperatures like "60.8°F" unless it's in the context
+- Use the exact current temp from context, not invented values
+
 ## Kalshi Temperature Markets
 
 ### How They Work
@@ -168,31 +175,32 @@ Use this format. Never exceed this length.`;
 export function buildSystemPrompt(context) {
   const parts = [COPILOT_SYSTEM_PROMPT];
 
-  // Add current context section
-  parts.push('\n\n## Current Session Context\n');
+  // Add current context section - CRITICAL: This is the ONLY data the AI should use
+  parts.push('\n\n---\n## CURRENT SESSION DATA (USE ONLY THESE VALUES)\n');
 
   if (context?.city) {
     parts.push(`**City:** ${context.city.name}`);
     if (context.city.stationId) {
       parts.push(`**Station:** ${context.city.stationId}`);
     }
-    if (context.city.timezone) {
-      parts.push(`**Timezone:** ${context.city.timezone}`);
-    }
   }
 
   if (context?.weather) {
     const w = context.weather;
-    const conditions = [
-      w.temp != null ? `${w.temp}°F` : null,
+    if (w.temp != null) {
+      parts.push(`**CURRENT TEMPERATURE: ${w.temp}°F** (Use this exact value, do not invent other readings)`);
+    }
+    const otherConditions = [
       w.condition,
       w.humidity != null ? `${w.humidity}% humidity` : null,
       w.windSpeed != null ? `Wind ${w.windSpeed} mph ${w.windDirection || ''}`.trim() : null,
     ].filter(Boolean).join(', ');
 
-    if (conditions) {
-      parts.push(`**Current Conditions:** ${conditions}`);
+    if (otherConditions) {
+      parts.push(`**Other Conditions:** ${otherConditions}`);
     }
+  } else {
+    parts.push('**CURRENT TEMPERATURE: No data available** (Tell user no current data)');
   }
 
   if (context?.tempTrend) {
@@ -216,6 +224,13 @@ export function buildSystemPrompt(context) {
       .map(o => `${o.time}: ${o.temp}°F`)
       .join(', ');
     parts.push(`**Recent Observations:** ${recent}`);
+
+    // Find today's high from observations
+    const temps = context.observations.map(o => o.temp).filter(t => t != null);
+    if (temps.length > 0) {
+      const highSoFar = Math.max(...temps);
+      parts.push(`**High So Far Today: ${highSoFar}°F**`);
+    }
   }
 
   if (context?.forecast?.length > 0) {
@@ -224,6 +239,9 @@ export function buildSystemPrompt(context) {
       .join(' | ');
     parts.push(`**Forecast:** ${forecasts}`);
   }
+
+  parts.push('\n---');
+  parts.push('REMINDER: Only reference the values above. Never invent temperature readings.');
 
   return parts.join('\n');
 }
