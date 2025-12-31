@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { X, Cloud, Thermometer, Wind, Play, Pause, Satellite } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
@@ -110,8 +110,8 @@ export default function MapWidgetPopup({
   const [satelliteBand, setSatelliteBand] = useState(initialBand);
   const [satelliteSector, setSatelliteSector] = useState(initialSector || getGOESConfig(lon, lat).sector);
 
-  // Get available sectors for this location
-  const availableSectors = getAvailableSectors(lon, lat);
+  // Get available sectors for this location (memoized to prevent infinite re-renders)
+  const availableSectors = useMemo(() => getAvailableSectors(lon, lat), [lon, lat]);
 
   // Sync active layer, band, and sector when popup opens
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Map, Maximize2, Cloud, Satellite } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
@@ -79,8 +79,8 @@ export default function WeatherMap({
   const [satelliteBand, setSatelliteBand] = useState('AirMass');
   const [satelliteSector, setSatelliteSector] = useState(() => getGOESConfig(lon, lat).sector);
 
-  // Get available sectors for this location
-  const availableSectors = getAvailableSectors(lon, lat);
+  // Get available sectors for this location (memoized to prevent infinite re-renders)
+  const availableSectors = useMemo(() => getAvailableSectors(lon, lat), [lon, lat]);
 
   const SATELLITE_BANDS = [
     { id: 'AirMass', label: 'AirMass' },
