@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { X, ArrowRight, Info, Calculator } from 'lucide-react';
+import { X, ArrowRight, Info, Calculator, Bot, AlertTriangle, Clock, Phone } from 'lucide-react';
 import {
   findASOSRange,
   findMETARRange,
@@ -72,34 +72,47 @@ export default function RoundingModal({ currentTemp, observationType = 'asos', o
             <div className="flex bg-white/10 rounded-lg p-0.5 mt-3">
               <button
                 onClick={() => setActiveTab('explanation')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-all ${
                   activeTab === 'explanation'
                     ? 'bg-white/20 text-white'
                     : 'text-white/50 hover:text-white/70'
                 }`}
               >
                 <Info className="w-3.5 h-3.5" />
-                How It Works
+                <span className="hidden sm:inline">How It Works</span>
+                <span className="sm:hidden">Info</span>
               </button>
               <button
                 onClick={() => setActiveTab('calculator')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-all ${
                   activeTab === 'calculator'
                     ? 'bg-white/20 text-white'
                     : 'text-white/50 hover:text-white/70'
                 }`}
               >
                 <Calculator className="w-3.5 h-3.5" />
-                Calculator
+                <span className="hidden sm:inline">Calculator</span>
+                <span className="sm:hidden">Calc</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('omo')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  activeTab === 'omo'
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/50 hover:text-white/70'
+                }`}
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">OMO Bots</span>
+                <span className="sm:hidden">OMO</span>
               </button>
             </div>
           </div>
 
           {/* Content */}
           <div className="overflow-y-auto max-h-[60vh] glass-scroll">
-            {activeTab === 'explanation' ? (
-              <ExplanationTab />
-            ) : (
+            {activeTab === 'explanation' && <ExplanationTab />}
+            {activeTab === 'calculator' && (
               <CalculatorTab
                 input={calcInput}
                 onInputChange={setCalcInput}
@@ -111,6 +124,7 @@ export default function RoundingModal({ currentTemp, observationType = 'asos', o
                 isValid={isValidInput}
               />
             )}
+            {activeTab === 'omo' && <OMOBotsTab />}
           </div>
 
           {/* Footer */}
@@ -276,6 +290,128 @@ function ExplanationTab() {
             <span>Edge cases near bracket boundaries have higher risk</span>
           </li>
         </ul>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * OMOBotsTab - Information about One-Minute Observation bots
+ */
+function OMOBotsTab() {
+  return (
+    <div className="p-4 space-y-4">
+      {/* Warning Banner */}
+      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-3">
+        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <h3 className="text-sm font-semibold text-red-300 mb-1">Trading Warning</h3>
+          <p className="text-xs text-red-200/80">
+            Be cautious leaving limit orders exposed when the current temperature is near the day's high,
+            especially in cities where OMO bots are known to be active.
+          </p>
+        </div>
+      </div>
+
+      {/* What is OMO */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Bot className="w-4 h-4 text-purple-400" />
+          <h3 className="text-sm font-semibold text-white">What is OMO?</h3>
+        </div>
+        <p className="text-xs text-white/70 leading-relaxed">
+          <span className="text-purple-300 font-medium">OMO</span> stands for{' '}
+          <span className="text-white">One-Minute Observation</span>. Some ASOS stations allow access
+          to near-real-time data via a dial-in phone system, traditionally used by pilots.
+          Automated bots can call this system to retrieve temperature readings.
+        </p>
+      </div>
+
+      {/* The Advantage */}
+      <div className="bg-white/5 rounded-lg p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Clock className="w-4 h-4 text-amber-400" />
+          <h4 className="text-xs font-semibold text-white">The Information Advantage</h4>
+        </div>
+        <p className="text-xs text-white/60 leading-relaxed">
+          Public NWS Time Series data only shows <span className="text-white">5-minute readings</span>.
+          OMO bots can potentially access temperature readings for the minutes{' '}
+          <span className="text-amber-300">between</span> those public reports, giving operators
+          a brief window of non-public information.
+        </p>
+      </div>
+
+      {/* How It Works */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Phone className="w-4 h-4 text-blue-400" />
+          <h3 className="text-xs font-semibold text-white">How It Works</h3>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-start gap-3 bg-white/5 rounded-lg p-2.5">
+            <span className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px] text-blue-300 flex-shrink-0">
+              1
+            </span>
+            <p className="text-xs text-white/70">
+              Bot dials into the ASOS station's phone line
+            </p>
+          </div>
+          <div className="flex items-start gap-3 bg-white/5 rounded-lg p-2.5">
+            <span className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px] text-blue-300 flex-shrink-0">
+              2
+            </span>
+            <p className="text-xs text-white/70">
+              System reads current conditions (temperature in °C)
+            </p>
+          </div>
+          <div className="flex items-start gap-3 bg-white/5 rounded-lg p-2.5">
+            <span className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px] text-blue-300 flex-shrink-0">
+              3
+            </span>
+            <p className="text-xs text-white/70">
+              Bot parses audio and acts before public data updates
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Key Details */}
+      <div className="space-y-2">
+        <h4 className="text-xs font-semibold text-white">Key Details</h4>
+
+        <div className="bg-white/5 rounded-lg p-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <span className="text-amber-400 text-xs">•</span>
+            <p className="text-xs text-white/70">
+              <span className="text-white">Data Format:</span> Temperature is provided in Celsius (°C),
+              so it still has rounding ambiguity when converted to Fahrenheit
+            </p>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-amber-400 text-xs">•</span>
+            <p className="text-xs text-white/70">
+              <span className="text-white">Access Limitation:</span> Often only one call can access
+              the ASOS line at a time
+            </p>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-amber-400 text-xs">•</span>
+            <p className="text-xs text-white/70">
+              <span className="text-white">City Variation:</span> Not all cities have active OMO bots;
+              some markets are more affected than others
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Market Implications */}
+      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+        <h4 className="text-xs font-semibold text-amber-300 mb-2">Market Implications</h4>
+        <p className="text-xs text-amber-200/80 leading-relaxed">
+          If a bot hears a new maximum temperature (even just a new rounded °C value) before it's public,
+          it might quickly fill orders that become unfavorable due to the new information.
+          This is especially risky for limit orders near the day's current high temperature.
+        </p>
       </div>
     </div>
   );
