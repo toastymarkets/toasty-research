@@ -156,6 +156,7 @@ export default function MarketBracketsModal({
               period={chartPeriod}
               onPeriodChange={setChartPeriod}
               loading={chartLoading}
+              cityName={cityName}
             />
           </div>
 

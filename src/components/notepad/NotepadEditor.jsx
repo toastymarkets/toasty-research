@@ -1,6 +1,7 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import Image from '@tiptap/extension-image';
 import { useNotepad } from '../../context/NotepadContext';
 import { useDataChip } from '../../context/DataChipContext';
 import { useCopilot } from '../../context/CopilotContext';
@@ -47,6 +48,10 @@ export default function NotepadEditor({ context }) {
       DataChipNode,
       SlashCommands,
       AIPromptExtension,
+      Image.configure({
+        inline: false,
+        allowBase64: true, // Required for screenshot data URLs
+      }),
       Placeholder.configure({
         placeholder: ({ node }) => {
           if (node.type.name === 'heading') {
