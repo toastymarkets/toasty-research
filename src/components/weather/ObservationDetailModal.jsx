@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types';
 import { X, Plus, Check, Table, BarChart3, Info, Thermometer, Droplets, Wind, Eye, Gauge, Clock, FileText } from 'lucide-react';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { insertObservationToNotes, insertSingleDataPoint } from '../../utils/noteInsertionEvents';
+import ChartScreenshotButton from '../ui/ChartScreenshotButton';
 import {
   ComposedChart,
   Line,
@@ -37,6 +38,8 @@ export default function ObservationDetailModal({
   const [showMETAROnly, setShowMETAROnly] = useState(false);
   // Info popover visibility
   const [showInfo, setShowInfo] = useState(false);
+  // Chart ref for screenshot
+  const chartRef = useRef(null);
 
   // Filter observations based on METAR toggle, and reverse for display (newest first)
   const displayObservations = useMemo(() => {
@@ -539,7 +542,11 @@ export default function ObservationDetailModal({
         {activeView === 'chart' && (
           <div className="px-2 py-3">
             {chartData.length > 0 ? (
-              <div className="h-[200px]">
+              <div ref={chartRef} className="relative group h-[200px] bg-white/5 rounded-lg p-2">
+                <ChartScreenshotButton
+                  chartRef={chartRef}
+                  caption={`${cityName || stationId} observations - ${new Date().toLocaleDateString()}`}
+                />
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                     <defs>
