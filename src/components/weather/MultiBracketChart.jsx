@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
+import ChartScreenshotButton from '../ui/ChartScreenshotButton';
 import {
   ResponsiveContainer,
   LineChart,
@@ -51,7 +52,9 @@ export default function MultiBracketChart({
   period,
   onPeriodChange,
   loading,
+  cityName = '',
 }) {
+  const chartRef = useRef(null);
   const periods = ['1h', '6h', '1d', '1w', 'all'];
   const periodLabels = { '1h': '1H', '6h': '6H', '1d': '1D', '1w': '1W', 'all': 'ALL' };
 
@@ -122,8 +125,16 @@ export default function MultiBracketChart({
     </div>
   );
 
+  // Generate caption for screenshot
+  const screenshotCaption = cityName
+    ? `${cityName} price chart - ${new Date().toLocaleDateString()}`
+    : `Price chart - ${new Date().toLocaleDateString()}`;
+
   return (
-    <div className="bg-white/5 rounded-xl p-3">
+    <div ref={chartRef} className="relative group bg-white/5 rounded-xl p-3">
+      {/* Screenshot button */}
+      <ChartScreenshotButton chartRef={chartRef} caption={screenshotCaption} />
+
       {/* Legend */}
       {renderLegend()}
 
@@ -238,4 +249,5 @@ MultiBracketChart.propTypes = {
   period: PropTypes.string.isRequired,
   onPeriodChange: PropTypes.func.isRequired,
   loading: PropTypes.bool,
+  cityName: PropTypes.string,
 };
