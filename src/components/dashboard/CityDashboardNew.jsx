@@ -21,7 +21,7 @@ import {
   WidgetGridV2,
   WeatherMap,
   WindWidget,
-  HumidityWidget,
+  ResolutionWidget,
   PressureWidget,
   VisibilityWidget,
   RoundingWidget,
@@ -276,7 +276,7 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* Wind + Humidity stacked */}
+          {/* Wind + Resolution stacked */}
           <WidgetGridV2.Area area="smallstack">
             <WindWidget
               speed={weatherDetails.windSpeed}
@@ -287,9 +287,11 @@ function CityDashboardContent({ city, citySlug }) {
               cityName={city.name}
               compact={true}
             />
-            <HumidityWidget
-              value={weatherDetails.humidity}
-              dewPoint={weatherDetails.dewPoint}
+            <ResolutionWidget
+              stationId={city.stationId}
+              citySlug={citySlug}
+              cityName={city.name}
+              timezone={city.timezone}
               loading={weatherLoading}
             />
           </WidgetGridV2.Area>

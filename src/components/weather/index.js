@@ -16,6 +16,8 @@ export { default as RoundingWidget } from './RoundingWidget';
 // RoundingModal is lazy-loaded by RoundingWidget, not exported here
 export { default as NearbyStations } from './NearbyStations';
 export { default as AlertsWidget } from './AlertsWidget';
+export { default as ResolutionWidget } from './ResolutionWidget';
+export { default as ResolutionModal } from './ResolutionModal';
 
 // Small Widgets
 export {
