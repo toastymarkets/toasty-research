@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, Clock } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import ResolutionModal from './ResolutionModal';
 import { useCLIReport } from '../../hooks/useCLIReport';
@@ -85,10 +85,10 @@ export function ResolutionWidget({
         className="cursor-pointer"
         onClick={() => setIsModalOpen(true)}
       >
-        <div className="flex flex-col h-full py-1">
-          <div className="w-16 h-10 bg-white/10 rounded mb-2" />
-          <div className="w-24 h-3 bg-white/10 rounded mb-1" />
-          <div className="w-20 h-3 bg-white/10 rounded" />
+        <div className="flex flex-col h-full py-3">
+          <div className="w-16 h-4 bg-white/10 rounded mb-3" />
+          <div className="w-20 h-10 bg-white/10 rounded mb-2" />
+          <div className="w-12 h-3 bg-white/10 rounded" />
         </div>
       </GlassWidget>
     );
@@ -104,17 +104,14 @@ export function ResolutionWidget({
           className="cursor-pointer"
           onClick={() => setIsModalOpen(true)}
         >
-          <div className="flex flex-col h-full py-1">
+          <div className="flex flex-col h-full py-3">
             {cliCountdown ? (
               <>
-                <div className="text-3xl font-light text-white tracking-tight">
+                <div className="text-4xl font-light text-white tracking-tight">
                   {cliCountdown.hours}h {cliCountdown.minutes}m
                 </div>
-                <div className="text-sm text-white/60 mt-2 leading-relaxed">
-                  until next
-                </div>
-                <div className="text-sm text-white/60">
-                  CLI report
+                <div className="text-sm text-white/70 mt-1">
+                  until next CLI
                 </div>
               </>
             ) : (
@@ -150,9 +147,9 @@ export function ResolutionWidget({
         className="cursor-pointer"
         onClick={() => setIsModalOpen(true)}
       >
-        <div className="flex flex-col h-full py-1">
+        <div className="flex flex-col h-full py-3">
           {/* Toggle Pills */}
-          <div className="flex gap-1 mb-2">
+          <div className="flex gap-1 mb-3">
             <button
               onClick={cycleView}
               className={`px-2 py-0.5 text-[10px] font-medium rounded-full transition-all ${
@@ -176,41 +173,39 @@ export function ResolutionWidget({
           </div>
 
           {/* Hero Number - High */}
-          <div className="text-3xl font-light text-white tracking-tight">
+          <div className="text-4xl font-light text-white tracking-tight">
             {data?.high != null ? `${data.high}°` : '--'}
           </div>
 
-          {/* Descriptor */}
-          <div className="text-sm mt-2 leading-relaxed">
-            <span className="font-semibold text-white">High</span>
-            <span className="text-white/50"> · {data?.sublabel}</span>
+          {/* Simple label */}
+          <div className="text-sm text-white/70 mt-1">
+            High
           </div>
 
-          {/* Bottom Stats */}
-          <div className="mt-auto pt-3 space-y-1.5">
-            <div className="flex justify-between text-sm">
-              <span className="font-semibold text-white">Low</span>
-              <span className="text-white">
-                {data?.low != null ? `${data.low}°` : '--'}
-              </span>
+          {/* Divider + Bottom Stats */}
+          <div className="mt-auto pt-3">
+            <div className="border-t border-white/10 pt-3 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-white/50">Low</span>
+                <span className="text-white font-medium">
+                  {data?.low != null ? `${data.low}°` : '--'}
+                </span>
+              </div>
+              {activeView === 'cli' && cliCountdown && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Next CLI</span>
+                  <span className="text-amber-400 font-medium">
+                    {cliCountdown.formatted}
+                  </span>
+                </div>
+              )}
+              {activeView === 'dsm' && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Status</span>
+                  <span className="text-green-400 font-medium">Live</span>
+                </div>
+              )}
             </div>
-            {activeView === 'cli' && cliCountdown && (
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  Next
-                </span>
-                <span className="text-amber-400 font-medium">
-                  {cliCountdown.formatted}
-                </span>
-              </div>
-            )}
-            {activeView === 'dsm' && (
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">Updated</span>
-                <span className="text-white/70">Live</span>
-              </div>
-            )}
           </div>
         </div>
       </GlassWidget>
