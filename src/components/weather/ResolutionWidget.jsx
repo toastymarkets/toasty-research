@@ -22,7 +22,7 @@ export function ResolutionWidget({
   const [activeView, setActiveView] = useState('cli'); // 'cli' | 'dsm'
 
   const { data: cliData, loading: cliLoading } = useCLIReport(stationId);
-  const { data: dsmData, loading: dsmLoading } = useDSM(citySlug);
+  const { data: dsmData, loading: dsmLoading, stationName: dsmStationName } = useDSM(citySlug);
   const cliCountdown = useCliCountdown(stationId);
 
   // Only show loading on initial load, not when switching views
@@ -132,6 +132,8 @@ export function ResolutionWidget({
             cityName={cityName}
             timezone={timezone}
             cliData={cliData}
+            dsmData={dsmData}
+            dsmStationName={dsmStationName}
             onClose={() => setIsModalOpen(false)}
           />
         )}
@@ -221,6 +223,8 @@ export function ResolutionWidget({
           cityName={cityName}
           timezone={timezone}
           cliData={cliData}
+          dsmData={dsmData}
+          dsmStationName={dsmStationName}
           onClose={() => setIsModalOpen(false)}
         />
       )}

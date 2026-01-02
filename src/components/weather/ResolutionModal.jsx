@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { X, Clock, Calendar, ExternalLink, FileText, Info, Radio, Timer, Thermometer } from 'lucide-react';
-import { useDSM } from '../../hooks/useDSM';
 import { useDataReleaseCountdown } from '../../hooks/useDataReleaseCountdown';
 import {
   DATA_SCHEDULE,
@@ -24,11 +23,12 @@ export default function ResolutionModal({
   cityName,
   timezone,
   cliData,
+  dsmData,
+  dsmStationName,
   onClose,
 }) {
   const [activeTab, setActiveTab] = useState('overview');
   const countdowns = useDataReleaseCountdown(stationId);
-  const { data: dsmData, loading: dsmLoading, stationName } = useDSM(citySlug);
 
   const schedule = DATA_SCHEDULE[stationId];
 
@@ -107,11 +107,10 @@ export default function ResolutionModal({
               <OverviewTab
                 cliData={cliData}
                 dsmData={dsmData}
-                dsmLoading={dsmLoading}
                 countdowns={countdowns}
                 schedule={schedule}
                 timezone={timezone}
-                stationName={stationName}
+                stationName={dsmStationName}
               />
             )}
             {activeTab === 'schedule' && (
@@ -144,13 +143,15 @@ ResolutionModal.propTypes = {
   cityName: PropTypes.string.isRequired,
   timezone: PropTypes.string.isRequired,
   cliData: PropTypes.object,
+  dsmData: PropTypes.object,
+  dsmStationName: PropTypes.string,
   onClose: PropTypes.func.isRequired,
 };
 
 /**
  * OverviewTab - Live data with countdown timers
  */
-function OverviewTab({ cliData, dsmData, dsmLoading, countdowns, schedule, timezone, stationName }) {
+function OverviewTab({ cliData, dsmData, countdowns, schedule, timezone, stationName }) {
   const formatTime = (timeStr) => {
     if (!timeStr || timeStr === 'M') return '--';
     const match = timeStr.match(/^(\d{1,2})(\d{2})\s*(AM|PM)$/i);
@@ -270,18 +271,7 @@ function OverviewTab({ cliData, dsmData, dsmLoading, countdowns, schedule, timez
           )}
         </div>
 
-        {dsmLoading ? (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-xs text-white/40 mb-1">High So Far</div>
-              <div className="text-xl font-semibold text-white/20">--</div>
-            </div>
-            <div>
-              <div className="text-xs text-white/40 mb-1">Low So Far</div>
-              <div className="text-xl font-semibold text-white/20">--</div>
-            </div>
-          </div>
-        ) : dsmData ? (
+        {dsmData ? (
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="text-xs text-white/40 mb-1">High So Far</div>
@@ -339,7 +329,6 @@ function OverviewTab({ cliData, dsmData, dsmLoading, countdowns, schedule, timez
 OverviewTab.propTypes = {
   cliData: PropTypes.object,
   dsmData: PropTypes.object,
-  dsmLoading: PropTypes.bool,
   countdowns: PropTypes.object,
   schedule: PropTypes.object,
   timezone: PropTypes.string,
