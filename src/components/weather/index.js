@@ -16,6 +16,8 @@ export { default as RoundingWidget } from './RoundingWidget';
 export { default as RoundingModal } from './RoundingModal';
 export { default as NearbyStations } from './NearbyStations';
 export { default as AlertsWidget } from './AlertsWidget';
+export { default as ResolutionWidget } from './ResolutionWidget';
+export { default as ResolutionModal } from './ResolutionModal';
 
 // Small Widgets
 export {
