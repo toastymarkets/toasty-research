@@ -239,7 +239,7 @@ export default function GlassSidebar() {
       {/* Desktop Sidebar */}
       <div className="hidden md:flex fixed left-3 top-3 bottom-3 w-72 flex-col z-40">
         {/* Logo */}
-        <div className="px-2 pb-3 flex items-center gap-2">
+        <Link to="/" className="px-2 pb-3 flex items-center gap-2 hover:opacity-80 transition-opacity">
           <svg className="w-7 h-7" viewBox="0 0 100 100" fill="none">
             <circle cx="50" cy="50" r="22" fill="white"/>
             <g fill="white">
@@ -254,7 +254,7 @@ export default function GlassSidebar() {
             </g>
           </svg>
           <h1 className="text-2xl font-bold text-white tracking-tight">Toasty</h1>
-        </div>
+        </Link>
 
         {/* Cities Card */}
         <aside className="flex-1 bg-black/30 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden min-h-0">
@@ -284,7 +284,7 @@ export default function GlassSidebar() {
             </button>
 
             {/* Logo */}
-            <div className="px-4 pt-4 pb-3 flex items-center gap-2">
+            <Link to="/" onClick={closeMobile} className="px-4 pt-4 pb-3 flex items-center gap-2 hover:opacity-80 transition-opacity">
               <svg className="w-7 h-7" viewBox="0 0 100 100" fill="none">
                 <circle cx="50" cy="50" r="22" fill="white"/>
                 <g fill="white">
@@ -299,7 +299,7 @@ export default function GlassSidebar() {
                 </g>
               </svg>
               <h1 className="text-2xl font-bold text-white tracking-tight">Toasty</h1>
-            </div>
+            </Link>
 
             {/* Cities section */}
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col">

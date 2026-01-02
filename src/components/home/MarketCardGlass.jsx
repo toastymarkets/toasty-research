@@ -73,7 +73,7 @@ export default function MarketCardGlass({ city, index = 0, comingSoon = false })
 
   return (
     <Link
-      to={`/city/${city.slug}`}
+      to={`/city/${city.citySlug || city.slug}`}
       className={`
         glass-widget glass-interactive glass-animate-in ${animationDelay}
         block overflow-hidden
