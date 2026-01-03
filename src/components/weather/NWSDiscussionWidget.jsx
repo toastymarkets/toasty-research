@@ -1,7 +1,77 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight } from 'lucide-react';
+import { FileText, X, ChevronRight, Plus, Copy, Check } from 'lucide-react';
 import GlassWidget from './GlassWidget';
+import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+
+// Meteorological keywords to highlight, grouped by category
+const WEATHER_KEYWORDS = {
+  temperature: [
+    'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
+    'above normal', 'below normal', 'near normal', 'record high', 'record low',
+    'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
+  ],
+  synoptic: [
+    'cold front', 'warm front', 'occluded front', 'stationary front',
+    'low pressure', 'high pressure', 'trough', 'ridge', 'upper level',
+    'surface low', 'surface high', 'shortwave', 'longwave',
+    'cutoff low', 'closed low', 'blocking pattern', 'zonal flow',
+  ],
+  precipitation: [
+    'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
+    'shower', 'drizzle', 'downpour', 'heavy rain', 'light rain',
+    'accumulation', 'precip', 'precipitation', 'moisture',
+    'convection', 'instability', 'cape', 'lifted index',
+  ],
+  wind: [
+    'wind advisory', 'high wind', 'gust', 'breezy', 'windy',
+    'santa ana', 'chinook', 'offshore flow', 'onshore flow',
+    'wind shift', 'veering', 'backing',
+  ],
+  confidence: [
+    'uncertainty', 'confidence', 'likely', 'unlikely', 'possible',
+    'expected', 'forecast', 'outlook', 'trend', 'timing',
+    'models agree', 'model spread', 'ensemble', 'deterministic',
+  ],
+};
+
+// Flatten keywords for lookup
+const KEYWORD_MAP = new Map();
+Object.entries(WEATHER_KEYWORDS).forEach(([category, keywords]) => {
+  keywords.forEach(keyword => KEYWORD_MAP.set(keyword.toLowerCase(), category));
+});
+
+// Category colors
+const CATEGORY_COLORS = {
+  temperature: 'bg-orange-500/30 text-orange-300 hover:bg-orange-500/50',
+  synoptic: 'bg-blue-500/30 text-blue-300 hover:bg-blue-500/50',
+  precipitation: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
+  wind: 'bg-teal-500/30 text-teal-300 hover:bg-teal-500/50',
+  confidence: 'bg-purple-500/30 text-purple-300 hover:bg-purple-500/50',
+};
+
+/**
+ * Insert discussion text into notes
+ */
+function insertDiscussionToNotes(text, source = 'NWS Discussion') {
+  const event = new CustomEvent(NOTE_INSERTION_EVENT, {
+    detail: {
+      type: 'discussion',
+      content: {
+        type: 'doc',
+        content: [{
+          type: 'paragraph',
+          content: [{
+            type: 'dataChip',
+            attrs: { value: text, label: '', type: 'forecast', source, timestamp: new Date().toISOString() }
+          }]
+        }]
+      },
+      rawData: { text, source },
+    }
+  });
+  window.dispatchEvent(event);
+}
 
 /**
  * NWSDiscussionWidget - Shows NWS Area Forecast Discussion
@@ -249,10 +319,83 @@ function formatTime(isoTime) {
 }
 
 /**
- * DiscussionModal - Full forecast discussion
+ * HighlightedKeyword - Clickable keyword that can be added to notes
+ */
+function HighlightedKeyword({ text, category, office }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const colorClass = CATEGORY_COLORS[category] || 'bg-white/20 text-white/80';
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    insertDiscussionToNotes(text, `NWS ${office}`);
+    setShowTooltip(false);
+  };
+
+  return (
+    <span className="relative inline">
+      <button
+        onClick={handleClick}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        className={`${colorClass} px-1 py-0.5 rounded cursor-pointer transition-colors`}
+        title={`Add "${text}" to notes`}
+      >
+        {text}
+      </button>
+      {showTooltip && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[10px] bg-black/90 text-white rounded whitespace-nowrap z-50 pointer-events-none">
+          Click to add to notes
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Parse text and highlight meteorological keywords
+ */
+function parseAndHighlight(text, office) {
+  if (!text) return null;
+
+  const allKeywords = Array.from(KEYWORD_MAP.keys()).sort((a, b) => b.length - a.length);
+  const pattern = new RegExp(`\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi');
+
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const keyword = match[0];
+    const category = KEYWORD_MAP.get(keyword.toLowerCase());
+    parts.push(
+      <HighlightedKeyword
+        key={`${match.index}-${keyword}`}
+        text={keyword}
+        category={category}
+        office={office}
+      />
+    );
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+/**
+ * DiscussionModal - Full forecast discussion with keyword highlighting
  */
 function DiscussionModal({ discussion, onClose }) {
   const [activeSection, setActiveSection] = useState('synopsis');
+  const [selectionPopup, setSelectionPopup] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const contentRef = useRef(null);
 
   const sections = [
     { id: 'synopsis', label: 'Synopsis', content: discussion.synopsis },
@@ -262,6 +405,59 @@ function DiscussionModal({ discussion, onClose }) {
     { id: 'aviation', label: 'Aviation', content: discussion.aviation },
     { id: 'marine', label: 'Marine', content: discussion.marine },
   ].filter(s => s.content);
+
+  // Handle text selection
+  const handleMouseUp = useCallback(() => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const containerRect = contentRef.current?.getBoundingClientRect();
+
+      if (containerRect) {
+        setSelectionPopup({
+          text: selection.toString().trim(),
+          x: rect.left + rect.width / 2 - containerRect.left,
+          y: rect.top - containerRect.top - 10,
+        });
+      }
+    } else {
+      setSelectionPopup(null);
+    }
+  }, []);
+
+  // Handle adding selection to notes
+  const handleAddSelectionToNotes = () => {
+    if (selectionPopup?.text) {
+      insertDiscussionToNotes(selectionPopup.text, `NWS ${discussion.office}`);
+      setSelectionPopup(null);
+      window.getSelection()?.removeAllRanges();
+    }
+  };
+
+  // Handle copy all
+  const handleCopyAll = async () => {
+    const activeContent = sections.find(s => s.id === activeSection)?.content;
+    if (activeContent) {
+      await navigator.clipboard.writeText(activeContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Hide popup on click outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (!selection || selection.toString().trim().length === 0) {
+          setSelectionPopup(null);
+        }
+      }, 100);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <>
@@ -283,12 +479,25 @@ function DiscussionModal({ discussion, onClose }) {
                   NWS {discussion.office} • {formatTime(discussion.issuanceTime)}
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <X className="w-4 h-4 text-white/70" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopyAll}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  title="Copy section"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-white/70" />
+                  )}
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <X className="w-4 h-4 text-white/70" />
+                </button>
+              </div>
             </div>
 
             {/* Section tabs */}
@@ -312,7 +521,27 @@ function DiscussionModal({ discussion, onClose }) {
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[55vh] p-4">
+          <div
+            ref={contentRef}
+            className="relative overflow-y-auto max-h-[55vh] p-4"
+            onMouseUp={handleMouseUp}
+          >
+            {/* Selection popup */}
+            {selectionPopup && (
+              <button
+                onClick={handleAddSelectionToNotes}
+                className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
+                style={{
+                  left: `${selectionPopup.x}px`,
+                  top: `${selectionPopup.y}px`,
+                  transform: 'translate(-50%, -100%)',
+                }}
+              >
+                <Plus className="w-3 h-3" />
+                Add to notes
+              </button>
+            )}
+
             {sections.map((section) => (
               <div
                 key={section.id}
@@ -321,9 +550,9 @@ function DiscussionModal({ discussion, onClose }) {
                 <h3 className="text-sm font-medium text-white/80 mb-2">
                   {section.label}
                 </h3>
-                <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
-                  {section.content}
-                </p>
+                <div className="text-sm text-white/70 leading-relaxed">
+                  {parseAndHighlight(section.content, discussion.office)}
+                </div>
               </div>
             ))}
           </div>
@@ -331,7 +560,7 @@ function DiscussionModal({ discussion, onClose }) {
           {/* Footer */}
           <div className="px-4 py-2 bg-white/5 border-t border-white/10">
             <p className="text-[10px] text-white/40 text-center">
-              Area Forecast Discussion from National Weather Service
+              Click highlighted terms or select text to add to notes
             </p>
           </div>
         </div>
