@@ -19,7 +19,8 @@ export default function MarketCardGlass({ city, index = 0, comingSoon = false })
   const error = contextData.error && !city.topBrackets;
 
   // Get city image from config if not passed
-  const cityConfig = CITY_BY_SLUG[city.slug];
+  // Use citySlug for rain/snow markets, fall back to slug for temp markets
+  const cityConfig = CITY_BY_SLUG[city.citySlug || city.slug];
   const cityImage = city.image || cityConfig?.image;
 
   const [timer, setTimer] = useState(null);

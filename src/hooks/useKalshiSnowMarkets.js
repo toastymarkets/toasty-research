@@ -183,8 +183,8 @@ export function useKalshiSnowMarkets() {
         };
       }
 
-      // Small delay between requests to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Delay to avoid rate limiting (staggered with other market hooks)
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
 
     setMarketsData(results);
@@ -193,13 +193,18 @@ export function useKalshiSnowMarkets() {
   }, []);
 
   useEffect(() => {
-    fetchAllSnowMarkets();
+    // Delay initial fetch to stagger with temperature (0s) and rain (2s) markets
+    const timeout = setTimeout(fetchAllSnowMarkets, 4000);
+    return () => clearTimeout(timeout);
   }, [fetchAllSnowMarkets]);
 
-  // Refresh every 30 seconds
+  // Refresh every 30 seconds (offset from other market hooks)
   useEffect(() => {
-    const interval = setInterval(fetchAllSnowMarkets, 30000);
-    return () => clearInterval(interval);
+    const startInterval = setTimeout(() => {
+      const interval = setInterval(fetchAllSnowMarkets, 30000);
+      return () => clearInterval(interval);
+    }, 4500);
+    return () => clearTimeout(startInterval);
   }, [fetchAllSnowMarkets]);
 
   // Convert to sorted array by volume

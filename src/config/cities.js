@@ -20,6 +20,7 @@ const CITY_IMAGES = {
   'dallas': 'https://images.unsplash.com/photo-1545194445-dddb8f4487c6?w=200&h=200&fit=crop',
   'detroit': 'https://images.unsplash.com/photo-1564502929457-da8ad77dbe50?w=200&h=200&fit=crop',
   'salt-lake-city': 'https://images.unsplash.com/photo-1527549993586-dff825b37782?w=200&h=200&fit=crop',
+  'new-orleans': 'https://images.unsplash.com/photo-1568402102990-bc541580b59f?w=200&h=200&fit=crop',
 };
 
 export const CITIES = [
@@ -38,6 +39,7 @@ export const CITIES = [
   { id: 'DAL', slug: 'dallas', name: 'Dallas', stationId: 'KDFW', lat: 32.89833, lon: -97.01944, timezone: 'America/Chicago', forecastOffice: 'FWD', hasMarket: false },
   { id: 'DET', slug: 'detroit', name: 'Detroit', stationId: 'KDTW', lat: 42.21417, lon: -83.35333, timezone: 'America/New_York', forecastOffice: 'DTX', hasMarket: false },
   { id: 'SLC', slug: 'salt-lake-city', name: 'Salt Lake City', stationId: 'KSLC', lat: 40.77069, lon: -111.96503, timezone: 'America/Denver', forecastOffice: 'SLC', hasMarket: false },
+  { id: 'MSY', slug: 'new-orleans', name: 'New Orleans', stationId: 'KMSY', lat: 29.99333, lon: -90.25806, timezone: 'America/Chicago', forecastOffice: 'LIX', hasMarket: false },
 ];
 
 // Add image URLs to cities

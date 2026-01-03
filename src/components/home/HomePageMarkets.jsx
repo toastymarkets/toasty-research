@@ -1,15 +1,14 @@
-import { useState, useContext, useMemo } from 'react';
-import { TrendingUp, CloudRain, Snowflake, ChevronRight } from 'lucide-react';
+import { useContext, useMemo } from 'react';
+import { TrendingUp, CloudRain, Snowflake } from 'lucide-react';
 import { MARKET_CITIES } from '../../config/cities';
 import { KalshiMarketsContext } from '../../hooks/useAllKalshiMarkets.jsx';
-import { useKalshiRainMarkets, RAIN_CITIES } from '../../hooks/useKalshiRainMarkets';
-import { useKalshiSnowMarkets, SNOW_CITIES } from '../../hooks/useKalshiSnowMarkets';
+import { useKalshiRainMarkets } from '../../hooks/useKalshiRainMarkets';
+import { useKalshiSnowMarkets } from '../../hooks/useKalshiSnowMarkets';
 import MarketCardGlass from './MarketCardGlass';
-import AllMarketsModal from './AllMarketsModal';
 
 /**
  * HomePageMarkets - Markets-focused homepage
- * Displays top 3 markets by volume for each category with "Show more"
+ * Displays all markets by volume in scrollable sections
  */
 export default function HomePageMarkets() {
   const context = useContext(KalshiMarketsContext);
@@ -19,12 +18,7 @@ export default function HomePageMarkets() {
   const { markets: rainMarketsData, loading: rainLoading } = useKalshiRainMarkets();
   const { markets: snowMarketsData, loading: snowLoading } = useKalshiSnowMarkets();
 
-  // Modal state
-  const [tempModalOpen, setTempModalOpen] = useState(false);
-  const [rainModalOpen, setRainModalOpen] = useState(false);
-  const [snowModalOpen, setSnowModalOpen] = useState(false);
-
-  // Sort cities by volume and get top 3
+  // Sort cities by volume
   const sortedTempMarkets = useMemo(() => {
     return MARKET_CITIES
       .map(city => ({
@@ -33,8 +27,6 @@ export default function HomePageMarkets() {
       }))
       .sort((a, b) => (b.totalVolume || 0) - (a.totalVolume || 0));
   }, [marketsData]);
-
-  const top3TempMarkets = sortedTempMarkets.slice(0, 3);
 
   // Format last update time
   const formatLastUpdate = () => {
@@ -95,11 +87,8 @@ export default function HomePageMarkets() {
         title="Temperature Markets"
         subtitle="Highest temperature predictions"
         icon={TrendingUp}
-        markets={top3TempMarkets}
-        allMarkets={sortedTempMarkets}
+        markets={sortedTempMarkets}
         loading={tempLoading}
-        onShowMore={() => setTempModalOpen(true)}
-        totalCount={sortedTempMarkets.length}
       />
 
       {/* Rain Markets Section */}
@@ -107,11 +96,8 @@ export default function HomePageMarkets() {
         title="Rain Markets"
         subtitle="Precipitation predictions"
         icon={CloudRain}
-        markets={rainMarkets.slice(0, 3)}
-        allMarkets={rainMarkets}
+        markets={rainMarkets}
         loading={rainLoading}
-        onShowMore={() => setRainModalOpen(true)}
-        totalCount={rainMarkets.length}
         noActiveMarkets={noRainMarkets}
       />
 
@@ -120,11 +106,8 @@ export default function HomePageMarkets() {
         title="Snow Markets"
         subtitle="Snowfall predictions"
         icon={Snowflake}
-        markets={snowMarkets.slice(0, 3)}
-        allMarkets={snowMarkets}
+        markets={snowMarkets}
         loading={snowLoading}
-        onShowMore={() => setSnowModalOpen(true)}
-        totalCount={snowMarkets.length}
         noActiveMarkets={noSnowMarkets}
       />
 
@@ -143,31 +126,6 @@ export default function HomePageMarkets() {
         </p>
       </div>
 
-      {/* Modals */}
-      <AllMarketsModal
-        isOpen={tempModalOpen}
-        onClose={() => setTempModalOpen(false)}
-        title="All Temperature Markets"
-        icon={TrendingUp}
-        markets={sortedTempMarkets}
-        type="temperature"
-      />
-      <AllMarketsModal
-        isOpen={rainModalOpen}
-        onClose={() => setRainModalOpen(false)}
-        title="All Rain Markets"
-        icon={CloudRain}
-        markets={rainMarkets}
-        type="rain"
-      />
-      <AllMarketsModal
-        isOpen={snowModalOpen}
-        onClose={() => setSnowModalOpen(false)}
-        title="All Snow Markets"
-        icon={Snowflake}
-        markets={snowMarkets}
-        type="snow"
-      />
     </div>
   );
 }
@@ -180,41 +138,32 @@ function MarketSection({
   subtitle,
   icon: Icon,
   markets,
-  allMarkets,
   loading,
-  onShowMore,
-  totalCount,
   noActiveMarkets = false
 }) {
   return (
     <div className="w-full max-w-6xl mx-auto px-4 mt-6">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-white/60" />
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
-          {noActiveMarkets && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50">
-              No Active Markets
-            </span>
-          )}
-        </div>
-        {!noActiveMarkets && markets.length > 0 && (
-          <button
-            onClick={onShowMore}
-            className="flex items-center gap-1 text-xs text-white/50 hover:text-white/80 transition-colors"
-          >
-            Show all {totalCount}
-            <ChevronRight className="w-3 h-3" />
-          </button>
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className="w-4 h-4 text-white/60" />
+        <h2 className="text-lg font-semibold text-white">{title}</h2>
+        {!loading && markets.length > 0 && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50">
+            {markets.length} markets
+          </span>
+        )}
+        {noActiveMarkets && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50">
+            No Active Markets
+          </span>
         )}
       </div>
       <p className="text-xs text-white/40 mb-4">{subtitle}</p>
 
       {/* Markets Grid */}
       {loading ? (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(Math.min(3, totalCount))].map((_, i) => (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[...Array(3)].map((_, i) => (
             <div key={i} className="glass-widget animate-pulse">
               <div className="h-20 bg-white/10" />
               <div className="p-3">
@@ -238,7 +187,7 @@ function MarketSection({
           <p className="text-xs text-white/30 mt-1">Check back later for new markets</p>
         </div>
       ) : (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {markets.map((market, index) => (
             <MarketCardGlass
               key={market.slug}

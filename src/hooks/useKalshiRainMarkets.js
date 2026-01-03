@@ -8,22 +8,52 @@ const KALSHI_PATH = 'trade-api/v2';
 
 /**
  * Rain market series tickers
- * NYC has both monthly accumulation and daily rain markets
+ * Monthly = accumulation markets (Above X inches)
+ * Daily = will it rain today (Yes/No)
  */
 export const RAIN_SERIES = {
-  // Monthly rain accumulation (Above X inches)
-  nycMonthly: 'KXNYCRAINM',
-  // Daily will it rain (Yes/No)
-  nycDaily: 'KXRAINNYC',
+  // Monthly rain accumulation markets
+  monthly: {
+    'new-york': 'KXRAINNYCM',
+    'chicago': 'KXRAINCHIM',
+    'los-angeles': 'KXRAINLAXM',
+    'miami': 'KXRAINMIAM',
+    'houston': 'KXRAINHOUM',
+    'seattle': 'KXRAINSEAM',
+    'san-francisco': 'KXRAINSFOM',
+    'austin': 'KXRAINAUSM',
+    'dallas': 'KXRAINDALM',
+    'denver': 'KXRAINDENM',
+  },
+  // Daily will it rain markets
+  daily: {
+    'new-york': 'KXRAINNYC',
+    'seattle': 'KXRAINSEA',
+    'houston': 'KXRAINHOU',
+    'new-orleans': 'KXRAINNO',
+  },
 };
 
 /**
  * City metadata for rain markets
- * Currently only NYC has rain markets
  */
 export const RAIN_CITIES = [
-  { slug: 'new-york', name: 'New York', id: 'NYC', type: 'monthly', citySlug: 'new-york' },
+  // Monthly markets
+  { slug: 'new-york-monthly', name: 'New York', id: 'NYC', type: 'monthly', citySlug: 'new-york' },
+  { slug: 'chicago-monthly', name: 'Chicago', id: 'CHI', type: 'monthly', citySlug: 'chicago' },
+  { slug: 'los-angeles-monthly', name: 'Los Angeles', id: 'LAX', type: 'monthly', citySlug: 'los-angeles' },
+  { slug: 'miami-monthly', name: 'Miami', id: 'MIA', type: 'monthly', citySlug: 'miami' },
+  { slug: 'houston-monthly', name: 'Houston', id: 'HOU', type: 'monthly', citySlug: 'houston' },
+  { slug: 'seattle-monthly', name: 'Seattle', id: 'SEA', type: 'monthly', citySlug: 'seattle' },
+  { slug: 'san-francisco-monthly', name: 'San Francisco', id: 'SFO', type: 'monthly', citySlug: 'san-francisco' },
+  { slug: 'austin-monthly', name: 'Austin', id: 'AUS', type: 'monthly', citySlug: 'austin' },
+  { slug: 'dallas-monthly', name: 'Dallas', id: 'DAL', type: 'monthly', citySlug: 'dallas' },
+  { slug: 'denver-monthly', name: 'Denver', id: 'DEN', type: 'monthly', citySlug: 'denver' },
+  // Daily markets
   { slug: 'new-york-daily', name: 'NYC Daily', id: 'NYC-D', type: 'daily', citySlug: 'new-york' },
+  { slug: 'seattle-daily', name: 'Seattle Daily', id: 'SEA-D', type: 'daily', citySlug: 'seattle' },
+  { slug: 'houston-daily', name: 'Houston Daily', id: 'HOU-D', type: 'daily', citySlug: 'houston' },
+  { slug: 'new-orleans-daily', name: 'New Orleans Daily', id: 'NO-D', type: 'daily', citySlug: 'new-orleans' },
 ];
 
 /**
@@ -65,12 +95,33 @@ async function fetchMarkets(seriesTicker) {
 }
 
 /**
+ * Get display name for a city slug
+ */
+function getCityDisplayName(citySlug) {
+  const names = {
+    'new-york': 'NYC',
+    'chicago': 'Chicago',
+    'los-angeles': 'LA',
+    'miami': 'Miami',
+    'houston': 'Houston',
+    'seattle': 'Seattle',
+    'san-francisco': 'SF',
+    'austin': 'Austin',
+    'dallas': 'Dallas',
+    'denver': 'Denver',
+    'new-orleans': 'New Orleans',
+  };
+  return names[citySlug] || citySlug;
+}
+
+/**
  * Process monthly rain market data (accumulation brackets)
  */
-function processMonthlyRainMarkets(markets) {
+function processMonthlyRainMarkets(markets, citySlug = 'new-york') {
   if (!markets || markets.length === 0) return null;
 
   const currentMonth = getCurrentMonthSuffix();
+  const cityName = getCityDisplayName(citySlug);
 
   // Filter for current month's active markets
   const currentMarkets = markets.filter(m =>
@@ -80,19 +131,20 @@ function processMonthlyRainMarkets(markets) {
   if (currentMarkets.length === 0) {
     const activeMarkets = markets.filter(m => m.status === 'active');
     if (activeMarkets.length === 0) return null;
-    return processMarketList(activeMarkets, 'Rain in NYC this month?');
+    return processMarketList(activeMarkets, `Rain in ${cityName} this month`);
   }
 
-  return processMarketList(currentMarkets, 'Rain in NYC this month?');
+  return processMarketList(currentMarkets, `Rain in ${cityName} this month`);
 }
 
 /**
  * Process daily rain market data (binary Yes/No)
  */
-function processDailyRainMarkets(markets) {
+function processDailyRainMarkets(markets, citySlug = 'new-york') {
   if (!markets || markets.length === 0) return null;
 
   const todayDate = getTodayTickerDate();
+  const cityName = getCityDisplayName(citySlug);
 
   // Filter for today's market
   const todayMarkets = markets.filter(m =>
@@ -106,10 +158,10 @@ function processDailyRainMarkets(markets) {
     const sorted = activeMarkets.sort((a, b) =>
       new Date(b.close_time || 0) - new Date(a.close_time || 0)
     );
-    return processDailyMarket(sorted[0]);
+    return processDailyMarket(sorted[0], cityName);
   }
 
-  return processDailyMarket(todayMarkets[0]);
+  return processDailyMarket(todayMarkets[0], cityName);
 }
 
 /**
@@ -149,7 +201,7 @@ function processMarketList(markets, title) {
 /**
  * Process a single daily rain market
  */
-function processDailyMarket(market) {
+function processDailyMarket(market, cityName = 'NYC') {
   if (!market) return null;
 
   const yesPrice = market.yes_bid || 0;
@@ -163,7 +215,7 @@ function processDailyMarket(market) {
     }],
     totalVolume: market.volume || 0,
     closeTime,
-    title: 'Will it rain in NYC today?',
+    title: `Will it rain in ${cityName} today?`,
   };
 }
 
@@ -179,42 +231,53 @@ export function useKalshiRainMarkets() {
   const fetchAllRainMarkets = useCallback(async () => {
     const results = {};
 
-    // Fetch monthly rain markets
-    try {
-      const monthlyMarkets = await fetchMarkets(RAIN_SERIES.nycMonthly);
-      const processed = processMonthlyRainMarkets(monthlyMarkets);
+    // Fetch all monthly rain markets
+    for (const [citySlug, ticker] of Object.entries(RAIN_SERIES.monthly)) {
+      try {
+        const markets = await fetchMarkets(ticker);
+        const processed = processMonthlyRainMarkets(markets, citySlug);
 
-      if (processed && processed.topBrackets.length > 0) {
-        results['new-york'] = {
-          ...processed,
-          cityName: 'New York',
-          citySlug: 'new-york',
-          loading: false,
-          error: null,
-        };
+        if (processed && processed.topBrackets.length > 0) {
+          const cityConfig = RAIN_CITIES.find(c => c.citySlug === citySlug && c.type === 'monthly');
+          results[`${citySlug}-monthly`] = {
+            ...processed,
+            cityName: cityConfig?.name || citySlug,
+            citySlug: citySlug,
+            marketSlug: `${citySlug}-monthly`,
+            type: 'monthly',
+            loading: false,
+            error: null,
+          };
+        }
+      } catch (err) {
+        console.log(`Monthly rain market for ${citySlug} not found:`, err.message);
       }
-    } catch (err) {
-      console.log('Monthly rain markets not found:', err.message);
+      // Delay to avoid rate limiting (staggered with other market hooks)
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Fetch all daily rain markets
+    for (const [citySlug, ticker] of Object.entries(RAIN_SERIES.daily)) {
+      try {
+        const markets = await fetchMarkets(ticker);
+        const processed = processDailyRainMarkets(markets, citySlug);
 
-    // Fetch daily rain markets
-    try {
-      const dailyMarkets = await fetchMarkets(RAIN_SERIES.nycDaily);
-      const processed = processDailyRainMarkets(dailyMarkets);
-
-      if (processed && processed.topBrackets.length > 0) {
-        results['new-york-daily'] = {
-          ...processed,
-          cityName: 'NYC Daily',
-          citySlug: 'new-york-daily',
-          loading: false,
-          error: null,
-        };
+        if (processed && processed.topBrackets.length > 0) {
+          const cityConfig = RAIN_CITIES.find(c => c.citySlug === citySlug && c.type === 'daily');
+          results[`${citySlug}-daily`] = {
+            ...processed,
+            cityName: cityConfig?.name || `${citySlug} Daily`,
+            citySlug: citySlug,
+            marketSlug: `${citySlug}-daily`,
+            type: 'daily',
+            loading: false,
+            error: null,
+          };
+        }
+      } catch (err) {
+        console.log(`Daily rain market for ${citySlug} not found:`, err.message);
       }
-    } catch (err) {
-      console.log('Daily rain markets not found:', err.message);
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     setMarketsData(results);
@@ -223,13 +286,19 @@ export function useKalshiRainMarkets() {
   }, []);
 
   useEffect(() => {
-    fetchAllRainMarkets();
+    // Delay initial fetch to stagger with temperature markets (which start immediately)
+    const timeout = setTimeout(fetchAllRainMarkets, 2000);
+    return () => clearTimeout(timeout);
   }, [fetchAllRainMarkets]);
 
-  // Refresh every 30 seconds
+  // Refresh every 30 seconds (offset from temperature markets)
   useEffect(() => {
-    const interval = setInterval(fetchAllRainMarkets, 30000);
-    return () => clearInterval(interval);
+    // Start interval after initial delay + a small offset
+    const startInterval = setTimeout(() => {
+      const interval = setInterval(fetchAllRainMarkets, 30000);
+      return () => clearInterval(interval);
+    }, 2500);
+    return () => clearTimeout(startInterval);
   }, [fetchAllRainMarkets]);
 
   // Convert to sorted array by volume
@@ -237,8 +306,10 @@ export function useKalshiRainMarkets() {
     .filter(m => !m.error && m.topBrackets?.length > 0)
     .sort((a, b) => (b.totalVolume || 0) - (a.totalVolume || 0))
     .map(m => ({
-      slug: m.citySlug,
+      slug: m.marketSlug,        // Unique market identifier (e.g., 'new-york-monthly')
+      citySlug: m.citySlug,      // City slug for navigation (e.g., 'new-york')
       name: m.cityName,
+      type: m.type,
       topBrackets: m.topBrackets,
       totalVolume: m.totalVolume,
       closeTime: m.closeTime,
