@@ -12,11 +12,14 @@ const WEATHER_KEYWORDS = {
     'above normal', 'below normal', 'near normal', 'record high', 'record low',
     'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
     // Common forecast terms
-    'storm system', 'frontal passage', 'cold front', 'warm front',
+    'storm system', 'frontal passage', 'frontal boundary', 'cold front', 'warm front',
     'cooler weather', 'warmer weather', 'cool days', 'cool nights',
     'warm days', 'warm nights', 'cooler temperatures', 'warmer temperatures',
     'temperatures will', 'highs in the', 'lows in the', 'high temperatures',
     'low temperatures', 'overnight lows', 'daytime highs',
+    // Pressure systems
+    'polar high pressure', 'high pressure', 'low pressure',
+    'weak clipper system', 'clipper system', 'clipper',
   ],
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
@@ -88,6 +91,9 @@ const KEYWORD_DEFINITIONS = {
   'low temperatures': 'The minimum temperature expected, usually overnight.',
   'overnight lows': 'The coldest temperature expected during the night.',
   'daytime highs': 'The warmest temperature expected during daylight hours.',
+  'polar high pressure': 'A strong high pressure system originating from polar regions, bringing very cold air.',
+  'frontal boundary': 'The transition zone between two different air masses.',
+  'weak clipper system': 'A fast-moving but less intense low pressure from Canada with light snow.',
 
   // Synoptic
   'high pressure': 'Area where atmospheric pressure is elevated. Associated with fair weather, clear skies, and light winds.',
