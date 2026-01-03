@@ -20,6 +20,8 @@ const WEATHER_KEYWORDS = {
     // Pressure systems
     'polar high pressure', 'high pressure', 'low pressure',
     'weak clipper system', 'clipper system', 'clipper',
+    // NWS abbreviations
+    'pva', 'nva', 'rrq', 'ulj', 'llj', 'theta-e',
   ],
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
@@ -94,6 +96,12 @@ const KEYWORD_DEFINITIONS = {
   'polar high pressure': 'A strong high pressure system originating from polar regions, bringing very cold air.',
   'frontal boundary': 'The transition zone between two different air masses.',
   'weak clipper system': 'A fast-moving but less intense low pressure from Canada with light snow.',
+  'pva': 'Positive Vorticity Advection - upward air motion that can trigger precipitation and storm development.',
+  'nva': 'Negative Vorticity Advection - downward air motion associated with clearing and fair weather.',
+  'rrq': 'Right Rear Quadrant - area of a jet stream with rising air, favorable for storm development.',
+  'ulj': 'Upper Level Jet - fast winds at high altitude (30,000+ ft) that influence weather patterns.',
+  'llj': 'Low Level Jet - strong winds at low altitude that can transport moisture and trigger storms.',
+  'theta-e': 'Equivalent Potential Temperature - measure of air mass energy. Higher values indicate warmer, more humid air.',
 
   // Synoptic
   'high pressure': 'Area where atmospheric pressure is elevated. Associated with fair weather, clear skies, and light winds.',
