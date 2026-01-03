@@ -466,14 +466,15 @@ function HighlightedKeyword({ text, category, office }) {
 }
 
 /**
- * Extract unique keywords from text for widget preview
+ * Extract unique temperature-related keywords from text for widget preview
  */
 function extractKeywords(text) {
   if (!text) return [];
 
-  const allKeywords = Array.from(KEYWORD_MAP.keys()).sort((a, b) => b.length - a.length);
+  // Only use temperature keywords for the preview
+  const tempKeywords = WEATHER_KEYWORDS.temperature.sort((a, b) => b.length - a.length);
   const pattern = new RegExp(
-    `\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+    `\\b(${tempKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
     'gi'
   );
 
@@ -483,12 +484,12 @@ function extractKeywords(text) {
     found.add(match[0].toLowerCase());
   }
 
-  // Return unique keywords with their categories, limited to top 6
+  // Return unique temperature keywords, limited to 4
   return Array.from(found)
-    .slice(0, 6)
+    .slice(0, 4)
     .map(kw => ({
       text: kw,
-      category: KEYWORD_MAP.get(kw),
+      category: 'temperature',
     }));
 }
 
