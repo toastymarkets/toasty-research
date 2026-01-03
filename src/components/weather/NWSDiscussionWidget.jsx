@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight, Plus, Copy, Check, ExternalLink } from 'lucide-react';
+import { FileText, X, ChevronRight, Plus, Copy, Check, ExternalLink, BookOpen } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+import { getGlossaryForOffice, termAppearsInText } from '../../data/cityGlossaries';
 
 // Meteorological keywords to highlight, grouped by category
 // See docs/FORECAST_KEYWORDS.md for full documentation
@@ -753,6 +754,92 @@ function parseAndHighlight(text, office) {
   return parts;
 }
 
+// Category colors for glossary
+const GLOSSARY_CATEGORY_COLORS = {
+  locations: 'bg-emerald-500/30 text-emerald-300 border-emerald-500/30',
+  phenomena: 'bg-teal-500/30 text-teal-300 border-teal-500/30',
+  technical: 'bg-purple-500/30 text-purple-300 border-purple-500/30',
+};
+
+const GLOSSARY_CATEGORY_LABELS = {
+  locations: 'Locations',
+  phenomena: 'Weather Phenomena',
+  technical: 'Technical Terms',
+};
+
+/**
+ * GlossaryContent - City-specific glossary of meteorological terms
+ */
+function GlossaryContent({ office, fullText }) {
+  const glossary = getGlossaryForOffice(office);
+
+  if (!glossary) {
+    return (
+      <div className="text-white/50 text-sm text-center py-8">
+        No glossary available for this forecast office.
+      </div>
+    );
+  }
+
+  // Combine all text for checking if terms appear
+  const allText = fullText || '';
+
+  return (
+    <div className="space-y-6">
+      {Object.entries(glossary).map(([category, terms]) => (
+        <div key={category}>
+          {/* Category header */}
+          <div className="flex items-center gap-2 mb-3">
+            <BookOpen className="w-4 h-4 text-white/50" />
+            <h4 className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+              {GLOSSARY_CATEGORY_LABELS[category] || category}
+            </h4>
+          </div>
+
+          {/* Terms list */}
+          <div className="space-y-3">
+            {Object.entries(terms)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([term, definition]) => {
+                const appearsInDiscussion = termAppearsInText(term, allText);
+                const colorClass = GLOSSARY_CATEGORY_COLORS[category] || 'bg-white/10 text-white/70';
+
+                return (
+                  <div
+                    key={term}
+                    className={`p-3 rounded-lg border ${
+                      appearsInDiscussion
+                        ? 'bg-white/5 border-white/20'
+                        : 'bg-black/20 border-white/5'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <span
+                        className={`text-sm font-medium capitalize ${
+                          appearsInDiscussion ? 'text-white' : 'text-white/70'
+                        }`}
+                      >
+                        {term}
+                      </span>
+                      {appearsInDiscussion && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300 whitespace-nowrap">
+                          in discussion
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-white/60 leading-relaxed">
+                      {definition}
+                    </p>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
  * DiscussionModal - Full forecast discussion with keyword highlighting
  */
@@ -762,6 +849,19 @@ function DiscussionModal({ discussion, onClose }) {
   const [copied, setCopied] = useState(false);
   const contentRef = useRef(null);
 
+  // Combine all discussion text for glossary term detection
+  const fullDiscussionText = [
+    discussion.synopsis,
+    discussion.nearTerm,
+    discussion.shortTerm,
+    discussion.longTerm,
+    discussion.aviation,
+    discussion.marine,
+  ].filter(Boolean).join(' ');
+
+  // Check if glossary exists for this office
+  const hasGlossary = !!getGlossaryForOffice(discussion.office);
+
   const sections = [
     { id: 'synopsis', label: 'Synopsis', content: discussion.synopsis },
     { id: 'nearTerm', label: 'Near Term', content: discussion.nearTerm },
@@ -769,7 +869,8 @@ function DiscussionModal({ discussion, onClose }) {
     { id: 'longTerm', label: 'Long Term', content: discussion.longTerm },
     { id: 'aviation', label: 'Aviation', content: discussion.aviation },
     { id: 'marine', label: 'Marine', content: discussion.marine },
-  ].filter(s => s.content);
+    ...(hasGlossary ? [{ id: 'glossary', label: 'Glossary', isGlossary: true }] : []),
+  ].filter(s => s.content || s.isGlossary);
 
   // Handle text selection
   const handleMouseUp = useCallback(() => {
@@ -924,9 +1025,16 @@ function DiscussionModal({ discussion, onClose }) {
                 <h3 className="text-sm font-medium text-white/80 mb-2">
                   {section.label}
                 </h3>
-                <div className="text-sm text-white/70 leading-relaxed">
-                  {parseAndHighlight(section.content, discussion.office)}
-                </div>
+                {section.isGlossary ? (
+                  <GlossaryContent
+                    office={discussion.office}
+                    fullText={fullDiscussionText}
+                  />
+                ) : (
+                  <div className="text-sm text-white/70 leading-relaxed">
+                    {parseAndHighlight(section.content, discussion.office)}
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -253,6 +253,29 @@ The widget also highlights temperature forecast phrases:
 
 ---
 
+## City-Specific Glossary
+
+The NWS Discussion widget includes a **Glossary tab** in the expanded modal view that provides city-specific definitions for locations and weather phenomena.
+
+### Glossary Features
+- **City-specific content**: Each NWS office (LOX, LOT, OKX, BOU, EWX, MFL) has its own glossary
+- **"In discussion" badges**: Terms that appear in the current forecast discussion are marked
+- **Three categories**:
+  - **Locations** (emerald): Geographic features and place names
+  - **Weather Phenomena** (teal): Regional weather patterns
+  - **Technical Terms** (purple): Specialized meteorological terminology
+
+### Data Source
+Glossary definitions are stored in `src/data/cityGlossaries.js`, organized by NWS office code.
+
+### Adding Glossary Terms
+1. Identify the NWS office code for the city
+2. Add the term to the appropriate category in `src/data/cityGlossaries.js`
+3. Provide a clear, concise definition (1-2 sentences)
+4. The term will automatically appear in the Glossary tab and show "in discussion" if found
+
+---
+
 ## Adding New Keywords
 
 When adding keywords:
