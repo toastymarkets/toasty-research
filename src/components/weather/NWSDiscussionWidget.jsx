@@ -411,13 +411,13 @@ export default function NWSDiscussionWidget({
         onClick={() => setIsModalOpen(true)}
         className="cursor-pointer"
         headerRight={
-          <span className="text-[10px] text-blue-400 font-medium flex items-center gap-0.5">
-            See full
+          <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-1 rounded-full hover:bg-blue-500/30 transition-colors">
+            Read more
             <ChevronRight className="w-3 h-3" />
           </span>
         }
       >
-        <div className="flex flex-col h-full justify-between gap-2">
+        <div className="flex flex-col h-full justify-between gap-2 overflow-hidden">
           {/* Synopsis excerpt */}
           {synopsisExcerpt ? (
             <p className="text-[11px] text-white/70 leading-relaxed line-clamp-2">
@@ -429,17 +429,15 @@ export default function NWSDiscussionWidget({
             </p>
           )}
 
-          {/* Keyword chips - horizontal scroll */}
+          {/* Keyword chips - wrapped, limited by widget height */}
           {keywords.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5">
+            <div className="flex flex-wrap gap-1.5 overflow-hidden">
               {keywords.map((kw, i) => {
-                // First keyword gets slightly more emphasis
-                const isFirst = i === 0;
                 const baseColors = CATEGORY_COLORS[kw.category]?.replace('hover:bg-', '') || 'bg-white/20 text-white/80';
                 return (
                   <span
                     key={i}
-                    className={`${baseColors} ${isFirst ? 'px-2.5 py-1' : 'px-2 py-0.5'} rounded-full text-[10px] font-medium whitespace-nowrap shrink-0`}
+                    className={`${baseColors} px-2 py-0.5 rounded-full text-[10px] font-medium`}
                   >
                     {kw.text}
                   </span>
