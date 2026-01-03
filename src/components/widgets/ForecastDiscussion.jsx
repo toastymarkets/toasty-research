@@ -1,6 +1,60 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, FileText, Clock, ExternalLink, Copy, Check } from 'lucide-react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Clock, ExternalLink, Copy, Check, Plus } from 'lucide-react';
 import { useNWSForecastDiscussion } from '../../hooks/useNWSWeather';
+import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+
+// Meteorological keywords to highlight, grouped by category
+const WEATHER_KEYWORDS = {
+  // Temperature patterns
+  temperature: [
+    'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
+    'above normal', 'below normal', 'near normal', 'record high', 'record low',
+    'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
+  ],
+  // Pressure/fronts
+  synoptic: [
+    'cold front', 'warm front', 'occluded front', 'stationary front',
+    'low pressure', 'high pressure', 'trough', 'ridge', 'upper level',
+    'surface low', 'surface high', 'shortwave', 'longwave',
+    'cutoff low', 'closed low', 'blocking pattern', 'zonal flow',
+  ],
+  // Precipitation
+  precipitation: [
+    'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
+    'shower', 'drizzle', 'downpour', 'heavy rain', 'light rain',
+    'accumulation', 'precip', 'precipitation', 'moisture',
+    'convection', 'instability', 'cape', 'lifted index',
+  ],
+  // Wind
+  wind: [
+    'wind advisory', 'high wind', 'gust', 'breezy', 'windy',
+    'santa ana', 'chinook', 'offshore flow', 'onshore flow',
+    'wind shift', 'veering', 'backing',
+  ],
+  // Confidence/uncertainty
+  confidence: [
+    'uncertainty', 'confidence', 'likely', 'unlikely', 'possible',
+    'expected', 'forecast', 'outlook', 'trend', 'timing',
+    'models agree', 'model spread', 'ensemble', 'deterministic',
+  ],
+};
+
+// Flatten keywords with their categories for lookup
+const KEYWORD_MAP = new Map();
+Object.entries(WEATHER_KEYWORDS).forEach(([category, keywords]) => {
+  keywords.forEach(keyword => {
+    KEYWORD_MAP.set(keyword.toLowerCase(), category);
+  });
+});
+
+// Category colors matching the glassmorphism design
+const CATEGORY_COLORS = {
+  temperature: 'bg-orange-500/30 text-orange-300 hover:bg-orange-500/50',
+  synoptic: 'bg-blue-500/30 text-blue-300 hover:bg-blue-500/50',
+  precipitation: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
+  wind: 'bg-teal-500/30 text-teal-300 hover:bg-teal-500/50',
+  confidence: 'bg-purple-500/30 text-purple-300 hover:bg-purple-500/50',
+};
 
 const formatRelativeTime = (isoString) => {
   if (!isoString) return '';
@@ -16,9 +70,119 @@ const formatRelativeTime = (isoString) => {
   return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
 };
 
+/**
+ * Insert discussion text into notes via global event
+ */
+function insertDiscussionToNotes(text, source = 'NWS Discussion') {
+  const event = new CustomEvent(NOTE_INSERTION_EVENT, {
+    detail: {
+      type: 'discussion',
+      content: {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'dataChip',
+                attrs: {
+                  value: text,
+                  label: '',
+                  type: 'forecast',
+                  source,
+                  timestamp: new Date().toISOString(),
+                }
+              }
+            ]
+          }
+        ]
+      },
+      rawData: { text, source },
+    }
+  });
+  window.dispatchEvent(event);
+}
+
+/**
+ * HighlightedKeyword - Clickable keyword with add-to-notes functionality
+ */
+function HighlightedKeyword({ text, category, officeName }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const colorClass = CATEGORY_COLORS[category] || 'bg-white/20 text-white/80';
+
+  const handleAddToNotes = (e) => {
+    e.stopPropagation();
+    insertDiscussionToNotes(text, `NWS ${officeName}`);
+    setShowTooltip(false);
+  };
+
+  return (
+    <span className="relative inline">
+      <button
+        onClick={handleAddToNotes}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        className={`${colorClass} px-1 py-0.5 rounded cursor-pointer transition-colors text-inherit font-inherit`}
+        title={`Add "${text}" to notes`}
+      >
+        {text}
+      </button>
+      {showTooltip && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[10px] bg-black/80 text-white rounded whitespace-nowrap z-50 pointer-events-none">
+          Click to add to notes
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Parse text and highlight meteorological keywords
+ */
+function parseAndHighlight(text, officeName) {
+  if (!text) return null;
+
+  // Build regex pattern from all keywords (sorted by length desc to match longer phrases first)
+  const allKeywords = Array.from(KEYWORD_MAP.keys()).sort((a, b) => b.length - a.length);
+  const pattern = new RegExp(`\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi');
+
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    // Add text before match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    // Add highlighted keyword
+    const keyword = match[0];
+    const category = KEYWORD_MAP.get(keyword.toLowerCase());
+    parts.push(
+      <HighlightedKeyword
+        key={`${match.index}-${keyword}`}
+        text={keyword}
+        category={category}
+        officeName={officeName}
+      />
+    );
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
 export default function ForecastDiscussion({ cityId }) {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [selectionPopup, setSelectionPopup] = useState(null);
+  const contentRef = useRef(null);
   const { discussion, loading, error } = useNWSForecastDiscussion(cityId);
 
   // Clean NWS text by joining hard-wrapped lines while preserving paragraphs
@@ -28,6 +192,51 @@ export default function ForecastDiscussion({ cityId }) {
       .replace(/\n(?!\n)/g, ' ')  // Single newline → space (join wrapped lines)
       .replace(/  +/g, ' ')        // Collapse multiple spaces
       .trim();
+  };
+
+  // Handle text selection for add-to-notes popup
+  const handleMouseUp = useCallback(() => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const containerRect = contentRef.current?.getBoundingClientRect();
+
+      if (containerRect) {
+        setSelectionPopup({
+          text: selection.toString().trim(),
+          x: rect.left + rect.width / 2 - containerRect.left,
+          y: rect.top - containerRect.top - 10,
+        });
+      }
+    } else {
+      setSelectionPopup(null);
+    }
+  }, []);
+
+  // Hide popup when clicking elsewhere
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (!selection || selection.toString().trim().length === 0) {
+          setSelectionPopup(null);
+        }
+      }, 100);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle adding selected text to notes
+  const handleAddSelectionToNotes = () => {
+    if (selectionPopup?.text) {
+      const cleanedText = cleanTextForCopy(selectionPopup.text);
+      insertDiscussionToNotes(cleanedText, `NWS ${discussion?.officeName || 'Discussion'}`);
+      setSelectionPopup(null);
+      window.getSelection()?.removeAllRanges();
+    }
   };
 
   // Handle copy button click
@@ -56,9 +265,9 @@ export default function ForecastDiscussion({ cityId }) {
 
   if (loading) {
     return (
-      <div className="py-4">
-        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-          <div className="w-4 h-4 border-2 border-gray-300 dark:border-dark-border-strong border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-2 text-white/50 p-4">
+          <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
           <span className="text-sm">Loading forecast discussion...</span>
         </div>
       </div>
@@ -67,73 +276,89 @@ export default function ForecastDiscussion({ cityId }) {
 
   if (error || !discussion) return null;
 
-  const { parsed, summary, issuanceTime, officeName } = discussion;
+  const { parsed, issuanceTime, officeName } = discussion;
 
   return (
-    <div className="flex flex-col max-h-[400px]">
-      <div className="flex items-center justify-between mb-3 shrink-0">
-        <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center gap-2 group">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-blue-500" />
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white">NWS Forecast Discussion</h2>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 pb-3 shrink-0 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">
+            NWS Discussion
+          </span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/40">
+            {officeName}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleCopy}
+            className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1 transition-colors"
+            title="Copy to clipboard"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3 h-3" />
+                <span>Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3 h-3" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+          <div className="flex items-center gap-1 text-[10px] text-white/40">
+            <Clock className="w-3 h-3" />
+            <span>{formatRelativeTime(issuanceTime)}</span>
           </div>
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
-          )}
-        </button>
-        <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-          <Clock className="w-3 h-3" />
-          <span>{formatRelativeTime(issuanceTime)}</span>
         </div>
       </div>
 
-      {isExpanded && (
-        <div className="flex flex-col flex-1 min-h-0 space-y-3 overflow-hidden">
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleCopy}
-              className="text-xs text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 flex items-center gap-1 transition-colors"
-              title="Copy to clipboard"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3 h-3" />
-                  <span>Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3 h-3" />
-                  <span>Copy</span>
-                </>
-              )}
-            </button>
-          </div>
+      {/* Content with highlighted keywords */}
+      <div
+        ref={contentRef}
+        className="relative flex-1 min-h-0 overflow-y-auto p-4"
+        onMouseUp={handleMouseUp}
+      >
+        {/* Selection popup */}
+        {selectionPopup && (
+          <button
+            onClick={handleAddSelectionToNotes}
+            className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
+            style={{
+              left: `${selectionPopup.x}px`,
+              top: `${selectionPopup.y}px`,
+              transform: 'translate(-50%, -100%)',
+            }}
+          >
+            <Plus className="w-3 h-3" />
+            Add to notes
+          </button>
+        )}
 
-          {parsed?.rawText && (
-            <pre
-              className="flex-1 min-h-0 p-3 bg-gray-50 dark:bg-dark-elevated rounded-lg text-xs text-gray-600 dark:text-gray-400 overflow-y-auto whitespace-pre-wrap font-mono select-text"
-              onCopy={handleTextCopy}
-            >
-              {parsed.rawText}
-            </pre>
-          )}
-
-          <div className="pt-3 border-t border-gray-100 dark:border-dark-border flex items-center justify-between shrink-0">
-            <span className="text-xs text-gray-400 dark:text-gray-500">NWS {officeName}</span>
-            <a
-              href={`https://forecast.weather.gov/product.php?site=${officeName}&issuedby=${officeName}&product=AFD`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 flex items-center gap-1"
-            >
-              View on NWS
-              <ExternalLink className="w-3 h-3" />
-            </a>
+        {parsed?.rawText && (
+          <div
+            className="text-xs text-white/70 whitespace-pre-wrap font-mono select-text leading-relaxed"
+            onCopy={handleTextCopy}
+          >
+            {parseAndHighlight(parsed.rawText, officeName)}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 pt-3 border-t border-white/10 shrink-0">
+        <a
+          href={`https://forecast.weather.gov/product.php?site=${officeName}&issuedby=${officeName}&product=AFD`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+        >
+          View full discussion on NWS
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ export default function GlassWidget({
   className = '',
   children,
   onClick,
+  headerRight,
 }) {
   // Size classes - Apple compact style
   const sizeClasses = {
@@ -31,9 +32,12 @@ export default function GlassWidget({
     >
       {/* Widget header */}
       {title && (
-        <div className="widget-header">
-          {Icon && <Icon className="w-3.5 h-3.5" />}
-          <span>{title}</span>
+        <div className="widget-header justify-between">
+          <div className="flex items-center gap-1.5">
+            {Icon && <Icon className="w-3.5 h-3.5" />}
+            <span>{title}</span>
+          </div>
+          {headerRight}
         </div>
       )}
 
@@ -52,4 +56,5 @@ GlassWidget.propTypes = {
   className: PropTypes.string,
   children: PropTypes.node,
   onClick: PropTypes.func,
+  headerRight: PropTypes.node,
 };
