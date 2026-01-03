@@ -22,6 +22,10 @@ const WEATHER_KEYWORDS = {
     'weak clipper system', 'clipper system', 'clipper',
     // NWS abbreviations
     'pva', 'nva', 'rrq', 'ulj', 'llj', 'theta-e',
+    // Climate indices
+    'ao', 'nao', '-ao', '-nao', '+ao', '+nao',
+    // More NWS abbreviations
+    'nbm', 'pops', 'wx', 'sca',
   ],
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
@@ -102,6 +106,16 @@ const KEYWORD_DEFINITIONS = {
   'ulj': 'Upper Level Jet - fast winds at high altitude (30,000+ ft) that influence weather patterns.',
   'llj': 'Low Level Jet - strong winds at low altitude that can transport moisture and trigger storms.',
   'theta-e': 'Equivalent Potential Temperature - measure of air mass energy. Higher values indicate warmer, more humid air.',
+  'ao': 'Arctic Oscillation - climate pattern affecting jet stream position. Negative (-AO) brings cold Arctic air south; positive (+AO) keeps cold air locked in Arctic.',
+  'nao': 'North Atlantic Oscillation - pressure pattern over Atlantic. Negative (-NAO) favors cold/snowy East Coast; positive (+NAO) brings milder, wetter conditions.',
+  '-ao': 'Negative Arctic Oscillation - weak polar vortex allows cold Arctic air to spill southward into mid-latitudes.',
+  '-nao': 'Negative North Atlantic Oscillation - blocking pattern that can bring cold air and snow to the eastern US.',
+  '+ao': 'Positive Arctic Oscillation - strong polar vortex keeps cold air trapped in Arctic, leading to milder mid-latitude temps.',
+  '+nao': 'Positive North Atlantic Oscillation - strong westerly flow bringing mild, wet weather to eastern US.',
+  'nbm': 'National Blend of Models - NWS guidance combining multiple weather models into a single forecast.',
+  'pops': 'Probability of Precipitation - percent chance of measurable precipitation at a location.',
+  'wx': 'Weather - shorthand used in NWS forecasts and discussions.',
+  'sca': 'Small Craft Advisory - marine warning for hazardous conditions for small boats.',
 
   // Synoptic
   'high pressure': 'Area where atmospheric pressure is elevated. Associated with fair weather, clear skies, and light winds.',
