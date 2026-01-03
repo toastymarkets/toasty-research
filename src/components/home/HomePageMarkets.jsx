@@ -61,8 +61,7 @@ export default function HomePageMarkets() {
 
       {/* Rain Markets Section */}
       <MarketSection
-        title="Rain Markets"
-        subtitle="Precipitation predictions"
+        title="Rain"
         icon={CloudRain}
         markets={rainMarkets}
         loading={rainLoading}
@@ -71,8 +70,7 @@ export default function HomePageMarkets() {
 
       {/* Snow Markets Section */}
       <MarketSection
-        title="Snow Markets"
-        subtitle="Snowfall predictions"
+        title="Snow"
         icon={Snowflake}
         markets={snowMarkets}
         loading={snowLoading}
@@ -238,30 +236,27 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
  */
 function MarketSection({
   title,
-  subtitle,
   icon: Icon,
   markets,
   loading,
   noActiveMarkets = false
 }) {
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 mt-6">
+    <div className="w-full max-w-6xl mx-auto px-4 mt-8">
       {/* Section Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className="w-4 h-4 text-white/60" />
-        <h2 className="text-lg font-semibold text-white">{title}</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-xl md:text-2xl font-bold text-white">{title}</h2>
         {!loading && markets.length > 0 && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">
             {markets.length} markets
           </span>
         )}
         {noActiveMarkets && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">
             No Active Markets
           </span>
         )}
       </div>
-      <p className="text-xs text-white/40 mb-4">{subtitle}</p>
 
       {/* Markets Grid */}
       {loading ? (
