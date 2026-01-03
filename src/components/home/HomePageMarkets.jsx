@@ -151,7 +151,7 @@ function Dropdown({ value, options, onChange, className = '' }) {
     <div ref={dropdownRef} className={`relative inline-block ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-orange-400 font-semibold"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-blue-400 font-semibold"
       >
         {selectedOption?.label || value}
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -169,7 +169,7 @@ function Dropdown({ value, options, onChange, className = '' }) {
               className={`
                 w-full px-3 py-2 text-left text-sm transition-colors
                 ${option.value === value
-                  ? 'bg-orange-500/20 text-orange-400'
+                  ? 'bg-blue-500/20 text-blue-400'
                   : 'text-white/80 hover:bg-white/10'
                 }
               `}
@@ -184,19 +184,11 @@ function Dropdown({ value, options, onChange, className = '' }) {
 }
 
 /**
- * TemperatureMarketsSection - Interactive temperature markets with city/type selection
+ * TemperatureMarketsSection - Interactive temperature markets with type/timeframe selection
  */
 function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
-  const [selectedCity, setSelectedCity] = useState(() => {
-    // Default to first city with most volume
-    if (highTempMarkets.length > 0) {
-      return highTempMarkets[0].slug;
-    }
-    return 'austin';
-  });
   const [marketType, setMarketType] = useState('highest');
-  const [isShuffling, setIsShuffling] = useState(false);
-  const [shuffleKey, setShuffleKey] = useState(0);
+  const [timeframe, setTimeframe] = useState('today');
 
   // Fetch low temp markets
   const { marketsData: lowTempMarketsData, loading: lowTempLoading } = useLowTempMarkets();
@@ -213,63 +205,23 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
   const markets = marketType === 'highest' ? highTempMarkets : lowTempMarkets;
   const loading = marketType === 'highest' ? highTempLoading : lowTempLoading;
 
-  // Sort markets with selected city first
-  const sortedMarkets = useMemo(() => {
-    const marketsCopy = [...markets];
-    const selectedIndex = marketsCopy.findIndex(m => m.slug === selectedCity);
-    if (selectedIndex > 0) {
-      const [selected] = marketsCopy.splice(selectedIndex, 1);
-      marketsCopy.unshift(selected);
-    }
-    return marketsCopy;
-  }, [markets, selectedCity]);
-
-  // Handle city change with shuffle animation
-  const handleCityChange = (newCity) => {
-    if (newCity === selectedCity) return;
-
-    setIsShuffling(true);
-
-    setTimeout(() => {
-      setSelectedCity(newCity);
-      setShuffleKey(prev => prev + 1);
-
-      setTimeout(() => {
-        setIsShuffling(false);
-      }, 50);
-    }, 200);
-  };
-
-  // Handle market type change with shuffle animation
-  const handleMarketTypeChange = (newType) => {
-    if (newType === marketType) return;
-
-    setIsShuffling(true);
-
-    setTimeout(() => {
-      setMarketType(newType);
-      setShuffleKey(prev => prev + 1);
-
-      setTimeout(() => {
-        setIsShuffling(false);
-      }, 50);
-    }, 200);
-  };
-
-  // City options for dropdown
-  const cityOptions = MARKET_CITIES.map(city => ({
-    value: city.slug,
-    label: city.name,
-  }));
-
   // Market type options
   const typeOptions = [
     { value: 'highest', label: 'Highest' },
     { value: 'lowest', label: 'Lowest' },
   ];
 
+  // Timeframe options
+  const timeframeOptions = [
+    { value: 'today', label: 'today' },
+    { value: 'tomorrow', label: 'tomorrow' },
+  ];
+
   // Check if low temp markets are available
   const lowMarketsAvailable = lowTempMarkets.some(m => m.topBrackets && m.topBrackets.length > 0);
+
+  // Check if we should show "coming soon" for tomorrow or lowest
+  const showComingSoon = timeframe === 'tomorrow' || (!lowMarketsAvailable && marketType === 'lowest');
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 mt-6">
@@ -280,24 +232,23 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
           <Dropdown
             value={marketType}
             options={typeOptions}
-            onChange={handleMarketTypeChange}
+            onChange={setMarketType}
           />
-          <span className="text-white/80">temperature in</span>
+          <span className="text-white/80">temperature</span>
           <Dropdown
-            value={selectedCity}
-            options={cityOptions}
-            onChange={handleCityChange}
+            value={timeframe}
+            options={timeframeOptions}
+            onChange={setTimeframe}
           />
-          <span className="text-white/80">today</span>
         </h2>
-        {!loading && sortedMarkets.length > 0 && (
+        {!loading && !showComingSoon && markets.length > 0 && (
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50 ml-2">
-            {sortedMarkets.length} markets
+            {markets.length} markets
           </span>
         )}
       </div>
       <p className="text-xs text-white/40 mb-4">
-        {marketType === 'highest' ? 'Daily high' : 'Daily low'} temperature predictions
+        {marketType === 'highest' ? 'Daily high' : 'Daily low'} temperature predictions for {timeframe}
       </p>
 
       {/* Markets Grid */}
@@ -320,25 +271,27 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
             </div>
           ))}
         </div>
-      ) : !lowMarketsAvailable && marketType === 'lowest' ? (
+      ) : showComingSoon ? (
         <div className="glass-widget p-8 text-center">
           <TrendingUp className="w-8 h-8 text-white/30 mx-auto mb-3" />
-          <p className="text-sm text-white/50">No lowest temperature markets available</p>
-          <p className="text-xs text-white/30 mt-1">These markets may not be active on Kalshi yet</p>
+          <p className="text-sm text-white/50">
+            {timeframe === 'tomorrow'
+              ? "Tomorrow's markets coming soon"
+              : 'No lowest temperature markets available'}
+          </p>
+          <p className="text-xs text-white/30 mt-1">
+            {timeframe === 'tomorrow'
+              ? 'Check back later for tomorrow\'s predictions'
+              : 'These markets may not be active on Kalshi yet'}
+          </p>
         </div>
       ) : (
-        <div
-          key={shuffleKey}
-          className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        >
-          {sortedMarkets.map((market, index) => (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {markets.map((market, index) => (
             <MarketCardGlass
               key={market.slug}
               city={market}
               index={index}
-              featured={market.slug === selectedCity}
-              shuffling={isShuffling}
-              shuffleDirection={index % 2 === 0 ? 1 : -1}
             />
           ))}
         </div>

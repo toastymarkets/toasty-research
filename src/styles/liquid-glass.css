@@ -517,8 +517,8 @@ body {
   z-index: 10;
   box-shadow:
     var(--glass-shadow-elevated),
-    0 0 0 2px rgba(255, 159, 10, 0.4),
-    0 0 20px rgba(255, 159, 10, 0.15);
+    0 0 0 2px rgba(96, 165, 250, 0.7),
+    0 0 30px rgba(96, 165, 250, 0.35);
 }
 
 .card-featured:hover {
