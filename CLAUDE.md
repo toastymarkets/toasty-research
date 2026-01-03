@@ -45,6 +45,7 @@ src/
 │   ├── cities.js          # City definitions & metadata
 │   └── dataSchedule.js    # NWS data release times
 ├── stores/            # localStorage persistence (workspaceStore)
+├── data/              # Static data (weatherKnowledge.js - NWS definitions)
 ├── utils/             # Helper functions
 └── styles/            # Custom CSS
 
@@ -94,6 +95,28 @@ api/                   # Vercel serverless functions
 2. Add entry to `src/config/WidgetRegistry.js`
 3. Implement required props (citySlug, cityName, etc.)
 4. Widget becomes available in AddWidgetPanel
+
+## NWS Discussion Widget
+
+The NWS Discussion widget fetches Area Forecast Discussions (AFD) from NWS offices and provides:
+
+### Keyword Highlighting
+Meteorological terms are automatically highlighted with color-coded categories:
+- **Temperature** (orange): warm air advection, freeze, cooling trend
+- **Synoptic** (blue): high pressure, cold front, trough, ridge
+- **Precipitation** (cyan): convection, cape, instability
+- **Wind** (teal): offshore flow, gust, santa ana
+- **Confidence** (purple): uncertainty, likely, models agree
+
+Hover over keywords to see NWS-sourced definitions. Click to add to research notes.
+
+### AFD Parsing
+The widget handles multiple NWS office formats:
+- Standard format: `.SYNOPSIS...` / `.NEAR TERM...` / `.LONG TERM...`
+- Alternative format: `.KEY MESSAGES...` / `.DISCUSSION...` (used by some offices like Chicago)
+- Section terminators: `&&` and paragraph breaks with new sections
+
+Cache key: `nws_afd_v2_${citySlug}` (localStorage with 30-min expiration)
 
 ## Design System
 

@@ -52,6 +52,17 @@ Used sparingly for semantic meaning and visual interest:
 | Rain | `#3B82F6` | `#60A5FA` |
 | Snow | `#8B5CF6` | `#A78BFA` |
 
+### Keyword Highlighting Colors
+Used in NWS Discussion widget for meteorological term highlighting:
+
+| Category | Tailwind Class | Usage |
+|----------|----------------|-------|
+| Temperature | `bg-orange-500/30 text-orange-300` | warm air advection, freeze, cooling trend |
+| Synoptic | `bg-blue-500/30 text-blue-300` | high pressure, cold front, trough, ridge |
+| Precipitation | `bg-cyan-500/30 text-cyan-300` | convection, cape, instability |
+| Wind | `bg-teal-500/30 text-teal-300` | offshore flow, gust, santa ana |
+| Confidence | `bg-purple-500/30 text-purple-300` | uncertainty, likely, models agree |
+
 ---
 
 ## Typography
