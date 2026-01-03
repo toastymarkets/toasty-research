@@ -50,12 +50,16 @@ function formatDate(date) {
  * @param {Date} date - Date to fetch data for (defaults to today)
  * @returns {{ data, loading, error, refetch, stationName, station }}
  */
-export function useDSM(citySlug, date = new Date()) {
+export function useDSM(citySlug, date) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const config = CITY_IEM_CONFIG[citySlug];
+
+  // Memoize date string to prevent infinite loops from new Date() default
+  // If no date provided, use today's date string
+  const dateStr = date ? formatDate(date) : formatDate(new Date());
 
   const fetchData = useCallback(async () => {
     if (!config) {
@@ -68,7 +72,6 @@ export function useDSM(citySlug, date = new Date()) {
     setError(null);
 
     try {
-      const dateStr = formatDate(date);
       const url = `https://mesonet.agron.iastate.edu/api/1/daily.json?network=${config.network}&station=${config.station}&date=${dateStr}`;
 
       const response = await fetch(url);
@@ -105,7 +108,7 @@ export function useDSM(citySlug, date = new Date()) {
     } finally {
       setLoading(false);
     }
-  }, [config, date]);
+  }, [config, dateStr]);
 
   useEffect(() => {
     fetchData();
