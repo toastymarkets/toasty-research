@@ -23,10 +23,10 @@ import {
   WindWidget,
   ResolutionWidget,
   PressureWidget,
-  VisibilityWidget,
   RoundingWidget,
   NearbyStations,
   AlertsWidget,
+  PrecipitationWidget,
 } from '../weather';
 
 // Kalshi market data
@@ -305,11 +305,11 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* Visibility */}
+          {/* Precipitation */}
           <WidgetGridV2.Area area="visibility">
-            <VisibilityWidget
-              value={weatherDetails.visibility}
-              loading={weatherLoading}
+            <PrecipitationWidget
+              citySlug={citySlug}
+              cityName={city.name}
             />
           </WidgetGridV2.Area>
 

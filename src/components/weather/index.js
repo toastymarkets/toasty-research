@@ -25,7 +25,7 @@ export {
   WindWidget,
   HumidityWidget,
   PressureWidget,
-  VisibilityWidget,
   FeelsLikeWidget,
   MarketInsightWidget,
+  PrecipitationWidget,
 } from './SmallWidgets';

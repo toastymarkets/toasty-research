@@ -5,18 +5,21 @@ import {
   Wind,
   Droplets,
   Gauge,
-  Eye,
   Thermometer,
   TrendingUp,
   TrendingDown,
   Minus,
   BarChart3,
   ChevronRight,
+  CloudRain,
+  Snowflake,
 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
+import { useMonthlyPrecipitation } from '../../hooks/useMonthlyPrecipitation';
 
-// Lazy load modal with Recharts
+// Lazy load modals with Recharts
 const WindDetailModal = lazy(() => import('./WindDetailModal'));
+const PrecipitationDetailModal = lazy(() => import('./PrecipitationDetailModal'));
 
 /**
  * Small Weather Widgets - Apple Weather inspired compact widgets
@@ -426,46 +429,6 @@ PressureWidget.propTypes = {
   loading: PropTypes.bool,
 };
 
-// ============ VISIBILITY WIDGET ============
-export const VisibilityWidget = memo(function VisibilityWidget({ value = 10, loading = false }) {
-  // Convert meters to miles if needed
-  const visibilityMiles = typeof value === 'object'
-    ? (value.value / 1609.34).toFixed(1)
-    : (value / 1609.34).toFixed(1);
-
-  if (loading) {
-    return (
-      <GlassWidget title="VISIBILITY" icon={Eye} size="small">
-        <div className="flex flex-col items-center justify-center h-full animate-pulse">
-          <div className="w-16 h-8 bg-white/10 rounded" />
-        </div>
-      </GlassWidget>
-    );
-  }
-
-  return (
-    <GlassWidget title="VISIBILITY" icon={Eye} size="small">
-      <div className="flex flex-col items-start justify-center flex-1">
-        {/* Value */}
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-light">{visibilityMiles}</span>
-          <span className="text-[11px] text-glass-text-muted">mi</span>
-        </div>
-
-        {/* Description */}
-        <span className="text-[11px] text-glass-text-secondary">
-          {parseFloat(visibilityMiles) >= 10 ? 'Clear' : parseFloat(visibilityMiles) >= 5 ? 'Good' : 'Limited'}
-        </span>
-      </div>
-    </GlassWidget>
-  );
-});
-
-VisibilityWidget.propTypes = {
-  value: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
-  loading: PropTypes.bool,
-};
-
 // ============ FEELS LIKE WIDGET ============
 export const FeelsLikeWidget = memo(function FeelsLikeWidget({ actual = 0, feelsLike = 0, loading = false }) {
   // Convert Celsius to Fahrenheit if needed
@@ -579,4 +542,100 @@ MarketInsightWidget.propTypes = {
   }),
   forecastHigh: PropTypes.number,
   loading: PropTypes.bool,
+};
+
+// ============ PRECIPITATION WIDGET ============
+export const PrecipitationWidget = memo(function PrecipitationWidget({
+  citySlug,
+  cityName,
+}) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { dailyData, totals, monthName, year, loading, error, stationName } = useMonthlyPrecipitation(citySlug);
+
+  // Determine what to display based on data
+  const hasRain = totals.precipitation > 0;
+  const hasSnow = totals.snowfall > 0;
+  const hasBoth = hasRain && hasSnow;
+  const hasNeither = !hasRain && !hasSnow;
+
+  // Primary display: rain if available, otherwise snow, otherwise 0
+  const primaryValue = hasRain ? totals.precipitation.toFixed(2) : hasSnow ? totals.snowfall.toFixed(1) : '0.00';
+  const primaryLabel = hasRain ? 'rain' : hasSnow ? 'snow' : 'rain';
+  const PrimaryIcon = hasSnow && !hasRain ? Snowflake : Droplets;
+
+  // Secondary value only shown when both rain and snow are present
+  const secondaryValue = hasBoth ? totals.snowfall.toFixed(1) : null;
+
+  if (loading) {
+    return (
+      <GlassWidget title="PRECIPITATION" icon={CloudRain} size="small">
+        <div className="flex flex-col items-center justify-center h-full animate-pulse">
+          <div className="w-16 h-8 bg-white/10 rounded" />
+        </div>
+      </GlassWidget>
+    );
+  }
+
+  if (error) {
+    return (
+      <GlassWidget title="PRECIPITATION" icon={CloudRain} size="small">
+        <div className="flex flex-col items-center justify-center flex-1">
+          <span className="text-sm text-glass-text-muted text-center">
+            No data
+          </span>
+        </div>
+      </GlassWidget>
+    );
+  }
+
+  return (
+    <>
+      <GlassWidget
+        title="PRECIPITATION"
+        icon={CloudRain}
+        size="small"
+        className="cursor-pointer"
+        onClick={() => setIsModalOpen(true)}
+      >
+        <div className="flex flex-col items-start justify-center flex-1">
+          {/* Primary value */}
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-light">{primaryValue}"</span>
+            <span className="text-[11px] text-glass-text-muted">{primaryLabel}</span>
+          </div>
+
+          {/* Secondary value (if both rain & snow) */}
+          {secondaryValue && (
+            <div className="flex items-center gap-1 text-sky-300">
+              <Snowflake className="w-3 h-3" />
+              <span className="text-[11px]">{secondaryValue}" snow</span>
+            </div>
+          )}
+
+          {/* Month label */}
+          <span className="text-[11px] text-glass-text-muted mt-1">{monthName} MTD</span>
+        </div>
+      </GlassWidget>
+
+      {/* Precipitation Detail Modal - Lazy loaded */}
+      {isModalOpen && (
+        <Suspense fallback={null}>
+          <PrecipitationDetailModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            dailyData={dailyData}
+            totals={totals}
+            monthName={monthName}
+            year={year}
+            stationName={stationName}
+          />
+        </Suspense>
+      )}
+    </>
+  );
+});
+
+PrecipitationWidget.propTypes = {
+  citySlug: PropTypes.string.isRequired,
+  cityName: PropTypes.string,
 };
