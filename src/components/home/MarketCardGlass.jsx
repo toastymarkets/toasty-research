@@ -7,7 +7,14 @@ import { CITY_BY_SLUG } from '../../config/cities';
  * MarketCardGlass - Glass-styled market card for homepage
  * Displays city market data with probability bars and countdown timer
  */
-export default function MarketCardGlass({ city, index = 0, comingSoon = false }) {
+export default function MarketCardGlass({
+  city,
+  index = 0,
+  comingSoon = false,
+  featured = false,
+  shuffling = false,
+  shuffleDirection = 1
+}) {
   // Get market data from context if it's a temperature market, otherwise use passed data
   const contextData = useKalshiMarketsFromContext(city.slug);
 
@@ -72,14 +79,22 @@ export default function MarketCardGlass({ city, index = 0, comingSoon = false })
   // Staggered animation delay
   const animationDelay = `glass-delay-${(index % 5) + 1}`;
 
+  // Generate random shuffle offset for animation
+  const shuffleX = shuffleDirection * (20 + Math.random() * 30);
+
   return (
     <Link
       to={`/city/${city.citySlug || city.slug}`}
       className={`
         glass-widget glass-interactive glass-animate-in ${animationDelay}
-        block overflow-hidden
+        block overflow-hidden transition-all duration-300
         ${comingSoon ? 'opacity-60 pointer-events-none' : ''}
+        ${featured ? 'card-featured' : ''}
+        ${shuffling ? 'card-shuffling' : ''}
       `}
+      style={{
+        '--shuffle-x': `${shuffleX}px`,
+      }}
     >
       {/* City Image Header */}
       <div className="relative h-20 overflow-hidden bg-gradient-to-br from-blue-900/50 to-purple-900/50">

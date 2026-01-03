@@ -478,6 +478,53 @@ body {
 .glass-delay-4 { animation-delay: 200ms; }
 .glass-delay-5 { animation-delay: 250ms; }
 
+/* ===== CARD SHUFFLE ANIMATION ===== */
+/* iPod shuffle-style card rearrangement */
+
+@keyframes card-shuffle-out {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0.4;
+    transform: translateX(var(--shuffle-x, 30px)) scale(0.92);
+  }
+}
+
+@keyframes card-shuffle-in {
+  0% {
+    opacity: 0.4;
+    transform: translateX(var(--shuffle-x, -30px)) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.card-shuffling {
+  animation: card-shuffle-out 200ms ease-out forwards;
+}
+
+.card-shuffle-enter {
+  animation: card-shuffle-in var(--transition-spring) forwards;
+}
+
+/* Featured card styling */
+.card-featured {
+  transform: scale(1.02);
+  z-index: 10;
+  box-shadow:
+    var(--glass-shadow-elevated),
+    0 0 0 2px rgba(255, 159, 10, 0.4),
+    0 0 20px rgba(255, 159, 10, 0.15);
+}
+
+.card-featured:hover {
+  transform: scale(1.04) translateY(-2px);
+}
+
 /* ===== RESPONSIVE ADJUSTMENTS ===== */
 
 /* Mobile only (< 768px) */

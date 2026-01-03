@@ -7,7 +7,7 @@ const KALSHI_PROXY = '/api/kalshi';
 const KALSHI_PATH = 'trade-api/v2';
 
 /**
- * Map city slugs to Kalshi series tickers
+ * Map city slugs to Kalshi series tickers (highest temperature)
  */
 const CITY_SERIES = {
   'new-york': 'KXHIGHNY',
@@ -17,6 +17,19 @@ const CITY_SERIES = {
   'denver': 'KXHIGHDEN',
   'austin': 'KXHIGHAUS',
   'philadelphia': 'KXHIGHPHIL',
+};
+
+/**
+ * Map city slugs to Kalshi series tickers (lowest temperature)
+ */
+const CITY_SERIES_LOW = {
+  'new-york': 'KXLOWNY',
+  'chicago': 'KXLOWCHI',
+  'los-angeles': 'KXLOWLAX',
+  'miami': 'KXLOWMIA',
+  'denver': 'KXLOWDEN',
+  'austin': 'KXLOWAUS',
+  'philadelphia': 'KXLOWPHIL',
 };
 
 /**
@@ -211,4 +224,61 @@ export function useKalshiMarketsFromContext(citySlug) {
   };
 }
 
-export { CITY_SERIES, KalshiMarketsContext };
+/**
+ * Hook to fetch low temperature markets for all cities
+ * Returns data in same format as the high temp context
+ */
+export function useLowTempMarkets() {
+  const [marketsData, setMarketsData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [lastFetch, setLastFetch] = useState(null);
+
+  const fetchAllMarkets = useCallback(async () => {
+    const cityEntries = Object.entries(CITY_SERIES_LOW);
+    const results = {};
+
+    for (let i = 0; i < cityEntries.length; i++) {
+      const [citySlug, seriesTicker] = cityEntries[i];
+
+      try {
+        const markets = await fetchSeriesMarkets(seriesTicker);
+        results[citySlug] = {
+          ...processCityMarkets(markets),
+          loading: false,
+          seriesTicker,
+        };
+      } catch {
+        results[citySlug] = {
+          brackets: [],
+          topBrackets: [],
+          totalVolume: 0,
+          closeTime: null,
+          error: 'No markets available',
+          loading: false,
+          seriesTicker,
+        };
+      }
+
+      if (i < cityEntries.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+
+    setMarketsData(results);
+    setLoading(false);
+    setLastFetch(new Date());
+  }, []);
+
+  useEffect(() => {
+    fetchAllMarkets();
+  }, [fetchAllMarkets]);
+
+  useEffect(() => {
+    const interval = setInterval(fetchAllMarkets, 30000);
+    return () => clearInterval(interval);
+  }, [fetchAllMarkets]);
+
+  return { marketsData, loading, lastFetch, refetch: fetchAllMarkets };
+}
+
+export { CITY_SERIES, CITY_SERIES_LOW, KalshiMarketsContext };
