@@ -264,7 +264,7 @@ export default function NWSDiscussionWidget({
   const fetchDiscussion = useCallback(async () => {
     if (!lat || !lon) return;
 
-    const cacheKey = `nws_afd_v1_${citySlug}`;
+    const cacheKey = `nws_afd_v2_${citySlug}`;
 
     // Check cache (30 min for discussions)
     try {
@@ -439,42 +439,64 @@ NWSDiscussionWidget.propTypes = {
 
 /**
  * Parse AFD text into sections
+ * Handles both standard format (.SYNOPSIS, .NEAR TERM, etc.) and
+ * alternative format (.KEY MESSAGES, .DISCUSSION) used by some offices like Chicago
+ * Section terminators: && or next .SECTION header
  */
 function parseDiscussion(text, meta) {
   const sections = {};
 
-  // Extract synopsis
-  const synopsisMatch = text.match(/\.SYNOPSIS\.\.\.?\s*([\s\S]*?)(?=\n\n&&|\n\n\.[A-Z])/i);
+  // Common section terminator pattern: && or next section header
+  const sectionEnd = '(?=&&|\\n\\n\\.[A-Z])';
+
+  // Extract synopsis (standard format)
+  const synopsisMatch = text.match(new RegExp('\\.SYNOPSIS\\.{3}\\s*([\\s\\S]*?)' + sectionEnd, 'i'));
   if (synopsisMatch) {
     sections.synopsis = cleanText(synopsisMatch[1]);
   }
 
+  // Extract key messages (alternative format - treat as synopsis)
+  if (!sections.synopsis) {
+    const keyMessagesMatch = text.match(new RegExp('\\.KEY MESSAGES\\.{3}\\s*([\\s\\S]*?)' + sectionEnd, 'i'));
+    if (keyMessagesMatch) {
+      sections.synopsis = cleanText(keyMessagesMatch[1]);
+    }
+  }
+
   // Extract near term
-  const nearTermMatch = text.match(/\.NEAR TERM[^.]*\.\.\.?\s*([\s\S]*?)(?=\n\n&&|\n\n\.[A-Z])/i);
+  const nearTermMatch = text.match(new RegExp('\\.NEAR TERM[^.]*\\.{3}\\s*([\\s\\S]*?)' + sectionEnd, 'i'));
   if (nearTermMatch) {
     sections.nearTerm = cleanText(nearTermMatch[1]);
   }
 
   // Extract short term
-  const shortTermMatch = text.match(/\.SHORT TERM[^.]*\.\.\.?\s*([\s\S]*?)(?=\n\n&&|\n\n\.[A-Z])/i);
+  const shortTermMatch = text.match(new RegExp('\\.SHORT TERM[^.]*\\.{3}\\s*([\\s\\S]*?)' + sectionEnd, 'i'));
   if (shortTermMatch) {
     sections.shortTerm = cleanText(shortTermMatch[1]);
   }
 
+  // Extract discussion (alternative format - some offices use this instead of near/short term)
+  if (!sections.nearTerm && !sections.shortTerm) {
+    const discussionMatch = text.match(new RegExp('\\.DISCUSSION\\.{3}\\s*([\\s\\S]*?)' + sectionEnd, 'i'));
+    if (discussionMatch) {
+      sections.nearTerm = cleanText(discussionMatch[1]);
+    }
+  }
+
   // Extract long term
-  const longTermMatch = text.match(/\.LONG TERM[^.]*\.\.\.?\s*([\s\S]*?)(?=\n\n&&|\n\n\.[A-Z])/i);
+  const longTermMatch = text.match(new RegExp('\\.LONG TERM[^.]*\\.{3}\\s*([\\s\\S]*?)' + sectionEnd, 'i'));
   if (longTermMatch) {
     sections.longTerm = cleanText(longTermMatch[1]);
   }
 
   // Extract aviation
-  const aviationMatch = text.match(/\.AVIATION[^.]*\.\.\.?\s*([\s\S]*?)(?=\n\n&&|\n\n\.[A-Z])/i);
+  const aviationMatch = text.match(new RegExp('\\.AVIATION[^.]*\\.{3}\\s*([\\s\\S]*?)' + sectionEnd, 'i'));
   if (aviationMatch) {
     sections.aviation = cleanText(aviationMatch[1]);
   }
 
   // Extract marine
-  const marineMatch = text.match(/\.MARINE[^.]*\.\.\.?\s*([\s\S]*?)(?=\n\n&&|\n\n\.[A-Z])/i);
+  const marineMatch = text.match(new RegExp('\\.MARINE[^.]*\\.{3}\\s*([\\s\\S]*?)' + sectionEnd, 'i'));
   if (marineMatch) {
     sections.marine = cleanText(marineMatch[1]);
   }
