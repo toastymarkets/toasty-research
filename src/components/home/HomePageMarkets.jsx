@@ -1,5 +1,5 @@
-import { useContext, useMemo, useState, useRef, useEffect } from 'react';
-import { TrendingUp, CloudRain, Snowflake, ChevronDown } from 'lucide-react';
+import { useContext, useMemo, useState } from 'react';
+import { TrendingUp, CloudRain, Snowflake } from 'lucide-react';
 import { MARKET_CITIES } from '../../config/cities';
 import { KalshiMarketsContext, useLowTempMarkets } from '../../hooks/useAllKalshiMarkets.jsx';
 import { useKalshiRainMarkets } from '../../hooks/useKalshiRainMarkets';
@@ -128,58 +128,24 @@ export default function HomePageMarkets() {
 }
 
 /**
- * Dropdown - Glass-styled dropdown for selecting options
+ * Toggle - Click to toggle between two options
  */
-function Dropdown({ value, options, onChange, className = '' }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
+function Toggle({ value, options, onChange }) {
+  const currentIndex = options.findIndex(opt => opt.value === value);
+  const currentLabel = options[currentIndex]?.label || value;
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => opt.value === value);
+  const handleClick = () => {
+    const nextIndex = (currentIndex + 1) % options.length;
+    onChange(options[nextIndex].value);
+  };
 
   return (
-    <div ref={dropdownRef} className={`relative inline-block ${className}`}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-blue-400 font-semibold"
-      >
-        {selectedOption?.label || value}
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1 min-w-[140px] py-1 glass-elevated z-50 animate-scale-in">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`
-                w-full px-3 py-2 text-left text-sm transition-colors
-                ${option.value === value
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : 'text-white/80 hover:bg-white/10'
-                }
-              `}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <button
+      onClick={handleClick}
+      className="text-blue-400 font-semibold underline decoration-blue-400/50 underline-offset-2 hover:decoration-blue-400 transition-colors cursor-pointer"
+    >
+      {currentLabel}
+    </button>
   );
 }
 
@@ -229,13 +195,13 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <TrendingUp className="w-4 h-4 text-white/60" />
         <h2 className="text-lg font-semibold text-white flex items-center gap-1.5 flex-wrap">
-          <Dropdown
+          <Toggle
             value={marketType}
             options={typeOptions}
             onChange={setMarketType}
           />
           <span className="text-white/80">temperature</span>
-          <Dropdown
+          <Toggle
             value={timeframe}
             options={timeframeOptions}
             onChange={setTimeframe}
