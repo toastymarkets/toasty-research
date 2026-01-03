@@ -51,7 +51,12 @@ export default async function handler(req) {
       });
     }
 
-    const systemPrompt = buildSystemPrompt(context);
+    // Get the latest user message for RAG retrieval
+    const lastUserMessage = messages
+      .filter(m => m.role === 'user')
+      .pop()?.content || '';
+
+    const systemPrompt = buildSystemPrompt(context, lastUserMessage);
 
     // Call Claude API with streaming
     const response = await fetch(ANTHROPIC_API_URL, {

@@ -5,6 +5,8 @@
  * This prompt is designed for Kalshi temperature prediction markets.
  */
 
+import { retrieveKnowledge, formatKnowledgeForPrompt } from '../src/data/weatherKnowledge.js';
+
 export const COPILOT_SYSTEM_PROMPT = `You are a weather research copilot for Kalshi temperature prediction market trading. You help traders analyze weather data, understand market odds, and build profitable trading theses.
 
 ## Your Role
@@ -194,9 +196,20 @@ Use this format. Never exceed this length.`;
 
 /**
  * Build the full system prompt with dynamic context
+ * @param {Object} context - Session context (city, weather, markets)
+ * @param {string} userMessage - The user's current message (for RAG retrieval)
  */
-export function buildSystemPrompt(context) {
+export function buildSystemPrompt(context, userMessage = '') {
   const parts = [COPILOT_SYSTEM_PROMPT];
+
+  // RAG: Retrieve relevant domain knowledge based on user's question
+  if (userMessage) {
+    const relevantKnowledge = retrieveKnowledge(userMessage, 3);
+    const knowledgeSection = formatKnowledgeForPrompt(relevantKnowledge);
+    if (knowledgeSection) {
+      parts.push(knowledgeSection);
+    }
+  }
 
   // Add current context section - CRITICAL: This is the ONLY data the AI should use
   parts.push('\n\n---\n## CURRENT SESSION DATA (USE ONLY THESE VALUES)\n');
