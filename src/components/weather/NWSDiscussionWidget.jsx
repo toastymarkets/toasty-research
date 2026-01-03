@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight, Plus, Copy, Check } from 'lucide-react';
+import { FileText, X, ChevronRight, Plus, Copy, Check, ExternalLink } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 
@@ -49,6 +49,17 @@ const WEATHER_KEYWORDS = {
     'expected', 'forecast', 'outlook', 'trend', 'timing',
     'models agree', 'model spread', 'ensemble', 'deterministic',
   ],
+  locations: [
+    // NY area
+    'moriches inlet', 'long island', 'manhattan', 'brooklyn', 'queens',
+    'bronx', 'staten island', 'hudson valley', 'jersey shore',
+    // CA area
+    'san miguel island', 'central coast', 'santa barbara', 'ventura',
+    'los angeles basin', 'san fernando valley', 'orange county',
+    'san diego', 'inland empire', 'high desert', 'antelope valley',
+    // General
+    'coastal waters', 'inland areas', 'mountains', 'valleys', 'foothills',
+  ],
 };
 
 // Flatten keywords for lookup
@@ -64,6 +75,7 @@ const CATEGORY_COLORS = {
   precipitation: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
   wind: 'bg-teal-500/30 text-teal-300 hover:bg-teal-500/50',
   confidence: 'bg-purple-500/30 text-purple-300 hover:bg-purple-500/50',
+  locations: 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50',
 };
 
 // NWS-sourced definitions for meteorological terms
@@ -188,6 +200,27 @@ const KEYWORD_DEFINITIONS = {
   'model spread': 'Disagreement between weather models, indicating forecast uncertainty.',
   'ensemble': 'Collection of model runs used to assess forecast uncertainty.',
   'deterministic': 'A single model run, as opposed to an ensemble average.',
+
+  // Locations
+  'moriches inlet': 'Inlet on the south shore of Long Island, NY connecting Moriches Bay to the Atlantic.',
+  'long island': 'Island extending east from NYC, includes Nassau and Suffolk counties.',
+  'manhattan': 'Borough of New York City, center of the NYC metro area.',
+  'hudson valley': 'Region along the Hudson River north of NYC.',
+  'jersey shore': 'Coastal region of New Jersey along the Atlantic Ocean.',
+  'san miguel island': 'Westernmost of California\'s Channel Islands, often referenced in marine forecasts.',
+  'central coast': 'California coastal region from San Luis Obispo to Santa Barbara.',
+  'santa barbara': 'Coastal city in Southern California, between LA and San Luis Obispo.',
+  'ventura': 'Coastal county between Los Angeles and Santa Barbara.',
+  'los angeles basin': 'Low-lying area containing LA and surrounding cities, often traps marine layer.',
+  'san fernando valley': 'Valley north of LA, often warmer than coastal areas.',
+  'inland empire': 'Region east of LA including Riverside and San Bernardino, often hot and dry.',
+  'high desert': 'Desert region of SoCal at higher elevation (3000+ ft), includes Victorville/Lancaster.',
+  'antelope valley': 'Desert valley in northern LA County, known for temperature extremes.',
+  'coastal waters': 'Ocean areas near the shoreline, typically within 60 miles.',
+  'inland areas': 'Regions away from the coast, often with more extreme temperatures.',
+  'mountains': 'Elevated terrain that affects local weather patterns.',
+  'valleys': 'Low-lying areas between mountains, often trap cold air.',
+  'foothills': 'Transitional zone between valleys and mountains.',
 };
 
 /**
@@ -671,6 +704,15 @@ function DiscussionModal({ discussion, onClose }) {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <a
+                  href={`https://forecast.weather.gov/product.php?site=${discussion.office}&issuedby=${discussion.office}&product=AFD`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  title="View on NWS"
+                >
+                  <ExternalLink className="w-4 h-4 text-white/70" />
+                </a>
                 <button
                   onClick={handleCopyAll}
                   className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
