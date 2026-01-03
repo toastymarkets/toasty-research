@@ -17,7 +17,7 @@ const WEATHER_KEYWORDS = {
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
     'frontal boundary', 'frontal passage',
-    'low pressure', 'high pressure', 'trough', 'ridge', 'upper level',
+    'low pressure', 'high pressure', 'trough', 'troughing', 'ridge', 'upper level',
     'surface low', 'surface high', 'shortwave', 'short wave', 'longwave',
     'cutoff low', 'closed low', 'blocking pattern', 'zonal flow',
     'return flow', 'upper level disturbance', 'Pacific front',
@@ -32,7 +32,8 @@ const WEATHER_KEYWORDS = {
   ],
   // Wind
   wind: [
-    'wind advisory', 'high wind', 'gust', 'breezy', 'windy',
+    'wind advisory', 'high wind', 'gust', 'gusty', 'gusty winds', 'gusty southerly winds',
+    'gusty south winds', 'breezy', 'windy',
     'santa ana', 'chinook', 'offshore flow', 'onshore flow',
     'wind shift', 'veering', 'backing',
   ],
@@ -51,6 +52,35 @@ const WEATHER_KEYWORDS = {
   // Aviation terms
   aviation: [
     'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling',
+  ],
+  // Locations - city-specific geographic references
+  locations: [
+    // NY/OKX area
+    'long island', 'hudson valley', 'manhattan', 'brooklyn', 'queens',
+    'bronx', 'staten island', 'moriches inlet', 'jersey shore',
+    'connecticut', 'new jersey',
+    // Chicago/LOT area
+    'lake michigan', 'lakefront', 'lake effect', 'lake enhanced',
+    'wisconsin', 'indiana', 'i-88', 'i-90',
+    // LA/LOX area
+    'point conception', 'santa barbara', 'ventura', 'los angeles county',
+    'los angeles basin', 'san fernando valley', 'antelope valley',
+    'catalina', 'channel islands', 'san gabriel', 'central coast',
+    'orange county', 'san diego', 'inland empire', 'high desert',
+    // Denver/BOU area
+    'front range', 'palmer divide', 'i-25', 'i-70', 'boulder',
+    'fort collins', 'denver metro', 'continental divide',
+    'northern mountains', 'central mountains', 'southern mountains',
+    // Austin/EWX area
+    'hill country', 'edwards plateau', 'rio grande', 'south central texas',
+    'balcones', 'i-35', 'i-10', 'san antonio', 'guadalupe',
+    // Miami/MFL area
+    'everglades', 'florida keys', 'keys', 'gulf stream', 'biscayne',
+    'palm beach', 'broward', 'miami-dade', 'lake okeechobee',
+    // General geographic terms
+    'coastal waters', 'inland areas', 'mountains', 'valleys', 'foothills',
+    'metro', 'interior', 'coastal', 'offshore', 'gulf coast', 'east coast',
+    'atlantic', 'pacific',
   ],
 };
 
@@ -75,6 +105,7 @@ const CATEGORY_COLORS = {
   hazards: 'bg-red-500/30 text-red-300 hover:bg-red-500/50',
   aviation: 'bg-gray-500/30 text-gray-300 hover:bg-gray-500/50',
   tempRange: 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/50',
+  locations: 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50',
 };
 
 const formatRelativeTime = (isoString) => {

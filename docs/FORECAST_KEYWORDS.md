@@ -42,6 +42,7 @@ Large-scale weather patterns, fronts, and pressure systems.
 | low pressure | Area of reduced atmospheric pressure |
 | high pressure | Area of elevated atmospheric pressure |
 | trough | Elongated area of low pressure |
+| troughing | Active trough movement or influence over a region |
 | ridge | Elongated area of high pressure |
 | upper level | Referring to upper atmosphere patterns |
 | surface low | Low pressure system at ground level |
@@ -93,6 +94,10 @@ Wind patterns and advisories.
 | wind advisory | Alert for strong winds |
 | high wind | Sustained strong winds |
 | gust | Brief increase in wind speed |
+| gusty | Characterized by sudden wind speed increases |
+| gusty winds | Winds with frequent gusts |
+| gusty southerly winds | South winds with frequent gusts |
+| gusty south winds | South winds with frequent gusts (alternate form) |
 | breezy | Moderate wind speeds |
 | windy | Notable wind conditions |
 | santa ana | Hot, dry California desert winds |
@@ -154,6 +159,84 @@ Flight condition terms.
 | LIFR | Low IFR (very poor visibility) |
 | ceiling | Height of cloud base |
 
+### Locations (Emerald)
+City-specific and general geographic references that appear in NWS forecast discussions.
+
+#### New York / OKX
+| Location | Significance |
+|----------|--------------|
+| Long Island | Major geographic feature affecting coastal weather |
+| Hudson Valley | Inland region with distinct temperature patterns |
+| Manhattan, Brooklyn, Queens, Bronx, Staten Island | NYC boroughs |
+| Moriches Inlet | Coastal reference point |
+| Jersey Shore | New Jersey coastal region |
+| Connecticut, New Jersey | Neighboring states |
+
+#### Chicago / LOT
+| Location | Significance |
+|----------|--------------|
+| Lake Michigan | Critical for lake effect weather |
+| lakefront | Near-lake areas with modified temperatures |
+| lake effect | Weather enhanced by Lake Michigan |
+| lake enhanced | Precipitation intensified by lake moisture |
+| Wisconsin, Indiana | Neighboring states |
+| I-88, I-90 | Geographic corridor references |
+
+#### Los Angeles / LOX
+| Location | Significance |
+|----------|--------------|
+| Point Conception | Critical coastal boundary where coastline turns 90°, dividing marine forecast zones |
+| Santa Barbara, Ventura | Coastal counties north of LA |
+| Los Angeles County, Los Angeles Basin | Metropolitan area |
+| San Fernando Valley, Antelope Valley | Inland valleys with distinct climates |
+| Catalina, Channel Islands | Offshore islands |
+| San Gabriel | Mountain range affecting LA weather |
+| Central Coast | Region north of Point Conception |
+
+#### Denver / BOU
+| Location | Significance |
+|----------|--------------|
+| Front Range | Mountain/urban corridor, critical weather boundary |
+| Palmer Divide | Geographic ridge affecting weather patterns |
+| foothills | Transition zone between plains and mountains |
+| Boulder, Fort Collins | Cities along Front Range |
+| Denver metro | Metropolitan area |
+| I-25, I-70 | Major corridor references |
+| Continental Divide | Mountain crest line |
+| northern/central/southern mountains | Regional mountain references |
+
+#### Austin / EWX
+| Location | Significance |
+|----------|--------------|
+| Hill Country | Elevated region with distinct temperatures |
+| Edwards Plateau | Geological feature affecting weather |
+| Rio Grande | Southern border river reference |
+| South Central Texas | Regional designation |
+| Balcones | Escarpment/fault line reference |
+| San Antonio | Major city in forecast area |
+| I-35, I-10 | Major corridor references |
+| Guadalupe | River/county reference |
+
+#### Miami / MFL
+| Location | Significance |
+|----------|--------------|
+| Everglades | Major wetland affecting local weather |
+| Florida Keys, Keys | Island chain south of mainland |
+| Gulf Stream | Warm ocean current affecting temperatures |
+| Biscayne | Bay area reference |
+| Palm Beach, Broward, Miami-Dade | County references |
+| Lake Okeechobee | Large inland lake |
+
+#### General Geographic Terms
+| Location | Significance |
+|----------|--------------|
+| coastal waters | Ocean/sea areas near shore |
+| inland areas, interior | Away from coast |
+| mountains, valleys, foothills | Terrain features |
+| metro | Metropolitan area |
+| coastal, offshore | Near or over water |
+| Gulf coast, east coast, Atlantic, Pacific | Regional references |
+
 ---
 
 ## Temperature Range Patterns
@@ -167,60 +250,6 @@ The widget also highlights temperature forecast phrases:
 | Lows in the [X]s | "lows in the 40s" |
 | Highs of [X] to [Y] | "highs of 75 to 80" |
 | Temperatures in the [X]s | "temperatures in the 60s" |
-
----
-
-## City-Specific Terms
-
-### Austin / San Antonio (EWX)
-| Term | Usage |
-|------|-------|
-| return flow | Gulf moisture returning from south |
-| Hill Country | Geographic region with different temps |
-| Rio Grande | Southern border region reference |
-| Edwards Plateau | Geographic/climate region |
-| South Central Texas | Regional reference |
-
-### New York (OKX)
-| Term | Usage |
-|------|-------|
-| coastal | Near ocean areas |
-| Long Island | Geographic reference |
-| metro | NYC metropolitan area |
-| Hudson Valley | Geographic region |
-
-### Chicago (LOT)
-| Term | Usage |
-|------|-------|
-| lake effect | Lake Michigan influence |
-| lakefront | Near Lake Michigan |
-| clipper | Fast-moving Canadian system |
-
-### Los Angeles (LOX)
-| Term | Usage |
-|------|-------|
-| Santa Ana | Hot, dry desert winds |
-| marine layer | Coastal low clouds/fog |
-| Catalina eddy | Coastal circulation pattern |
-| offshore flow | Winds from land to ocean |
-| onshore flow | Winds from ocean to land |
-
-### Miami (MFL)
-| Term | Usage |
-|------|-------|
-| tropical | Related to tropical weather |
-| trade winds | Easterly winds |
-| sea breeze | Afternoon coastal winds |
-| Everglades | Geographic reference |
-
-### Denver (BOU)
-| Term | Usage |
-|------|-------|
-| upslope | Air rising along mountains |
-| downslope | Air descending from mountains |
-| Front Range | Mountain/urban corridor |
-| Palmer Divide | Geographic feature |
-| chinook | Warm, dry mountain winds |
 
 ---
 

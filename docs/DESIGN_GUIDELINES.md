@@ -59,13 +59,14 @@ See [docs/FORECAST_KEYWORDS.md](./FORECAST_KEYWORDS.md) for full keyword list.
 | Category | Tailwind Class | Usage |
 |----------|----------------|-------|
 | Temperature | `bg-orange-500/30 text-orange-300` | warm air advection, freeze, cooling trend |
-| Synoptic | `bg-blue-500/30 text-blue-300` | high pressure, cold front, trough, ridge |
+| Synoptic | `bg-blue-500/30 text-blue-300` | high pressure, cold front, trough, troughing |
 | Precipitation | `bg-cyan-500/30 text-cyan-300` | convection, cape, instability, rain, snow |
-| Wind | `bg-teal-500/30 text-teal-300` | offshore flow, gust, santa ana |
+| Wind | `bg-teal-500/30 text-teal-300` | offshore flow, gust, gusty winds, santa ana |
 | Confidence | `bg-purple-500/30 text-purple-300` | uncertainty, likely, models agree |
 | Hazards | `bg-red-500/30 text-red-300` | fire weather, tornado, flash flood |
 | Aviation | `bg-gray-500/30 text-gray-300` | VFR, IFR, MVFR, ceiling |
 | Temp Range | `bg-yellow-500/30 text-yellow-300` | "highs in the 70s", "lows in the 40s" |
+| Locations | `bg-emerald-500/30 text-emerald-300` | Point Conception, Front Range, Hill Country |
 
 ---
 
