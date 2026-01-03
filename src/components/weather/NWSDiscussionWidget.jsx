@@ -319,19 +319,23 @@ export default function NWSDiscussionWidget({
               </p>
             )}
 
-            {/* Meta info */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/40">
-                NWS {discussion.office}
-              </span>
-              <span className="text-[10px] text-white/40">•</span>
-              <span className="text-[10px] text-white/40">
-                {formatTime(discussion.issuanceTime)}
+            {/* Meta info and button */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-white/40">
+                  NWS {discussion.office}
+                </span>
+                <span className="text-[10px] text-white/40">•</span>
+                <span className="text-[10px] text-white/40">
+                  {formatTime(discussion.issuanceTime)}
+                </span>
+              </div>
+              <span className="text-[10px] text-blue-400 font-medium flex items-center gap-0.5">
+                See full discussion
+                <ChevronRight className="w-3 h-3" />
               </span>
             </div>
           </div>
-
-          <ChevronRight className="w-4 h-4 text-white/30 flex-shrink-0 ml-2" />
         </div>
       </GlassWidget>
 
