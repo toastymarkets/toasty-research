@@ -101,3 +101,13 @@ api/                   # Vercel serverless functions
 - Apple Weather inspired aesthetic
 - Dark/light mode via CSS variables
 - Apple accent color palette (blue, green, yellow, orange, red, purple, pink, teal)
+
+## Playwright MCP Guidelines
+
+To minimize context usage when using the Playwright browser tools:
+
+1. **Skip automatic snapshots** - Use `browser_navigate` without immediately taking a snapshot unless interaction with specific elements is needed
+2. **Prefer screenshots over snapshots** - Screenshots are smaller than full accessibility trees; use snapshots only when you need element refs for clicking/typing
+3. **Close browser when done** - Close the browser after verification instead of leaving it open
+4. **Ask before visual checks** - Ask if a screenshot is wanted rather than automatically taking one
+5. **Save to file when possible** - Use the `filename` param to save screenshots to disk instead of returning them inline

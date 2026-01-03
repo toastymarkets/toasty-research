@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useKalshiMarketsFromContext } from '../../hooks/useAllKalshiMarkets.jsx';
 import { CITY_BY_SLUG } from '../../config/cities';
+import { getWeatherBackground, WeatherOverlay } from '../weather/DynamicWeatherBackground';
+import { useAllCitiesWeather } from '../../hooks/useAllCitiesWeather';
 
 /**
  * MarketCardGlass - Glass-styled market card for homepage
@@ -25,10 +27,13 @@ export default function MarketCardGlass({
   const loading = contextData.loading && !city.topBrackets;
   const error = contextData.error && !city.topBrackets;
 
-  // Get city image from config if not passed
-  // Use citySlug for rain/snow markets, fall back to slug for temp markets
+  // Get city config for timezone
   const cityConfig = CITY_BY_SLUG[city.citySlug || city.slug];
-  const cityImage = city.image || cityConfig?.image;
+
+  // Get weather data for dynamic background
+  const { getWeatherForCity } = useAllCitiesWeather();
+  const weather = getWeatherForCity(city.citySlug || city.slug);
+  const weatherBg = getWeatherBackground(weather?.condition, cityConfig?.timezone);
 
   const [timer, setTimer] = useState(null);
 
@@ -87,52 +92,54 @@ export default function MarketCardGlass({
       to={`/city/${city.citySlug || city.slug}`}
       className={`
         glass-widget glass-interactive glass-animate-in ${animationDelay}
-        block overflow-hidden transition-all duration-300
+        block overflow-hidden transition-all duration-300 relative
         ${comingSoon ? 'opacity-60 pointer-events-none' : ''}
         ${featured ? 'card-featured' : ''}
         ${shuffling ? 'card-shuffling' : ''}
       `}
       style={{
         '--shuffle-x': `${shuffleX}px`,
+        background: weatherBg,
       }}
     >
-      {/* City Image Header */}
-      <div className="relative h-20 overflow-hidden bg-gradient-to-br from-blue-900/50 to-purple-900/50">
-        {cityImage && (
-          <img
-            src={cityImage.replace('w=200&h=200', 'w=400&h=200')}
-            alt={city.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-        <h3 className="absolute bottom-2 left-3 text-white font-semibold text-lg drop-shadow-lg">
-          {city.name}
-        </h3>
-        {comingSoon && (
-          <div className="absolute top-2 right-2">
+      {/* Weather overlay */}
+      <WeatherOverlay condition={weather?.condition} timezone={cityConfig?.timezone} index={index} />
+
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/30" />
+
+      {/* Card Content */}
+      <div className="relative z-10 p-4">
+        {/* City name and type chip */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-white font-semibold text-lg drop-shadow-lg">
+              {city.name}
+            </h3>
+            {city.type && (
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/20 text-white/80 font-medium">
+                {city.type}
+              </span>
+            )}
+          </div>
+          {comingSoon && (
             <span className="text-[9px] px-2 py-0.5 rounded-full bg-black/50 text-white/70">
               Coming Soon
             </span>
-          </div>
-        )}
-      </div>
-
-      {/* Card Content */}
-      <div className="p-3">
+          )}
+        </div>
         {/* Brackets */}
         {loading ? (
-          <div className="space-y-2 mb-3">
+          <div className="space-y-2 mb-4">
             <div className="h-9 bg-white/10 rounded-lg animate-pulse" />
             <div className="h-9 bg-white/10 rounded-lg animate-pulse" />
           </div>
         ) : error ? (
-          <div className="h-[72px] flex items-center justify-center text-xs text-white/40 mb-3">
+          <div className="h-[72px] flex items-center justify-center text-xs text-white/40 mb-4">
             {error}
           </div>
         ) : topBrackets.length > 0 ? (
-          <div className="space-y-1.5 mb-3">
+          <div className="space-y-2 mb-4">
             {topBrackets.slice(0, 2).map((bracket, i) => (
               <div
                 key={bracket.ticker || i}
@@ -170,13 +177,13 @@ export default function MarketCardGlass({
             ))}
           </div>
         ) : (
-          <div className="h-[72px] flex items-center justify-center text-xs text-white/40 mb-3">
+          <div className="h-[72px] flex items-center justify-center text-xs text-white/40 mb-4">
             No markets available
           </div>
         )}
 
         {/* Footer with volume and timer */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10">
+        <div className="flex items-center justify-between pt-3 border-t border-white/10">
           <span className="text-xs text-white/50">
             {formatVolume(totalVolume)}
           </span>
