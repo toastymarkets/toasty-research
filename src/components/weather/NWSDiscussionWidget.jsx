@@ -399,6 +399,9 @@ export default function NWSDiscussionWidget({
     (discussion.synopsis || '') + ' ' + (discussion.nearTerm || '') + ' ' + (discussion.shortTerm || '')
   );
 
+  // Get synopsis excerpt for preview
+  const synopsisExcerpt = extractSynopsisExcerpt(discussion.synopsis);
+
   return (
     <>
       <GlassWidget
@@ -414,34 +417,41 @@ export default function NWSDiscussionWidget({
           </span>
         }
       >
-        <div className="flex flex-col h-full">
-          {/* Keyword chips preview */}
-          {keywords.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {keywords.map((kw, i) => (
-                <span
-                  key={i}
-                  className={`${CATEGORY_COLORS[kw.category]?.replace('hover:bg-', '') || 'bg-white/20 text-white/80'} px-2 py-0.5 rounded-full text-[10px] font-medium`}
-                >
-                  {kw.text}
-                </span>
-              ))}
-            </div>
+        <div className="flex flex-col h-full justify-between gap-2">
+          {/* Synopsis excerpt */}
+          {synopsisExcerpt ? (
+            <p className="text-[11px] text-white/70 leading-relaxed line-clamp-2">
+              {synopsisExcerpt}
+            </p>
           ) : (
-            <p className="text-xs text-white/60 mb-2">
+            <p className="text-[11px] text-white/50 italic">
               Tap to view forecast discussion
             </p>
           )}
 
-          {/* Meta info */}
-          <div className="flex items-center gap-2 mt-auto">
-            <span className="text-[10px] text-white/40">
-              NWS {discussion.office}
-            </span>
-            <span className="text-[10px] text-white/40">•</span>
-            <span className="text-[10px] text-white/40">
-              {formatTime(discussion.issuanceTime)}
-            </span>
+          {/* Keyword chips - horizontal scroll */}
+          {keywords.length > 0 && (
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5">
+              {keywords.map((kw, i) => {
+                // First keyword gets slightly more emphasis
+                const isFirst = i === 0;
+                const baseColors = CATEGORY_COLORS[kw.category]?.replace('hover:bg-', '') || 'bg-white/20 text-white/80';
+                return (
+                  <span
+                    key={i}
+                    className={`${baseColors} ${isFirst ? 'px-2.5 py-1' : 'px-2 py-0.5'} rounded-full text-[10px] font-medium whitespace-nowrap shrink-0`}
+                  >
+                    {kw.text}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Footer - office & relative time */}
+          <div className="flex items-center justify-between text-[10px] text-white/40 pt-1 border-t border-white/5">
+            <span className="font-medium">NWS {discussion.office}</span>
+            <span>{formatRelativeTime(discussion.issuanceTime)}</span>
           </div>
         </div>
       </GlassWidget>
@@ -558,6 +568,63 @@ function formatTime(isoTime) {
     month: 'short',
     day: 'numeric',
   });
+}
+
+/**
+ * Format relative time (e.g., "12m ago", "2h ago")
+ */
+function formatRelativeTime(isoTime) {
+  if (!isoTime) return '';
+  const date = new Date(isoTime);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+/**
+ * Extract a clean synopsis excerpt for preview
+ * Returns first 1-2 sentences, max ~120 chars
+ */
+function extractSynopsisExcerpt(synopsis) {
+  if (!synopsis) return null;
+
+  // Clean up and normalize whitespace
+  let text = synopsis.trim().replace(/\s+/g, ' ');
+
+  // Remove common NWS prefixes:
+  // - Date/time stamps like "03/242 AM." or "12/1045 PM."
+  // - Forecaster signatures at start
+  text = text.replace(/^\d{1,2}\/\d{3,4}\s*(AM|PM)\.?\s*/i, '');
+  text = text.replace(/^\.{3}\s*/, ''); // Remove leading ellipsis
+
+  // Try to get first sentence or two
+  const sentences = text.match(/[^.!?]+[.!?]+/g);
+  if (sentences && sentences.length > 0) {
+    // Get first sentence, or first two if first is short
+    let excerpt = sentences[0].trim();
+    if (excerpt.length < 60 && sentences.length > 1) {
+      excerpt += ' ' + sentences[1].trim();
+    }
+
+    // Truncate if too long
+    if (excerpt.length > 120) {
+      excerpt = excerpt.slice(0, 117).trim() + '...';
+    }
+    return excerpt;
+  }
+
+  // Fallback: just truncate
+  if (text.length > 120) {
+    return text.slice(0, 117).trim() + '...';
+  }
+  return text;
 }
 
 /**
