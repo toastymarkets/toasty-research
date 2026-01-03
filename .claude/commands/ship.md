@@ -13,3 +13,20 @@ Follow these steps:
    - Include "🤖 Generated with [Claude Code](https://claude.com/claude-code)" at the end
 
 If a PR already exists for this branch, skip PR creation and just report the existing PR URL.
+
+## Changelog & Version (for releases)
+
+After creating the PR, ask the user:
+- "Is this a release? Should I update the changelog and version?"
+
+If yes:
+1. Determine version bump type:
+   - **patch** (1.2.0 → 1.2.1): Bug fixes only
+   - **minor** (1.2.0 → 1.3.0): New features, backwards compatible
+   - **major** (1.2.0 → 2.0.0): Breaking changes
+2. Update `package.json` version field
+3. Add new section to top of `CHANGELOG.md` with:
+   - Version number and today's date
+   - Changes grouped by: Added, Changed, Fixed, Removed
+4. Commit the version bump: "Bump version to X.X.X"
+5. Push the update
