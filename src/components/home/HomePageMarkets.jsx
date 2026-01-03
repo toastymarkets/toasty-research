@@ -99,7 +99,7 @@ export default function HomePageMarkets() {
         allMarkets={sortedTempMarkets}
         loading={tempLoading}
         onShowMore={() => setTempModalOpen(true)}
-        totalCount={MARKET_CITIES.length}
+        totalCount={sortedTempMarkets.length}
       />
 
       {/* Rain Markets Section */}
@@ -111,7 +111,7 @@ export default function HomePageMarkets() {
         allMarkets={rainMarkets}
         loading={rainLoading}
         onShowMore={() => setRainModalOpen(true)}
-        totalCount={RAIN_CITIES.length}
+        totalCount={rainMarkets.length}
         noActiveMarkets={noRainMarkets}
       />
 
@@ -124,7 +124,7 @@ export default function HomePageMarkets() {
         allMarkets={snowMarkets}
         loading={snowLoading}
         onShowMore={() => setSnowModalOpen(true)}
-        totalCount={SNOW_CITIES.length}
+        totalCount={snowMarkets.length}
         noActiveMarkets={noSnowMarkets}
       />
 

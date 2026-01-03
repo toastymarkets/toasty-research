@@ -22,8 +22,8 @@ export const RAIN_SERIES = {
  * Currently only NYC has rain markets
  */
 export const RAIN_CITIES = [
-  { slug: 'new-york', name: 'New York', id: 'NYC', type: 'monthly' },
-  { slug: 'new-york-daily', name: 'NYC Daily', id: 'NYC-D', type: 'daily' },
+  { slug: 'new-york', name: 'New York', id: 'NYC', type: 'monthly', citySlug: 'new-york' },
+  { slug: 'new-york-daily', name: 'NYC Daily', id: 'NYC-D', type: 'daily', citySlug: 'new-york' },
 ];
 
 /**

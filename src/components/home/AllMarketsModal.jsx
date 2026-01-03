@@ -93,7 +93,7 @@ export default function AllMarketsModal({
               {markets.map((market) => (
                 <Link
                   key={market.slug}
-                  to={`/city/${market.slug}`}
+                  to={`/city/${market.citySlug || market.slug}`}
                   onClick={onClose}
                   className="glass-widget p-3 hover:bg-white/10 transition-colors"
                 >
