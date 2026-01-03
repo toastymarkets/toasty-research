@@ -4,7 +4,6 @@
  * Captures chart elements as images and inserts them into the notepad.
  */
 
-import html2canvas from 'html2canvas';
 import { NOTE_INSERTION_EVENT } from './noteInsertionEvents';
 
 /**
@@ -18,6 +17,9 @@ export async function captureChartScreenshot(chartElement, options = {}) {
     backgroundColor = '#1a1a2e', // Match dark theme
     scale = 2, // Higher quality
   } = options;
+
+  // Dynamic import to reduce initial bundle size (~50-100 KB savings)
+  const html2canvas = (await import('html2canvas')).default;
 
   const canvas = await html2canvas(chartElement, {
     backgroundColor,
