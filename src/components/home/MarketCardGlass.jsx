@@ -110,11 +110,18 @@ export default function MarketCardGlass({
 
       {/* Card Content */}
       <div className="relative z-10 p-4">
-        {/* City name */}
+        {/* City name and type chip */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold text-lg drop-shadow-lg">
-            {city.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-white font-semibold text-lg drop-shadow-lg">
+              {city.name}
+            </h3>
+            {city.type && (
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/20 text-white/80 font-medium">
+                {city.type}
+              </span>
+            )}
+          </div>
           {comingSoon && (
             <span className="text-[9px] px-2 py-0.5 rounded-full bg-black/50 text-white/70">
               Coming Soon
