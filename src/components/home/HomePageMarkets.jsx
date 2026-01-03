@@ -111,7 +111,7 @@ function Toggle({ value, options, onChange }) {
   return (
     <button
       onClick={handleClick}
-      className="text-blue-400 font-semibold border-b border-blue-400/40 hover:border-blue-400 pb-0.5 transition-colors cursor-pointer"
+      className="text-blue-400 font-semibold hover:text-blue-300 transition-colors cursor-pointer"
     >
       {currentLabel}
     </button>
