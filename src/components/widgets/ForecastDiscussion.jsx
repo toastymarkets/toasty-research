@@ -4,30 +4,36 @@ import { useNWSForecastDiscussion } from '../../hooks/useNWSWeather';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 
 // Meteorological keywords to highlight, grouped by category
+// See docs/FORECAST_KEYWORDS.md for full documentation
 const WEATHER_KEYWORDS = {
   // Temperature patterns
   temperature: [
     'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
     'above normal', 'below normal', 'near normal', 'record high', 'record low',
     'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
+    'warmer', 'cooler', 'warm', 'cold',
   ],
   // Pressure/fronts
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
-    'low pressure', 'high pressure', 'trough', 'ridge', 'upper level',
-    'surface low', 'surface high', 'shortwave', 'longwave',
+    'frontal boundary', 'frontal passage',
+    'low pressure', 'high pressure', 'trough', 'troughing', 'ridge', 'upper level',
+    'surface low', 'surface high', 'shortwave', 'short wave', 'longwave',
     'cutoff low', 'closed low', 'blocking pattern', 'zonal flow',
+    'return flow', 'upper level disturbance', 'Pacific front',
   ],
   // Precipitation
   precipitation: [
-    'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
+    'rain chances', 'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
     'shower', 'drizzle', 'downpour', 'heavy rain', 'light rain',
     'accumulation', 'precip', 'precipitation', 'moisture',
     'convection', 'instability', 'cape', 'lifted index',
+    'dry', 'low clouds',
   ],
   // Wind
   wind: [
-    'wind advisory', 'high wind', 'gust', 'breezy', 'windy',
+    'wind advisory', 'high wind', 'gust', 'gusty', 'gusty winds', 'gusty southerly winds',
+    'gusty south winds', 'breezy', 'windy',
     'santa ana', 'chinook', 'offshore flow', 'onshore flow',
     'wind shift', 'veering', 'backing',
   ],
@@ -35,9 +41,51 @@ const WEATHER_KEYWORDS = {
   confidence: [
     'uncertainty', 'confidence', 'likely', 'unlikely', 'possible',
     'expected', 'forecast', 'outlook', 'trend', 'timing',
-    'models agree', 'model spread', 'ensemble', 'deterministic',
+    'models agree', 'model spread', 'ensemble', 'ensemble solutions', 'deterministic',
+  ],
+  // Hazards - fire, severe weather, dangerous conditions
+  hazards: [
+    'fire weather', 'fire concerns', 'fuel moisture', 'red flag warning',
+    'wind chill', 'heat index', 'severe', 'tornado', 'hail',
+    'flash flood', 'flood', 'ice storm', 'blizzard',
+  ],
+  // Aviation terms
+  aviation: [
+    'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling',
+  ],
+  // Locations - city-specific geographic references
+  locations: [
+    // NY/OKX area
+    'long island', 'hudson valley', 'manhattan', 'brooklyn', 'queens',
+    'bronx', 'staten island', 'moriches inlet', 'jersey shore',
+    'connecticut', 'new jersey',
+    // Chicago/LOT area
+    'lake michigan', 'lakefront', 'lake effect', 'lake enhanced',
+    'wisconsin', 'indiana', 'i-88', 'i-90',
+    // LA/LOX area
+    'point conception', 'santa barbara', 'ventura', 'los angeles county',
+    'los angeles basin', 'san fernando valley', 'antelope valley',
+    'catalina', 'channel islands', 'san gabriel', 'central coast',
+    'orange county', 'san diego', 'inland empire', 'high desert',
+    // Denver/BOU area
+    'front range', 'palmer divide', 'i-25', 'i-70', 'boulder',
+    'fort collins', 'denver metro', 'continental divide',
+    'northern mountains', 'central mountains', 'southern mountains',
+    // Austin/EWX area
+    'hill country', 'edwards plateau', 'rio grande', 'south central texas',
+    'balcones', 'i-35', 'i-10', 'san antonio', 'guadalupe',
+    // Miami/MFL area
+    'everglades', 'florida keys', 'keys', 'gulf stream', 'biscayne',
+    'palm beach', 'broward', 'miami-dade', 'lake okeechobee',
+    // General geographic terms
+    'coastal waters', 'inland areas', 'mountains', 'valleys', 'foothills',
+    'metro', 'interior', 'coastal', 'offshore', 'gulf coast', 'east coast',
+    'atlantic', 'pacific',
   ],
 };
+
+// Temperature range patterns - matches "highs in the 70s", "lows in the upper 40s", etc.
+const TEMP_RANGE_PATTERN = /\b(highs?|lows?|temperatures?)\s+(in the\s+)?(lower\s+|mid\s+|upper\s+)?(\d{1,2}0s|\d{1,3}(\s*to\s*\d{1,3})?)\b/gi;
 
 // Flatten keywords with their categories for lookup
 const KEYWORD_MAP = new Map();
@@ -54,6 +102,10 @@ const CATEGORY_COLORS = {
   precipitation: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
   wind: 'bg-teal-500/30 text-teal-300 hover:bg-teal-500/50',
   confidence: 'bg-purple-500/30 text-purple-300 hover:bg-purple-500/50',
+  hazards: 'bg-red-500/30 text-red-300 hover:bg-red-500/50',
+  aviation: 'bg-gray-500/30 text-gray-300 hover:bg-gray-500/50',
+  tempRange: 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/50',
+  locations: 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50',
 };
 
 const formatRelativeTime = (isoString) => {
@@ -137,38 +189,49 @@ function HighlightedKeyword({ text, category, officeName }) {
 }
 
 /**
- * Parse text and highlight meteorological keywords
+ * Parse text and highlight meteorological keywords and temperature ranges
  */
 function parseAndHighlight(text, officeName) {
   if (!text) return null;
 
   // Build regex pattern from all keywords (sorted by length desc to match longer phrases first)
   const allKeywords = Array.from(KEYWORD_MAP.keys()).sort((a, b) => b.length - a.length);
-  const pattern = new RegExp(`\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi');
+  const keywordPattern = `\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`;
+
+  // Temperature range pattern - matches various formats:
+  // "highs in the 70s", "lows in the upper 40s", "highs in the 70s to the lower 80s"
+  // "temperatures in the mid 60s", "highs of 75 to 80"
+  const tempRangePattern = `\\b(highs?|lows?|temperatures?)\\s+(in the\\s+|of\\s+)?(lower\\s+|mid\\s+|upper\\s+)?(\\d{1,2}0s)(\\s+to\\s+(the\\s+)?(lower\\s+|mid\\s+|upper\\s+)?\\d{1,2}0s)?\\b`;
+
+  // Combined pattern - temp ranges first (they're longer), then keywords
+  const combinedPattern = new RegExp(`(${tempRangePattern})|(${keywordPattern})`, 'gi');
 
   const parts = [];
   let lastIndex = 0;
   let match;
 
-  while ((match = pattern.exec(text)) !== null) {
+  while ((match = combinedPattern.exec(text)) !== null) {
     // Add text before match
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
 
-    // Add highlighted keyword
-    const keyword = match[0];
-    const category = KEYWORD_MAP.get(keyword.toLowerCase());
+    const matchedText = match[0];
+
+    // Determine if it's a temp range or keyword
+    const isTempRange = /^(highs?|lows?|temperatures?)\s+/i.test(matchedText);
+    const category = isTempRange ? 'tempRange' : KEYWORD_MAP.get(matchedText.toLowerCase());
+
     parts.push(
       <HighlightedKeyword
-        key={`${match.index}-${keyword}`}
-        text={keyword}
+        key={`${match.index}-${matchedText}`}
+        text={matchedText}
         category={category}
         officeName={officeName}
       />
     );
 
-    lastIndex = pattern.lastIndex;
+    lastIndex = combinedPattern.lastIndex;
   }
 
   // Add remaining text

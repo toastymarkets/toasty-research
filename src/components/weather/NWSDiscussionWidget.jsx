@@ -1,64 +1,88 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight, Plus, Copy, Check, ExternalLink } from 'lucide-react';
+import { FileText, X, ChevronRight, Plus, Copy, Check, ExternalLink, BookOpen } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+import { getGlossaryForOffice, termAppearsInText } from '../../data/cityGlossaries';
 
 // Meteorological keywords to highlight, grouped by category
+// See docs/FORECAST_KEYWORDS.md for full documentation
 const WEATHER_KEYWORDS = {
+  // Temperature patterns
   temperature: [
-    // Advection and trends
     'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
     'above normal', 'below normal', 'near normal', 'record high', 'record low',
     'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
-    // Common forecast terms
-    'storm system', 'frontal passage', 'frontal boundary', 'cold front', 'warm front',
-    'cooler weather', 'warmer weather', 'cool days', 'cool nights',
-    'warm days', 'warm nights', 'cooler temperatures', 'warmer temperatures',
-    'temperatures will', 'highs in the', 'lows in the', 'high temperatures',
-    'low temperatures', 'overnight lows', 'daytime highs',
-    // Pressure systems
-    'polar high pressure', 'high pressure', 'low pressure',
-    'weak clipper system', 'clipper system', 'clipper',
-    // NWS abbreviations
-    'pva', 'nva', 'rrq', 'ulj', 'llj', 'theta-e',
-    // Climate indices
-    'ao', 'nao', '-ao', '-nao', '+ao', '+nao',
-    // More NWS abbreviations
-    'nbm', 'pops', 'wx', 'sca',
+    'warmer', 'cooler', 'warm', 'cold',
   ],
+  // Pressure/fronts
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
-    'low pressure', 'high pressure', 'trough', 'ridge', 'upper level',
-    'surface low', 'surface high', 'shortwave', 'longwave',
+    'frontal boundary', 'frontal passage',
+    'low pressure', 'high pressure', 'trough', 'troughing', 'ridge', 'upper level',
+    'surface low', 'surface high', 'shortwave', 'short wave', 'longwave',
     'cutoff low', 'closed low', 'blocking pattern', 'zonal flow',
+    'return flow', 'upper level disturbance', 'Pacific front',
   ],
+  // Precipitation
   precipitation: [
-    'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
+    'rain chances', 'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
     'shower', 'drizzle', 'downpour', 'heavy rain', 'light rain',
     'accumulation', 'precip', 'precipitation', 'moisture',
     'convection', 'instability', 'cape', 'lifted index',
+    'dry', 'low clouds',
   ],
+  // Wind
   wind: [
-    'wind advisory', 'high wind', 'gust', 'breezy', 'windy',
+    'wind advisory', 'high wind', 'gust', 'gusty', 'gusty winds', 'gusty southerly winds',
+    'gusty south winds', 'breezy', 'windy',
     'santa ana', 'chinook', 'offshore flow', 'onshore flow',
     'wind shift', 'veering', 'backing',
   ],
+  // Confidence/uncertainty
   confidence: [
     'uncertainty', 'confidence', 'likely', 'unlikely', 'possible',
     'expected', 'forecast', 'outlook', 'trend', 'timing',
-    'models agree', 'model spread', 'ensemble', 'deterministic',
+    'models agree', 'model spread', 'ensemble', 'ensemble solutions', 'deterministic',
   ],
+  // Hazards - fire, severe weather, dangerous conditions
+  hazards: [
+    'fire weather', 'fire concerns', 'fuel moisture', 'red flag warning',
+    'wind chill', 'heat index', 'severe', 'tornado', 'hail',
+    'flash flood', 'flood', 'ice storm', 'blizzard',
+  ],
+  // Aviation terms
+  aviation: [
+    'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling',
+  ],
+  // Locations - city-specific geographic references
   locations: [
-    // NY area
-    'moriches inlet', 'long island', 'manhattan', 'brooklyn', 'queens',
-    'bronx', 'staten island', 'hudson valley', 'jersey shore',
-    // CA area
-    'san miguel island', 'central coast', 'santa barbara', 'ventura',
-    'los angeles basin', 'san fernando valley', 'orange county',
-    'san diego', 'inland empire', 'high desert', 'antelope valley',
-    // General
+    // NY/OKX area
+    'long island', 'hudson valley', 'manhattan', 'brooklyn', 'queens',
+    'bronx', 'staten island', 'moriches inlet', 'jersey shore',
+    'connecticut', 'new jersey',
+    // Chicago/LOT area
+    'lake michigan', 'lakefront', 'lake effect', 'lake enhanced',
+    'wisconsin', 'indiana', 'i-88', 'i-90',
+    // LA/LOX area
+    'point conception', 'santa barbara', 'ventura', 'los angeles county',
+    'los angeles basin', 'san fernando valley', 'antelope valley',
+    'catalina', 'channel islands', 'san gabriel', 'central coast',
+    'orange county', 'san diego', 'inland empire', 'high desert',
+    // Denver/BOU area
+    'front range', 'palmer divide', 'i-25', 'i-70', 'boulder',
+    'fort collins', 'denver metro', 'continental divide',
+    'northern mountains', 'central mountains', 'southern mountains',
+    // Austin/EWX area
+    'hill country', 'edwards plateau', 'rio grande', 'south central texas',
+    'balcones', 'i-35', 'i-10', 'san antonio', 'guadalupe',
+    // Miami/MFL area
+    'everglades', 'florida keys', 'keys', 'gulf stream', 'biscayne',
+    'palm beach', 'broward', 'miami-dade', 'lake okeechobee',
+    // General geographic terms
     'coastal waters', 'inland areas', 'mountains', 'valleys', 'foothills',
+    'metro', 'interior', 'coastal', 'offshore', 'gulf coast', 'east coast',
+    'atlantic', 'pacific',
   ],
 };
 
@@ -68,13 +92,16 @@ Object.entries(WEATHER_KEYWORDS).forEach(([category, keywords]) => {
   keywords.forEach(keyword => KEYWORD_MAP.set(keyword.toLowerCase(), category));
 });
 
-// Category colors
+// Category colors matching the glassmorphism design
 const CATEGORY_COLORS = {
   temperature: 'bg-orange-500/30 text-orange-300 hover:bg-orange-500/50',
   synoptic: 'bg-blue-500/30 text-blue-300 hover:bg-blue-500/50',
   precipitation: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
   wind: 'bg-teal-500/30 text-teal-300 hover:bg-teal-500/50',
   confidence: 'bg-purple-500/30 text-purple-300 hover:bg-purple-500/50',
+  hazards: 'bg-red-500/30 text-red-300 hover:bg-red-500/50',
+  aviation: 'bg-gray-500/30 text-gray-300 hover:bg-gray-500/50',
+  tempRange: 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/50',
   locations: 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50',
 };
 
@@ -367,10 +394,13 @@ export default function NWSDiscussionWidget({
     );
   }
 
-  // Extract keywords from synopsis and near term for preview
+  // Extract keywords from synopsis, near term, and short term for preview
   const keywords = extractKeywords(
-    (discussion.synopsis || '') + ' ' + (discussion.nearTerm || '')
+    (discussion.synopsis || '') + ' ' + (discussion.nearTerm || '') + ' ' + (discussion.shortTerm || '')
   );
+
+  // Get synopsis excerpt for preview
+  const synopsisExcerpt = extractSynopsisExcerpt(discussion.synopsis);
 
   return (
     <>
@@ -381,40 +411,45 @@ export default function NWSDiscussionWidget({
         onClick={() => setIsModalOpen(true)}
         className="cursor-pointer"
         headerRight={
-          <span className="text-[10px] text-blue-400 font-medium flex items-center gap-0.5">
-            See full
+          <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors whitespace-nowrap">
+            More
             <ChevronRight className="w-3 h-3" />
           </span>
         }
       >
-        <div className="flex flex-col h-full">
-          {/* Keyword chips preview */}
-          {keywords.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {keywords.map((kw, i) => (
-                <span
-                  key={i}
-                  className={`${CATEGORY_COLORS[kw.category]?.replace('hover:bg-', '') || 'bg-white/20 text-white/80'} px-2 py-0.5 rounded-full text-[10px] font-medium`}
-                >
-                  {kw.text}
-                </span>
-              ))}
-            </div>
+        <div className="flex flex-col h-full justify-between gap-2 overflow-hidden">
+          {/* Synopsis excerpt */}
+          {synopsisExcerpt ? (
+            <p className="text-[11px] text-white/70 leading-relaxed line-clamp-2">
+              {synopsisExcerpt}
+            </p>
           ) : (
-            <p className="text-xs text-white/60 mb-2">
+            <p className="text-[11px] text-white/50 italic">
               Tap to view forecast discussion
             </p>
           )}
 
-          {/* Meta info */}
-          <div className="flex items-center gap-2 mt-auto">
-            <span className="text-[10px] text-white/40">
-              NWS {discussion.office}
-            </span>
-            <span className="text-[10px] text-white/40">•</span>
-            <span className="text-[10px] text-white/40">
-              {formatTime(discussion.issuanceTime)}
-            </span>
+          {/* Keyword chips - wrapped, limited by widget height */}
+          {keywords.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 overflow-hidden">
+              {keywords.map((kw, i) => {
+                const baseColors = CATEGORY_COLORS[kw.category]?.replace('hover:bg-', '') || 'bg-white/20 text-white/80';
+                return (
+                  <span
+                    key={i}
+                    className={`${baseColors} px-2 py-0.5 rounded-full text-[10px] font-medium`}
+                  >
+                    {kw.text}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Footer - office & relative time */}
+          <div className="flex items-center justify-between text-[10px] text-white/40 pt-1 border-t border-white/5">
+            <span className="font-medium">NWS {discussion.office}</span>
+            <span>{formatRelativeTime(discussion.issuanceTime)}</span>
           </div>
         </div>
       </GlassWidget>
@@ -534,6 +569,63 @@ function formatTime(isoTime) {
 }
 
 /**
+ * Format relative time (e.g., "12m ago", "2h ago")
+ */
+function formatRelativeTime(isoTime) {
+  if (!isoTime) return '';
+  const date = new Date(isoTime);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+/**
+ * Extract a clean synopsis excerpt for preview
+ * Returns first 1-2 sentences, max ~120 chars
+ */
+function extractSynopsisExcerpt(synopsis) {
+  if (!synopsis) return null;
+
+  // Clean up and normalize whitespace
+  let text = synopsis.trim().replace(/\s+/g, ' ');
+
+  // Remove common NWS prefixes:
+  // - Date/time stamps like "03/242 AM." or "12/1045 PM."
+  // - Forecaster signatures at start
+  text = text.replace(/^\d{1,2}\/\d{3,4}\s*(AM|PM)\.?\s*/i, '');
+  text = text.replace(/^\.{3}\s*/, ''); // Remove leading ellipsis
+
+  // Try to get first sentence or two
+  const sentences = text.match(/[^.!?]+[.!?]+/g);
+  if (sentences && sentences.length > 0) {
+    // Get first sentence, or first two if first is short
+    let excerpt = sentences[0].trim();
+    if (excerpt.length < 60 && sentences.length > 1) {
+      excerpt += ' ' + sentences[1].trim();
+    }
+
+    // Truncate if too long
+    if (excerpt.length > 120) {
+      excerpt = excerpt.slice(0, 117).trim() + '...';
+    }
+    return excerpt;
+  }
+
+  // Fallback: just truncate
+  if (text.length > 120) {
+    return text.slice(0, 117).trim() + '...';
+  }
+  return text;
+}
+
+/**
  * HighlightedKeyword - Clickable keyword with definition tooltip
  * Hover: shows definition, Click: adds to notes
  */
@@ -570,68 +662,247 @@ function HighlightedKeyword({ text, category, office }) {
 }
 
 /**
- * Extract unique temperature-related keywords from text for widget preview
+ * Extract key forecast keywords from text for widget preview
+ * Prioritizes: temp ranges > precipitation > temperature keywords
  */
 function extractKeywords(text) {
   if (!text) return [];
 
-  // Only use temperature keywords for the preview
+  const tempRanges = [];
+  const tempKeywordsFound = [];
+  const precipKeywordsFound = [];
+
+  // Temperature range pattern - matches "highs in the 70s", "lows in the upper 40s", etc.
+  const tempRangePattern = /\b(highs?|lows?|temperatures?)\s+(in the\s+|of\s+)?(lower\s+|mid\s+|upper\s+)?(\d{1,2}0s)(\s+to\s+(the\s+)?(lower\s+|mid\s+|upper\s+)?\d{1,2}0s)?\b/gi;
+
+  let match;
+  while ((match = tempRangePattern.exec(text)) !== null) {
+    tempRanges.push({
+      text: match[0].toLowerCase(),
+      category: 'tempRange',
+    });
+  }
+
+  // Check for static temperature keywords (warm, cold, warmer, cooler, etc.)
   const tempKeywords = WEATHER_KEYWORDS.temperature.sort((a, b) => b.length - a.length);
-  const pattern = new RegExp(
+  const tempPattern = new RegExp(
     `\\b(${tempKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
     'gi'
   );
 
-  const found = new Set();
-  let match;
-  while ((match = pattern.exec(text)) !== null) {
-    found.add(match[0].toLowerCase());
+  while ((match = tempPattern.exec(text)) !== null) {
+    const matchText = match[0].toLowerCase();
+    if (!tempKeywordsFound.some(r => r.text === matchText)) {
+      tempKeywordsFound.push({
+        text: matchText,
+        category: 'temperature',
+      });
+    }
   }
 
-  // Return unique temperature keywords, limited to 4
-  return Array.from(found)
-    .slice(0, 4)
-    .map(kw => ({
-      text: kw,
-      category: 'temperature',
-    }));
+  // Check for precipitation keywords
+  const precipKeywords = WEATHER_KEYWORDS.precipitation.sort((a, b) => b.length - a.length);
+  const precipPattern = new RegExp(
+    `\\b(${precipKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+    'gi'
+  );
+
+  while ((match = precipPattern.exec(text)) !== null) {
+    const matchText = match[0].toLowerCase();
+    if (!precipKeywordsFound.some(r => r.text === matchText)) {
+      precipKeywordsFound.push({
+        text: matchText,
+        category: 'precipitation',
+      });
+    }
+  }
+
+  // Check for wind keywords
+  const windKeywordsFound = [];
+  const windKeywords = WEATHER_KEYWORDS.wind.sort((a, b) => b.length - a.length);
+  const windPattern = new RegExp(
+    `\\b(${windKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+    'gi'
+  );
+
+  while ((match = windPattern.exec(text)) !== null) {
+    const matchText = match[0].toLowerCase();
+    if (!windKeywordsFound.some(r => r.text === matchText)) {
+      windKeywordsFound.push({
+        text: matchText,
+        category: 'wind',
+      });
+    }
+  }
+
+  // Build balanced results: temp range, temp keyword, wind, then precipitation
+  const results = [];
+
+  // Add first temp range
+  if (tempRanges.length > 0) {
+    results.push(tempRanges[0]);
+  }
+
+  // Add first temperature keyword
+  if (tempKeywordsFound.length > 0) {
+    results.push(tempKeywordsFound[0]);
+  }
+
+  // Add first wind keyword (prioritize longer phrases like "gusty southerly winds")
+  if (windKeywordsFound.length > 0) {
+    results.push(windKeywordsFound[0]);
+  }
+
+  // Fill remaining slots with precipitation, then others
+  const remaining = [...precipKeywordsFound, ...tempRanges.slice(1), ...tempKeywordsFound.slice(1), ...windKeywordsFound.slice(1)];
+  for (const item of remaining) {
+    if (results.length >= 4) break;
+    if (!results.some(r => r.text === item.text)) {
+      results.push(item);
+    }
+  }
+
+  return results;
 }
 
 /**
- * Parse text and highlight meteorological keywords
+ * Parse text and highlight meteorological keywords and temperature ranges
  */
 function parseAndHighlight(text, office) {
   if (!text) return null;
 
+  // Build regex pattern from all keywords (sorted by length desc to match longer phrases first)
   const allKeywords = Array.from(KEYWORD_MAP.keys()).sort((a, b) => b.length - a.length);
-  const pattern = new RegExp(`\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi');
+  const keywordPattern = `\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`;
+
+  // Temperature range pattern - matches various formats:
+  // "highs in the 70s", "lows in the upper 40s", "highs in the 70s to the lower 80s"
+  // "temperatures in the mid 60s", "highs of 75 to 80"
+  const tempRangePattern = `\\b(highs?|lows?|temperatures?)\\s+(in the\\s+|of\\s+)?(lower\\s+|mid\\s+|upper\\s+)?(\\d{1,2}0s)(\\s+to\\s+(the\\s+)?(lower\\s+|mid\\s+|upper\\s+)?\\d{1,2}0s)?\\b`;
+
+  // Combined pattern - temp ranges first (they're longer), then keywords
+  const combinedPattern = new RegExp(`(${tempRangePattern})|(${keywordPattern})`, 'gi');
 
   const parts = [];
   let lastIndex = 0;
   let match;
 
-  while ((match = pattern.exec(text)) !== null) {
+  while ((match = combinedPattern.exec(text)) !== null) {
+    // Add text before match
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
-    const keyword = match[0];
-    const category = KEYWORD_MAP.get(keyword.toLowerCase());
+
+    const matchedText = match[0];
+
+    // Determine if it's a temp range or keyword
+    const isTempRange = /^(highs?|lows?|temperatures?)\s+/i.test(matchedText);
+    const category = isTempRange ? 'tempRange' : KEYWORD_MAP.get(matchedText.toLowerCase());
+
     parts.push(
       <HighlightedKeyword
-        key={`${match.index}-${keyword}`}
-        text={keyword}
+        key={`${match.index}-${matchedText}`}
+        text={matchedText}
         category={category}
         office={office}
       />
     );
-    lastIndex = pattern.lastIndex;
+
+    lastIndex = combinedPattern.lastIndex;
   }
 
+  // Add remaining text
   if (lastIndex < text.length) {
     parts.push(text.slice(lastIndex));
   }
 
   return parts;
+}
+
+// Category colors for glossary
+const GLOSSARY_CATEGORY_COLORS = {
+  locations: 'bg-emerald-500/30 text-emerald-300 border-emerald-500/30',
+  phenomena: 'bg-teal-500/30 text-teal-300 border-teal-500/30',
+  technical: 'bg-purple-500/30 text-purple-300 border-purple-500/30',
+};
+
+const GLOSSARY_CATEGORY_LABELS = {
+  locations: 'Locations',
+  phenomena: 'Weather Phenomena',
+  technical: 'Technical Terms',
+};
+
+/**
+ * GlossaryContent - City-specific glossary of meteorological terms
+ */
+function GlossaryContent({ office, fullText }) {
+  const glossary = getGlossaryForOffice(office);
+
+  if (!glossary) {
+    return (
+      <div className="text-white/50 text-sm text-center py-8">
+        No glossary available for this forecast office.
+      </div>
+    );
+  }
+
+  // Combine all text for checking if terms appear
+  const allText = fullText || '';
+
+  return (
+    <div className="space-y-6">
+      {Object.entries(glossary).map(([category, terms]) => (
+        <div key={category}>
+          {/* Category header */}
+          <div className="flex items-center gap-2 mb-3">
+            <BookOpen className="w-4 h-4 text-white/50" />
+            <h4 className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+              {GLOSSARY_CATEGORY_LABELS[category] || category}
+            </h4>
+          </div>
+
+          {/* Terms list */}
+          <div className="space-y-3">
+            {Object.entries(terms)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([term, definition]) => {
+                const appearsInDiscussion = termAppearsInText(term, allText);
+                const colorClass = GLOSSARY_CATEGORY_COLORS[category] || 'bg-white/10 text-white/70';
+
+                return (
+                  <div
+                    key={term}
+                    className={`p-3 rounded-lg border ${
+                      appearsInDiscussion
+                        ? 'bg-white/5 border-white/20'
+                        : 'bg-black/20 border-white/5'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <span
+                        className={`text-sm font-medium capitalize ${
+                          appearsInDiscussion ? 'text-white' : 'text-white/70'
+                        }`}
+                      >
+                        {term}
+                      </span>
+                      {appearsInDiscussion && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300 whitespace-nowrap">
+                          in discussion
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-white/60 leading-relaxed">
+                      {definition}
+                    </p>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -643,6 +914,19 @@ function DiscussionModal({ discussion, onClose }) {
   const [copied, setCopied] = useState(false);
   const contentRef = useRef(null);
 
+  // Combine all discussion text for glossary term detection
+  const fullDiscussionText = [
+    discussion.synopsis,
+    discussion.nearTerm,
+    discussion.shortTerm,
+    discussion.longTerm,
+    discussion.aviation,
+    discussion.marine,
+  ].filter(Boolean).join(' ');
+
+  // Check if glossary exists for this office
+  const hasGlossary = !!getGlossaryForOffice(discussion.office);
+
   const sections = [
     { id: 'synopsis', label: 'Synopsis', content: discussion.synopsis },
     { id: 'nearTerm', label: 'Near Term', content: discussion.nearTerm },
@@ -650,7 +934,8 @@ function DiscussionModal({ discussion, onClose }) {
     { id: 'longTerm', label: 'Long Term', content: discussion.longTerm },
     { id: 'aviation', label: 'Aviation', content: discussion.aviation },
     { id: 'marine', label: 'Marine', content: discussion.marine },
-  ].filter(s => s.content);
+    ...(hasGlossary ? [{ id: 'glossary', label: 'Glossary', isGlossary: true }] : []),
+  ].filter(s => s.content || s.isGlossary);
 
   // Handle text selection
   const handleMouseUp = useCallback(() => {
@@ -805,9 +1090,16 @@ function DiscussionModal({ discussion, onClose }) {
                 <h3 className="text-sm font-medium text-white/80 mb-2">
                   {section.label}
                 </h3>
-                <div className="text-sm text-white/70 leading-relaxed">
-                  {parseAndHighlight(section.content, discussion.office)}
-                </div>
+                {section.isGlossary ? (
+                  <GlossaryContent
+                    office={discussion.office}
+                    fullText={fullDiscussionText}
+                  />
+                ) : (
+                  <div className="text-sm text-white/70 leading-relaxed">
+                    {parseAndHighlight(section.content, discussion.office)}
+                  </div>
+                )}
               </div>
             ))}
           </div>
