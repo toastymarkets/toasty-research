@@ -651,7 +651,25 @@ function extractKeywords(text) {
     }
   }
 
-  // Build balanced results: temp range, temp keyword, then precipitation
+  // Check for wind keywords
+  const windKeywordsFound = [];
+  const windKeywords = WEATHER_KEYWORDS.wind.sort((a, b) => b.length - a.length);
+  const windPattern = new RegExp(
+    `\\b(${windKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+    'gi'
+  );
+
+  while ((match = windPattern.exec(text)) !== null) {
+    const matchText = match[0].toLowerCase();
+    if (!windKeywordsFound.some(r => r.text === matchText)) {
+      windKeywordsFound.push({
+        text: matchText,
+        category: 'wind',
+      });
+    }
+  }
+
+  // Build balanced results: temp range, temp keyword, wind, then precipitation
   const results = [];
 
   // Add first temp range
@@ -664,8 +682,13 @@ function extractKeywords(text) {
     results.push(tempKeywordsFound[0]);
   }
 
-  // Fill remaining slots with precipitation, then more temp ranges/keywords
-  const remaining = [...precipKeywordsFound, ...tempRanges.slice(1), ...tempKeywordsFound.slice(1)];
+  // Add first wind keyword (prioritize longer phrases like "gusty southerly winds")
+  if (windKeywordsFound.length > 0) {
+    results.push(windKeywordsFound[0]);
+  }
+
+  // Fill remaining slots with precipitation, then others
+  const remaining = [...precipKeywordsFound, ...tempRanges.slice(1), ...tempKeywordsFound.slice(1), ...windKeywordsFound.slice(1)];
   for (const item of remaining) {
     if (results.length >= 4) break;
     if (!results.some(r => r.text === item.text)) {
