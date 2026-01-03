@@ -109,9 +109,9 @@ export default function MarketCardGlass({
       <div className="absolute inset-0 bg-black/30" />
 
       {/* Card Content */}
-      <div className="relative z-10 p-3">
+      <div className="relative z-10 p-4">
         {/* City name */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-semibold text-lg drop-shadow-lg">
             {city.name}
           </h3>
@@ -123,16 +123,16 @@ export default function MarketCardGlass({
         </div>
         {/* Brackets */}
         {loading ? (
-          <div className="space-y-2 mb-3">
+          <div className="space-y-2 mb-4">
             <div className="h-9 bg-white/10 rounded-lg animate-pulse" />
             <div className="h-9 bg-white/10 rounded-lg animate-pulse" />
           </div>
         ) : error ? (
-          <div className="h-[72px] flex items-center justify-center text-xs text-white/40 mb-3">
+          <div className="h-[72px] flex items-center justify-center text-xs text-white/40 mb-4">
             {error}
           </div>
         ) : topBrackets.length > 0 ? (
-          <div className="space-y-1.5 mb-3">
+          <div className="space-y-2 mb-4">
             {topBrackets.slice(0, 2).map((bracket, i) => (
               <div
                 key={bracket.ticker || i}
@@ -170,13 +170,13 @@ export default function MarketCardGlass({
             ))}
           </div>
         ) : (
-          <div className="h-[72px] flex items-center justify-center text-xs text-white/40 mb-3">
+          <div className="h-[72px] flex items-center justify-center text-xs text-white/40 mb-4">
             No markets available
           </div>
         )}
 
         {/* Footer with volume and timer */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10">
+        <div className="flex items-center justify-between pt-3 border-t border-white/10">
           <span className="text-xs text-white/50">
             {formatVolume(totalVolume)}
           </span>

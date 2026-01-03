@@ -161,7 +161,7 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
   return (
     <div className="w-full max-w-6xl mx-auto px-4 pt-8">
       {/* Dynamic Section Header */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
         <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2 flex-wrap">
           <Toggle
             value={marketType}
@@ -217,7 +217,7 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {markets.map((market, index) => (
             <MarketCardGlass
               key={market.slug}
@@ -242,9 +242,9 @@ function MarketSection({
   noActiveMarkets = false
 }) {
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 mt-8">
+    <div className="w-full max-w-6xl mx-auto px-4 mt-10">
       {/* Section Header */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-6">
         <h2 className="text-xl md:text-2xl font-bold text-white">{title}</h2>
         {!loading && markets.length > 0 && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">
@@ -285,7 +285,7 @@ function MarketSection({
           <p className="text-xs text-white/30 mt-1">Check back later for new markets</p>
         </div>
       ) : (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {markets.map((market, index) => (
             <MarketCardGlass
               key={market.slug}
