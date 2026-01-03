@@ -7,9 +7,16 @@ import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 // Meteorological keywords to highlight, grouped by category
 const WEATHER_KEYWORDS = {
   temperature: [
+    // Advection and trends
     'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
     'above normal', 'below normal', 'near normal', 'record high', 'record low',
     'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
+    // Common forecast terms
+    'storm system', 'frontal passage', 'cold front', 'warm front',
+    'cooler weather', 'warmer weather', 'cool days', 'cool nights',
+    'warm days', 'warm nights', 'cooler temperatures', 'warmer temperatures',
+    'temperatures will', 'highs in the', 'lows in the', 'high temperatures',
+    'low temperatures', 'overnight lows', 'daytime highs',
   ],
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
@@ -67,6 +74,20 @@ const KEYWORD_DEFINITIONS = {
   'heat wave': 'Extended period of abnormally high temperatures.',
   'cold snap': 'A sudden, brief period of cold weather.',
   'thermal trough': 'An elongated area of low pressure caused by intense surface heating.',
+  'storm system': 'An organized area of low pressure that brings unsettled weather and temperature changes.',
+  'frontal passage': 'When a weather front moves through an area, often causing temperature shifts.',
+  'cooler weather': 'Temperatures lower than recent days.',
+  'warmer weather': 'Temperatures higher than recent days.',
+  'cool days': 'Daytime temperatures below seasonal averages.',
+  'cool nights': 'Overnight temperatures below seasonal averages.',
+  'warm days': 'Daytime temperatures above seasonal averages.',
+  'warm nights': 'Overnight temperatures above seasonal averages.',
+  'cooler temperatures': 'A drop in temperature from current conditions.',
+  'warmer temperatures': 'A rise in temperature from current conditions.',
+  'high temperatures': 'The maximum temperature expected during the day.',
+  'low temperatures': 'The minimum temperature expected, usually overnight.',
+  'overnight lows': 'The coldest temperature expected during the night.',
+  'daytime highs': 'The warmest temperature expected during daylight hours.',
 
   // Synoptic
   'high pressure': 'Area where atmospheric pressure is elevated. Associated with fair weather, clear skies, and light winds.',
