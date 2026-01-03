@@ -18,11 +18,13 @@ import {
  * 1. How It Works - Explanation of ASOS vs METAR processes
  * 2. Calculator - Interactive tool with C/F and ASOS/METAR toggles
  */
-export default function RoundingModal({ currentTemp, observationType = 'asos', onClose }) {
+export default function RoundingModal({ currentTemp, runningHigh, observationType = 'asos', onClose }) {
+  // Default to running high if available, otherwise use current temp
+  const defaultTemp = runningHigh ?? currentTemp;
   const [activeTab, setActiveTab] = useState('calculator');
   const [calcMode, setCalcMode] = useState(observationType); // 'asos' | 'metar'
   const [calcUnit, setCalcUnit] = useState('f'); // 'f' | 'c'
-  const [calcInput, setCalcInput] = useState(currentTemp?.toString() || '70');
+  const [calcInput, setCalcInput] = useState(defaultTemp?.toString() || '70');
 
   // Calculate range for current input
   const inputValue = parseInt(calcInput, 10);
@@ -142,6 +144,7 @@ export default function RoundingModal({ currentTemp, observationType = 'asos', o
 
 RoundingModal.propTypes = {
   currentTemp: PropTypes.number,
+  runningHigh: PropTypes.number,
   observationType: PropTypes.oneOf(['asos', 'metar']),
   onClose: PropTypes.func.isRequired,
 };

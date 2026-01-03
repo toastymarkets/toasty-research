@@ -116,6 +116,20 @@ function CityDashboardContent({ city, citySlug }) {
     }));
   }, [forecast, currentTempF]);
 
+  // Calculate running high from today's observations
+  const runningHigh = useMemo(() => {
+    if (!observations?.length) return null;
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayObs = observations.filter(o => {
+      const obsDate = new Date(o.timestamp);
+      return obsDate >= todayStart;
+    });
+    if (todayObs.length === 0) return null;
+    const temps = todayObs.map(o => o.temperature).filter(t => t != null);
+    return temps.length > 0 ? Math.max(...temps) : null;
+  }, [observations]);
+
   // Get current conditions
   const currentConditions = useMemo(() => {
     const condition = weather?.textDescription || forecast?.periods?.[0]?.shortForecast || 'Clear';
@@ -123,10 +137,10 @@ function CityDashboardContent({ city, citySlug }) {
     return {
       temperature: currentTempF,
       condition,
-      high: forecast?.todayHigh,
+      high: runningHigh ?? forecast?.todayHigh, // Use running high if available, fallback to forecast
       low: forecast?.todayLow,
     };
-  }, [weather, forecast, currentTempF]);
+  }, [weather, forecast, currentTempF, runningHigh]);
 
   // Sunrise/sunset times (mock - would need real API)
   const sunTimes = useMemo(() => {
@@ -327,6 +341,7 @@ function CityDashboardContent({ city, citySlug }) {
           <WidgetGridV2.Area area="rounding">
             <RoundingWidget
               currentTemp={currentTempF}
+              runningHigh={runningHigh}
               observationType={observationType}
               loading={weatherLoading}
             />

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { FileText, RefreshCw, ChevronUp, ChevronDown, Thermometer, Calendar } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { FileText, RefreshCw, ChevronUp, ChevronDown, Thermometer, Calendar, Clock } from 'lucide-react';
 import SelectableData from './SelectableData';
 
 /**
@@ -38,6 +38,7 @@ function useIEMDailySummary(citySlug, date) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastFetched, setLastFetched] = useState(null);
 
   const config = CITY_IEM_CONFIG[citySlug];
 
@@ -67,6 +68,7 @@ function useIEMDailySummary(citySlug, date) {
       } else {
         setData(records[0]);
       }
+      setLastFetched(new Date());
     } catch (err) {
       setError(err.message);
       setData(null);
@@ -79,14 +81,55 @@ function useIEMDailySummary(citySlug, date) {
     fetchData();
   }, [fetchData]);
 
-  return { data, loading, error, refetch: fetchData, stationName: config?.name };
+  return { data, loading, error, refetch: fetchData, stationName: config?.name, lastFetched };
+}
+
+/**
+ * Calculate time until next CLI release window (5am-10am UTC)
+ */
+function getNextCLIRelease() {
+  const now = new Date();
+  const utcHour = now.getUTCHours();
+
+  // If currently in the release window (5-10 UTC), show "In progress"
+  if (utcHour >= 5 && utcHour < 10) {
+    return { inProgress: true, text: 'CLI window open' };
+  }
+
+  // Calculate next 5am UTC
+  const next5amUTC = new Date(now);
+  next5amUTC.setUTCHours(5, 0, 0, 0);
+
+  // If we're past 10am UTC today, target tomorrow's 5am
+  if (utcHour >= 10) {
+    next5amUTC.setUTCDate(next5amUTC.getUTCDate() + 1);
+  }
+
+  const diffMs = next5amUTC - now;
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  return {
+    inProgress: false,
+    text: `${hours}h ${minutes}m`,
+    targetTime: next5amUTC
+  };
 }
 
 export default function DailySummary({ citySlug, cityName, className = '' }) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [isExpanded, setIsExpanded] = useState(true);
+  const [countdown, setCountdown] = useState(() => getNextCLIRelease());
 
-  const { data, loading, error, refetch, stationName } = useIEMDailySummary(citySlug, selectedDate);
+  const { data, loading, error, refetch, stationName, lastFetched } = useIEMDailySummary(citySlug, selectedDate);
+
+  // Update countdown every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdown(getNextCLIRelease());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const config = CITY_IEM_CONFIG[citySlug];
 
@@ -289,9 +332,23 @@ export default function DailySummary({ citySlug, cityName, className = '' }) {
             </div>
           )}
 
-          {/* Footer */}
-          <div className="mt-4 pt-3 border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
-            Data from Iowa Environmental Mesonet (IEM)
+          {/* Footer with timestamp and CLI countdown */}
+          <div className="mt-4 pt-3 border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)] space-y-2">
+            <div className="flex items-center justify-between">
+              <span>Data from IEM</span>
+              {lastFetched && (
+                <span className="flex items-center gap-1">
+                  <Clock size={10} />
+                  {lastFetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Next CLI release:</span>
+              <span className={countdown.inProgress ? 'text-green-400' : 'text-blue-400'}>
+                {countdown.text}
+              </span>
+            </div>
           </div>
         </>
       )}
