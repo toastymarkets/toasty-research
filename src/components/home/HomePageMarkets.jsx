@@ -53,35 +53,6 @@ export default function HomePageMarkets() {
 
   return (
     <div className="min-h-screen pb-24 md:pb-8 overflow-x-hidden w-full max-w-[100vw]">
-      {/* Hero Section */}
-      <div className="w-full max-w-6xl mx-auto px-4 pt-8 pb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-              Weather Markets
-            </h1>
-            <p className="text-sm text-white/60">
-              Real-time prediction markets on Kalshi
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Live indicator */}
-            <div className="glass-badge flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-              </span>
-              <span className="text-white/80 text-xs font-medium">Live</span>
-            </div>
-            {lastFetch && (
-              <span className="text-[10px] text-white/40 hidden sm:block">
-                Updated {formatLastUpdate()}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Temperature Markets Section */}
       <TemperatureMarketsSection
         highTempMarkets={sortedTempMarkets}
@@ -190,11 +161,10 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
   const showComingSoon = timeframe === 'tomorrow' || (!lowMarketsAvailable && marketType === 'lowest');
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 mt-6">
+    <div className="w-full max-w-6xl mx-auto px-4 pt-8">
       {/* Dynamic Section Header */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <TrendingUp className="w-4 h-4 text-white/60" />
-        <h2 className="text-lg font-semibold text-white flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2 flex-wrap">
           <Toggle
             value={marketType}
             options={typeOptions}
@@ -206,16 +176,13 @@ function TemperatureMarketsSection({ highTempMarkets, highTempLoading }) {
             options={timeframeOptions}
             onChange={setTimeframe}
           />
-        </h2>
+        </h1>
         {!loading && !showComingSoon && markets.length > 0 && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50 ml-2">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">
             {markets.length} markets
           </span>
         )}
       </div>
-      <p className="text-xs text-white/40 mb-4">
-        {marketType === 'highest' ? 'Daily high' : 'Daily low'} temperature predictions for {timeframe}
-      </p>
 
       {/* Markets Grid */}
       {loading ? (
