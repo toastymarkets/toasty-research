@@ -97,10 +97,15 @@ api/                   # Vercel serverless functions
 
 ## Design System
 
-- Glass morphism UI with backdrop blur
-- Apple Weather inspired aesthetic
-- Dark/light mode via CSS variables
-- Apple accent color palette (blue, green, yellow, orange, red, purple, pink, teal)
+See **[docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md)** for comprehensive design documentation.
+
+### Quick Reference
+- **Theme**: Dark monochromatic glassmorphism (Apple Weather / macOS Tahoe inspired)
+- **Primary accent**: Blue (`#007AFF` / `blue-400`)
+- **Glass surfaces**: `rgba(0, 0, 0, 0.3)` with `backdrop-filter: blur(20px)`
+- **Text**: White with opacity variants (`text-white`, `text-white/75`, `text-white/50`)
+- **Interactive elements**: Blue highlights, hover states
+- **Weather backgrounds**: Time-based gradients with animated overlays
 
 ## Playwright MCP Guidelines
 
