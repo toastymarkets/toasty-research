@@ -411,8 +411,8 @@ export default function NWSDiscussionWidget({
         onClick={() => setIsModalOpen(true)}
         className="cursor-pointer"
         headerRight={
-          <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-1 rounded-full hover:bg-blue-500/30 transition-colors">
-            Read more
+          <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors whitespace-nowrap">
+            More
             <ChevronRight className="w-3 h-3" />
           </span>
         }
