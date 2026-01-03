@@ -5,50 +5,55 @@ import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 
 // Meteorological keywords to highlight, grouped by category
+// See docs/FORECAST_KEYWORDS.md for full documentation
 const WEATHER_KEYWORDS = {
+  // Temperature patterns
   temperature: [
-    // Advection and trends
     'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
     'above normal', 'below normal', 'near normal', 'record high', 'record low',
     'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
-    // Common forecast terms
-    'storm system', 'frontal passage', 'frontal boundary', 'cold front', 'warm front',
-    'cooler weather', 'warmer weather', 'cool days', 'cool nights',
-    'warm days', 'warm nights', 'cooler temperatures', 'warmer temperatures',
-    'temperatures will', 'highs in the', 'lows in the', 'high temperatures',
-    'low temperatures', 'overnight lows', 'daytime highs',
-    // Pressure systems
-    'polar high pressure', 'high pressure', 'low pressure',
-    'weak clipper system', 'clipper system', 'clipper',
-    // NWS abbreviations
-    'pva', 'nva', 'rrq', 'ulj', 'llj', 'theta-e',
-    // Climate indices
-    'ao', 'nao', '-ao', '-nao', '+ao', '+nao',
-    // More NWS abbreviations
-    'nbm', 'pops', 'wx', 'sca',
+    'warmer', 'cooler', 'warm', 'cold',
   ],
+  // Pressure/fronts
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
+    'frontal boundary', 'frontal passage',
     'low pressure', 'high pressure', 'trough', 'ridge', 'upper level',
-    'surface low', 'surface high', 'shortwave', 'longwave',
+    'surface low', 'surface high', 'shortwave', 'short wave', 'longwave',
     'cutoff low', 'closed low', 'blocking pattern', 'zonal flow',
+    'return flow', 'upper level disturbance', 'Pacific front',
   ],
+  // Precipitation
   precipitation: [
-    'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
+    'rain chances', 'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
     'shower', 'drizzle', 'downpour', 'heavy rain', 'light rain',
     'accumulation', 'precip', 'precipitation', 'moisture',
     'convection', 'instability', 'cape', 'lifted index',
+    'dry', 'low clouds',
   ],
+  // Wind
   wind: [
     'wind advisory', 'high wind', 'gust', 'breezy', 'windy',
     'santa ana', 'chinook', 'offshore flow', 'onshore flow',
     'wind shift', 'veering', 'backing',
   ],
+  // Confidence/uncertainty
   confidence: [
     'uncertainty', 'confidence', 'likely', 'unlikely', 'possible',
     'expected', 'forecast', 'outlook', 'trend', 'timing',
-    'models agree', 'model spread', 'ensemble', 'deterministic',
+    'models agree', 'model spread', 'ensemble', 'ensemble solutions', 'deterministic',
   ],
+  // Hazards - fire, severe weather, dangerous conditions
+  hazards: [
+    'fire weather', 'fire concerns', 'fuel moisture', 'red flag warning',
+    'wind chill', 'heat index', 'severe', 'tornado', 'hail',
+    'flash flood', 'flood', 'ice storm', 'blizzard',
+  ],
+  // Aviation terms
+  aviation: [
+    'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling',
+  ],
+  // Locations
   locations: [
     // NY area
     'moriches inlet', 'long island', 'manhattan', 'brooklyn', 'queens',
@@ -57,6 +62,8 @@ const WEATHER_KEYWORDS = {
     'san miguel island', 'central coast', 'santa barbara', 'ventura',
     'los angeles basin', 'san fernando valley', 'orange county',
     'san diego', 'inland empire', 'high desert', 'antelope valley',
+    // TX area
+    'hill country', 'rio grande', 'edwards plateau', 'south central texas',
     // General
     'coastal waters', 'inland areas', 'mountains', 'valleys', 'foothills',
   ],
@@ -68,13 +75,16 @@ Object.entries(WEATHER_KEYWORDS).forEach(([category, keywords]) => {
   keywords.forEach(keyword => KEYWORD_MAP.set(keyword.toLowerCase(), category));
 });
 
-// Category colors
+// Category colors matching the glassmorphism design
 const CATEGORY_COLORS = {
   temperature: 'bg-orange-500/30 text-orange-300 hover:bg-orange-500/50',
   synoptic: 'bg-blue-500/30 text-blue-300 hover:bg-blue-500/50',
   precipitation: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
   wind: 'bg-teal-500/30 text-teal-300 hover:bg-teal-500/50',
   confidence: 'bg-purple-500/30 text-purple-300 hover:bg-purple-500/50',
+  hazards: 'bg-red-500/30 text-red-300 hover:bg-red-500/50',
+  aviation: 'bg-gray-500/30 text-gray-300 hover:bg-gray-500/50',
+  tempRange: 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/50',
   locations: 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50',
 };
 
@@ -367,9 +377,9 @@ export default function NWSDiscussionWidget({
     );
   }
 
-  // Extract keywords from synopsis and near term for preview
+  // Extract keywords from synopsis, near term, and short term for preview
   const keywords = extractKeywords(
-    (discussion.synopsis || '') + ' ' + (discussion.nearTerm || '')
+    (discussion.synopsis || '') + ' ' + (discussion.nearTerm || '') + ' ' + (discussion.shortTerm || '')
   );
 
   return (
@@ -570,63 +580,133 @@ function HighlightedKeyword({ text, category, office }) {
 }
 
 /**
- * Extract unique temperature-related keywords from text for widget preview
+ * Extract key forecast keywords from text for widget preview
+ * Prioritizes: temp ranges > precipitation > temperature keywords
  */
 function extractKeywords(text) {
   if (!text) return [];
 
-  // Only use temperature keywords for the preview
+  const tempRanges = [];
+  const tempKeywordsFound = [];
+  const precipKeywordsFound = [];
+
+  // Temperature range pattern - matches "highs in the 70s", "lows in the upper 40s", etc.
+  const tempRangePattern = /\b(highs?|lows?|temperatures?)\s+(in the\s+|of\s+)?(lower\s+|mid\s+|upper\s+)?(\d{1,2}0s)(\s+to\s+(the\s+)?(lower\s+|mid\s+|upper\s+)?\d{1,2}0s)?\b/gi;
+
+  let match;
+  while ((match = tempRangePattern.exec(text)) !== null) {
+    tempRanges.push({
+      text: match[0].toLowerCase(),
+      category: 'tempRange',
+    });
+  }
+
+  // Check for static temperature keywords (warm, cold, warmer, cooler, etc.)
   const tempKeywords = WEATHER_KEYWORDS.temperature.sort((a, b) => b.length - a.length);
-  const pattern = new RegExp(
+  const tempPattern = new RegExp(
     `\\b(${tempKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
     'gi'
   );
 
-  const found = new Set();
-  let match;
-  while ((match = pattern.exec(text)) !== null) {
-    found.add(match[0].toLowerCase());
+  while ((match = tempPattern.exec(text)) !== null) {
+    const matchText = match[0].toLowerCase();
+    if (!tempKeywordsFound.some(r => r.text === matchText)) {
+      tempKeywordsFound.push({
+        text: matchText,
+        category: 'temperature',
+      });
+    }
   }
 
-  // Return unique temperature keywords, limited to 4
-  return Array.from(found)
-    .slice(0, 4)
-    .map(kw => ({
-      text: kw,
-      category: 'temperature',
-    }));
+  // Check for precipitation keywords
+  const precipKeywords = WEATHER_KEYWORDS.precipitation.sort((a, b) => b.length - a.length);
+  const precipPattern = new RegExp(
+    `\\b(${precipKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+    'gi'
+  );
+
+  while ((match = precipPattern.exec(text)) !== null) {
+    const matchText = match[0].toLowerCase();
+    if (!precipKeywordsFound.some(r => r.text === matchText)) {
+      precipKeywordsFound.push({
+        text: matchText,
+        category: 'precipitation',
+      });
+    }
+  }
+
+  // Build balanced results: temp range, temp keyword, then precipitation
+  const results = [];
+
+  // Add first temp range
+  if (tempRanges.length > 0) {
+    results.push(tempRanges[0]);
+  }
+
+  // Add first temperature keyword
+  if (tempKeywordsFound.length > 0) {
+    results.push(tempKeywordsFound[0]);
+  }
+
+  // Fill remaining slots with precipitation, then more temp ranges/keywords
+  const remaining = [...precipKeywordsFound, ...tempRanges.slice(1), ...tempKeywordsFound.slice(1)];
+  for (const item of remaining) {
+    if (results.length >= 4) break;
+    if (!results.some(r => r.text === item.text)) {
+      results.push(item);
+    }
+  }
+
+  return results;
 }
 
 /**
- * Parse text and highlight meteorological keywords
+ * Parse text and highlight meteorological keywords and temperature ranges
  */
 function parseAndHighlight(text, office) {
   if (!text) return null;
 
+  // Build regex pattern from all keywords (sorted by length desc to match longer phrases first)
   const allKeywords = Array.from(KEYWORD_MAP.keys()).sort((a, b) => b.length - a.length);
-  const pattern = new RegExp(`\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi');
+  const keywordPattern = `\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`;
+
+  // Temperature range pattern - matches various formats:
+  // "highs in the 70s", "lows in the upper 40s", "highs in the 70s to the lower 80s"
+  // "temperatures in the mid 60s", "highs of 75 to 80"
+  const tempRangePattern = `\\b(highs?|lows?|temperatures?)\\s+(in the\\s+|of\\s+)?(lower\\s+|mid\\s+|upper\\s+)?(\\d{1,2}0s)(\\s+to\\s+(the\\s+)?(lower\\s+|mid\\s+|upper\\s+)?\\d{1,2}0s)?\\b`;
+
+  // Combined pattern - temp ranges first (they're longer), then keywords
+  const combinedPattern = new RegExp(`(${tempRangePattern})|(${keywordPattern})`, 'gi');
 
   const parts = [];
   let lastIndex = 0;
   let match;
 
-  while ((match = pattern.exec(text)) !== null) {
+  while ((match = combinedPattern.exec(text)) !== null) {
+    // Add text before match
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
-    const keyword = match[0];
-    const category = KEYWORD_MAP.get(keyword.toLowerCase());
+
+    const matchedText = match[0];
+
+    // Determine if it's a temp range or keyword
+    const isTempRange = /^(highs?|lows?|temperatures?)\s+/i.test(matchedText);
+    const category = isTempRange ? 'tempRange' : KEYWORD_MAP.get(matchedText.toLowerCase());
+
     parts.push(
       <HighlightedKeyword
-        key={`${match.index}-${keyword}`}
-        text={keyword}
+        key={`${match.index}-${matchedText}`}
+        text={matchedText}
         category={category}
         office={office}
       />
     );
-    lastIndex = pattern.lastIndex;
+
+    lastIndex = combinedPattern.lastIndex;
   }
 
+  // Add remaining text
   if (lastIndex < text.length) {
     parts.push(text.slice(lastIndex));
   }

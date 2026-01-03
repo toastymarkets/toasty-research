@@ -53,15 +53,19 @@ Used sparingly for semantic meaning and visual interest:
 | Snow | `#8B5CF6` | `#A78BFA` |
 
 ### Keyword Highlighting Colors
-Used in NWS Discussion widget for meteorological term highlighting:
+Used in NWS Discussion widget for meteorological term highlighting.
+See [docs/FORECAST_KEYWORDS.md](./FORECAST_KEYWORDS.md) for full keyword list.
 
 | Category | Tailwind Class | Usage |
 |----------|----------------|-------|
 | Temperature | `bg-orange-500/30 text-orange-300` | warm air advection, freeze, cooling trend |
 | Synoptic | `bg-blue-500/30 text-blue-300` | high pressure, cold front, trough, ridge |
-| Precipitation | `bg-cyan-500/30 text-cyan-300` | convection, cape, instability |
+| Precipitation | `bg-cyan-500/30 text-cyan-300` | convection, cape, instability, rain, snow |
 | Wind | `bg-teal-500/30 text-teal-300` | offshore flow, gust, santa ana |
 | Confidence | `bg-purple-500/30 text-purple-300` | uncertainty, likely, models agree |
+| Hazards | `bg-red-500/30 text-red-300` | fire weather, tornado, flash flood |
+| Aviation | `bg-gray-500/30 text-gray-300` | VFR, IFR, MVFR, ceiling |
+| Temp Range | `bg-yellow-500/30 text-yellow-300` | "highs in the 70s", "lows in the 40s" |
 
 ---
 
