@@ -16,15 +16,21 @@ export default function ExpandedNoteView({ note, storageKey }) {
 
   // Load note content from localStorage
   useEffect(() => {
+    // Reset content when key changes
+    setContent(null);
+
     if (!noteStorageKey) return;
+
     try {
       const saved = localStorage.getItem(noteStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         setContent(parsed.document);
+      } else {
+        console.warn('No data found for key:', noteStorageKey);
       }
     } catch (e) {
-      console.error('Failed to load note:', e);
+      console.error('Failed to load note:', noteStorageKey, e);
     }
   }, [noteStorageKey]);
 
