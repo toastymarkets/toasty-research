@@ -13,7 +13,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { DataChipNode } from '../notepad/extensions/DataChipNode';
 import { gatherCopilotContext } from '../../utils/copilotHelpers';
 import NotesDashboardSidebar from './NotesDashboardSidebar';
-import NotesGridView from './NotesGridView';
+import ExpandedNoteView from './ExpandedNoteView';
 
 // Context to pass copilot data to NotepadEditor
 const CopilotDataContext = createContext(null);
@@ -543,25 +543,15 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
                 onSearchChange={setSearchQuery}
               />
 
-              {/* Right content - notes grid */}
-              <div className="flex-1 flex flex-col min-w-0 border-l border-white/10">
-                {/* Header */}
-                <div className="px-6 py-4 border-b border-white/10">
-                  <h1 className="text-lg font-semibold text-white">Research Notes</h1>
-                  <p className="text-xs text-white/50 mt-0.5">
-                    {filteredNotes.length} note{filteredNotes.length !== 1 ? 's' : ''}
-                    {filter !== 'all' && ` (${filter})`}
-                  </p>
-                </div>
-
-                {/* Notes grid */}
-                <div className="flex-1 overflow-y-auto p-6">
-                  <NotesGridView
-                    notes={filteredNotes}
-                    selectedNoteKey={selectedNoteKey}
-                    currentStorageKey={storageKey}
-                  />
-                </div>
+              {/* Right content - expanded note view */}
+              <div className="flex-1 flex flex-col min-w-0 border-l border-white/10 p-6">
+                <ExpandedNoteView
+                  note={selectedNoteKey
+                    ? filteredNotes.find(n => (n.storageKey || n.id) === selectedNoteKey)
+                    : filteredNotes.find(n => (n.storageKey || n.id) === storageKey)
+                  }
+                  storageKey={selectedNoteKey || storageKey}
+                />
               </div>
             </div>
           ) : (
