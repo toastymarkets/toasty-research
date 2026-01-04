@@ -468,7 +468,7 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
     if (isCollapsed) {
       expand(); // Show sidebar
     } else if (isDashboard) {
-      collapse(); // Minimize everything
+      closeDashboard(); // Back to sidebar/note-taking mode
     } else {
       openDashboard(); // Expand to dashboard
     }
@@ -485,7 +485,7 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
   // Get button title based on state
   const getButtonTitle = () => {
     if (isCollapsed) return 'Show notes';
-    if (isDashboard) return 'Collapse dashboard';
+    if (isDashboard) return 'Back to notes';
     return 'Expand to dashboard';
   };
 
