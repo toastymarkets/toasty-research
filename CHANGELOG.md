@@ -2,6 +2,17 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.4.1] - 2026-01-03
+
+### Changed
+- Dashboard toggle button now returns to note-taking sidebar instead of fully collapsing
+- Toggle button repositioned to right side in dashboard mode to avoid overlap with navigation
+
+### Fixed
+- Dashboard panel width now aligns flush with city cards sidebar (no overlap or gap)
+- Fixed dashboard collapse accidentally navigating to homepage
+- Fixed unique key warning in NotesDashboardSidebar component
+
 ## [1.4.0] - 2026-01-03
 
 ### Added
