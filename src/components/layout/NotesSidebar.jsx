@@ -477,7 +477,8 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
   // Get button position based on state
   const getButtonPosition = () => {
     if (isCollapsed) return 'right-4';
-    if (isDashboard) return 'right-[calc(100%-4rem)]'; // Far left of expanded panel
+    // Keep button on the right side even in dashboard mode to avoid overlap with left sidebar
+    if (isDashboard) return 'right-[calc(100vw-22rem+0.75rem)]'; // Just inside dashboard panel
     return 'right-[21.5rem]'; // Next to sidebar
   };
 
