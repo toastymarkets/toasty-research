@@ -2,6 +2,20 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.3.0] - 2026-01-03
+
+### Added
+- FrogFriend interactive pixel art mascot on city dashboards
+- 8 frog emotes: idle, happy, sad, angry, surprised, sleeping, eating, confused
+- Weather-reactive emotes (rain→sad, thunder→angry, snow→surprised, fog→confused, clear→happy)
+- Sleep mode with floating zzz after 1 minute of inactivity
+- Click interactions: hop, eat fly, wake from sleep
+
+### Changed
+- Frog design rebuilt with proper raised eye bumps matching sprite reference
+- Simplified happy emote to subtle smile (removed tongue)
+- Reduced frog size to 36×29px for subtlety
+
 ## [1.2.2] - 2026-01-03
 
 ### Changed
