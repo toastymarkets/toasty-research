@@ -42,7 +42,7 @@ export default function NotesDashboardSidebar({
   onSearchChange,
 }) {
   return (
-    <div className="w-80 flex-shrink-0 border-r border-white/10 flex flex-col bg-black/20">
+    <div className="w-64 flex-shrink-0 border-r border-white/10 flex flex-col bg-black/20">
       {/* Header */}
       <div className="p-4 border-b border-white/10">
         <h2 className="text-sm font-semibold text-white mb-3">Notes Library</h2>
