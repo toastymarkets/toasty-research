@@ -376,7 +376,7 @@ function ResearchLog() {
  * Apple Weather style panel
  */
 export default function NotesSidebar({ storageKey, cityName, city, weather, markets, observations }) {
-  const { isCollapsed, isDashboard, toggle, expand, openDashboard, closeDashboard, selectedNoteKey, selectNote } = useNotesSidebar();
+  const { isCollapsed, isDashboard, toggle, expand, collapse, openDashboard, closeDashboard, selectedNoteKey, selectNote } = useNotesSidebar();
   const [activeView, setActiveView] = useState('notes'); // 'notes' | 'log'
 
   // Dashboard state
@@ -551,6 +551,13 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
                       {filter !== 'all' && ` (${filter})`}
                     </p>
                   </div>
+                  <button
+                    onClick={collapse}
+                    className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                    title="Close dashboard"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
                 {/* Notes grid */}

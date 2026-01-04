@@ -117,13 +117,15 @@ export default function NotesDashboardSidebar({
           </div>
         ) : (
           <div className="divide-y divide-white/5">
-            {notes.map((note) => (
+            {notes.map((note) => {
+              const noteKey = note.storageKey || note.id;
+              return (
               <button
-                key={note.storageKey}
-                onClick={() => onSelectNote(note.storageKey)}
+                key={noteKey}
+                onClick={() => onSelectNote(noteKey)}
                 className={`
                   w-full px-4 py-3 text-left transition-colors
-                  ${selectedNoteKey === note.storageKey
+                  ${selectedNoteKey === noteKey
                     ? 'bg-blue-500/20 border-l-2 border-blue-400'
                     : 'hover:bg-white/5 border-l-2 border-transparent'
                   }
@@ -160,7 +162,8 @@ export default function NotesDashboardSidebar({
                   </span>
                 )}
               </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
