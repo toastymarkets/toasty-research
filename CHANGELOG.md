@@ -2,6 +2,17 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.2.2] - 2026-01-03
+
+### Changed
+- Redesigned ResolutionWidget layout to fit within small widget constraints
+- Hero high temperature with report timestamp and countdown to next CLI
+- DSM view shows "High so far today" with live status indicator
+
+### Fixed
+- Removed unused formatLastUpdated function (dead code)
+- Bottom section only renders when content exists (prevents empty border)
+
 ## [1.2.1] - 2025-01-03
 
 ### Added

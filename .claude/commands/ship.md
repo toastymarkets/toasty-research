@@ -1,3 +1,7 @@
+---
+description: Commit all staged and unstaged changes, push to the remote, and create a pull request.
+---
+
 Commit all staged and unstaged changes, push to the remote, and create a pull request.
 
 Follow these steps:

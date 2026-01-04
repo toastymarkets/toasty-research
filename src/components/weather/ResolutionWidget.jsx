@@ -35,17 +35,6 @@ export function ResolutionWidget({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Format relative time
-  const formatLastUpdated = () => {
-    if (activeView === 'cli' && cliData?.valid) {
-      return formatDate(cliData.valid);
-    }
-    if (activeView === 'dsm' && dsmData) {
-      return 'Today';
-    }
-    return '--';
-  };
-
   // Get current data based on view
   const getData = () => {
     if (activeView === 'cli' && cliData) {
@@ -147,9 +136,9 @@ export function ResolutionWidget({
         className="cursor-pointer"
         onClick={() => setIsModalOpen(true)}
       >
-        <div className="flex flex-col h-full py-3">
+        <div className="flex flex-col h-full">
           {/* Toggle Pills */}
-          <div className="flex gap-1 mb-3">
+          <div className="flex gap-1 mb-2">
             <button
               onClick={cycleView}
               className={`px-2 py-0.5 text-[10px] font-medium rounded-full transition-all ${
@@ -172,41 +161,38 @@ export function ResolutionWidget({
             </button>
           </div>
 
-          {/* Hero Number - High */}
-          <div className="text-4xl font-light text-white tracking-tight">
+          {/* Hero High */}
+          <div className="text-3xl font-light text-white tracking-tight">
             {data?.high != null ? `${data.high}°` : '--'}
           </div>
 
-          {/* Simple label */}
-          <div className="text-sm text-white/70 mt-1">
-            High
+          {/* Report timestamp */}
+          <div className="text-xs text-white/50 mt-1">
+            {activeView === 'cli' && cliData?.valid && (
+              <>Report: {formatDate(cliData.valid)}</>
+            )}
+            {activeView === 'dsm' && (
+              <>High so far today</>
+            )}
           </div>
 
-          {/* Divider + Bottom Stats */}
-          <div className="mt-auto pt-3">
-            <div className="border-t border-white/10 pt-3 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">Low</span>
-                <span className="text-white font-medium">
-                  {data?.low != null ? `${data.low}°` : '--'}
-                </span>
-              </div>
+          {/* Countdown / Status - bottom */}
+          {(activeView === 'dsm' || cliCountdown) && (
+            <div className="mt-auto pt-2 text-sm border-t border-white/10">
               {activeView === 'cli' && cliCountdown && (
-                <div className="flex justify-between text-sm">
+                <div className="flex items-center justify-between pt-2">
                   <span className="text-white/50">Next CLI</span>
-                  <span className="text-amber-400 font-medium">
-                    {cliCountdown.formatted}
-                  </span>
+                  <span className="text-amber-400 font-medium">{cliCountdown.formatted}</span>
                 </div>
               )}
               {activeView === 'dsm' && (
-                <div className="flex justify-between text-sm">
+                <div className="flex items-center justify-between pt-2">
                   <span className="text-white/50">Status</span>
                   <span className="text-green-400 font-medium">Live</span>
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
       </GlassWidget>
 

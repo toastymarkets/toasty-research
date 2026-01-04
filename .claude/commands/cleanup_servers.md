@@ -1,3 +1,7 @@
+---
+description: Kill all dev servers except the most recent one.
+---
+
 Kill all dev servers except the most recent one.
 
 This command cleans up orphaned Vite dev servers that accumulate during development sessions.

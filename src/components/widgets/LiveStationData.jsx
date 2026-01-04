@@ -1,11 +1,23 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import {
-  ChevronUp, ChevronDown, X, ExternalLink, Wind as WindIcon, MapPin, Plus,
+  ChevronUp, ChevronDown, ExternalLink, Wind as WindIcon, MapPin, Plus,
   Clock, Thermometer, Droplet, Droplets, Cloud, Gauge
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
 import SelectableData from './SelectableData';
 import { useDataChip } from '../../context/DataChipContext';
+
+// Get temp color class based on temperature (extracted for performance)
+const getTempColorClass = (tempF) => {
+  if (tempF == null) return 'bg-gray-600';
+  if (tempF >= 90) return 'bg-red-600';
+  if (tempF >= 80) return 'bg-orange-500';
+  if (tempF >= 70) return 'bg-yellow-500';
+  if (tempF >= 60) return 'bg-green-600';
+  if (tempF >= 50) return 'bg-emerald-600';
+  if (tempF >= 40) return 'bg-teal-600';
+  if (tempF >= 32) return 'bg-cyan-600';
+  return 'bg-blue-600';
+};
 
 /**
  * Nearby stations for each primary station
@@ -31,8 +43,9 @@ const NEARBY_STATIONS = {
 /**
  * ObservationRow Component
  * Individual row with hover state for row-level data selection
+ * Memoized to prevent unnecessary re-renders when parent state changes
  */
-function ObservationRow({
+const ObservationRow = memo(function ObservationRow({
   obs,
   timeStr,
   stationName,
@@ -164,14 +177,14 @@ function ObservationRow({
       </td>
     </tr>
   );
-}
+});
 
 /**
  * LiveStationData Widget
  * Comprehensive real-time weather observations from NWS station
- * with temperature trend chart and observation history table
+ * with observation history table and nearby station support
  */
-export default function LiveStationData({ stationId, cityName, timezone, onRemove }) {
+export default function LiveStationData({ stationId, cityName, timezone }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [observations, setObservations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -269,74 +282,6 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
   // Current observation (most recent)
   const current = observations[0];
 
-  // Calculate 1-hour trend
-  const trend = useMemo(() => {
-    if (observations.length < 2 || !current?.tempF) return null;
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const hourAgoObs = observations.find(o => o.timestamp && o.timestamp <= oneHourAgo);
-    if (!hourAgoObs?.tempF) return null;
-    const diff = current.tempF - hourAgoObs.tempF;
-    if (Math.abs(diff) <= 1) return 'Stable';
-    if (diff > 0) return `+${diff}°`;
-    return `${diff}°`;
-  }, [observations, current]);
-
-  // Chart data (last 6 hours, reversed for chronological order)
-  // When nearby stations are enabled, average observations within 5-minute windows
-  const chartData = useMemo(() => {
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
-    const filtered = observations.filter(o => o.timestamp && o.timestamp >= sixHoursAgo && o.tempF != null);
-
-    if (!showNearby || filtered.length === 0) {
-      // Single station - just return as-is
-      return filtered
-        .map(o => ({
-          time: o.timestamp.getTime(),
-          temp: useMetric ? o.tempC : o.tempF,
-          label: o.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timezone }),
-        }))
-        .reverse();
-    }
-
-    // Multiple stations - group by 5-minute intervals and average
-    const intervalMs = 5 * 60 * 1000; // 5 minutes
-    const buckets = new Map();
-
-    filtered.forEach(o => {
-      const bucketTime = Math.floor(o.timestamp.getTime() / intervalMs) * intervalMs;
-      if (!buckets.has(bucketTime)) {
-        buckets.set(bucketTime, []);
-      }
-      buckets.get(bucketTime).push(useMetric ? o.tempC : o.tempF);
-    });
-
-    // Convert buckets to chart data with averaged temps
-    return Array.from(buckets.entries())
-      .map(([time, temps]) => ({
-        time,
-        temp: Math.round(temps.reduce((a, b) => a + b, 0) / temps.length),
-        label: new Date(time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timezone }),
-      }))
-      .sort((a, b) => a.time - b.time);
-  }, [observations, useMetric, showNearby, timezone]);
-
-  // Chart Y-axis domain
-  const chartDomain = useMemo(() => {
-    if (chartData.length === 0) return [50, 70];
-    const temps = chartData.map(d => d.temp).filter(t => t != null);
-    const min = Math.min(...temps);
-    const max = Math.max(...temps);
-    const padding = Math.max(3, (max - min) * 0.2);
-    return [Math.floor(min - padding), Math.ceil(max + padding)];
-  }, [chartData]);
-
-  // Average temp for reference line
-  const avgTemp = useMemo(() => {
-    if (chartData.length === 0) return null;
-    const temps = chartData.map(d => d.temp).filter(t => t != null);
-    return Math.round(temps.reduce((a, b) => a + b, 0) / temps.length);
-  }, [chartData]);
-
   const formatTimeAgo = (date) => {
     if (!date) return '';
     const mins = Math.floor((Date.now() - date.getTime()) / 60000);
@@ -344,19 +289,6 @@ export default function LiveStationData({ stationId, cityName, timezone, onRemov
     if (mins === 1) return '1 min ago';
     if (mins < 60) return `${mins} mins ago`;
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: timezone });
-  };
-
-  // Get temp color class based on temperature
-  const getTempColorClass = (tempF) => {
-    if (tempF == null) return 'bg-gray-600';
-    if (tempF >= 90) return 'bg-red-600';
-    if (tempF >= 80) return 'bg-orange-500';
-    if (tempF >= 70) return 'bg-yellow-500';
-    if (tempF >= 60) return 'bg-green-600';
-    if (tempF >= 50) return 'bg-emerald-600';
-    if (tempF >= 40) return 'bg-teal-600';
-    if (tempF >= 32) return 'bg-cyan-600';
-    return 'bg-blue-600';
   };
 
   return (

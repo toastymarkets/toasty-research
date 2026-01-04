@@ -11,23 +11,27 @@ const RoundingModal = lazy(() => import('./RoundingModal'));
 /**
  * RoundingWidget - Shows the real temperature range based on NWS rounding
  *
- * Displays the current observation and the range of possible actual temperatures
- * that could have produced that displayed value through NWS's rounding process.
+ * Displays the running high (or current observation) and the range of possible
+ * actual temperatures that could have produced that displayed value through
+ * NWS's rounding process.
  *
  * ASOS 5-minute: F→C→F double conversion (~±1°F uncertainty)
  * METAR hourly: C→F single conversion (~±0.9°F uncertainty)
  */
 export default function RoundingWidget({
   currentTemp,
+  runningHigh,
   observationType = 'asos',
   loading = false
 }) {
+  // Use running high if available, otherwise fall back to current temp
+  const displayTemp = runningHigh ?? currentTemp;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [celsiusOffset, setCelsiusOffset] = useState(0);
 
-  // Calculate the real range for the current temperature
-  const baseRangeData = currentTemp !== null && currentTemp !== undefined
-    ? findRange(Math.round(currentTemp), observationType)
+  // Calculate the real range for the displayed temperature (running high or current)
+  const baseRangeData = displayTemp !== null && displayTemp !== undefined
+    ? findRange(Math.round(displayTemp), observationType)
     : null;
 
   // Get the base Celsius value and apply offset
@@ -148,13 +152,13 @@ export default function RoundingWidget({
                       <span className="text-sm font-medium w-12 text-white">
                         {item.temp}°F
                       </span>
-                      <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
+                      <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-blue-400/40"
+                          className="h-full rounded-full bg-blue-400/60"
                           style={{ width: `${item.probability}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-white/50 w-10 text-right">
+                      <span className="text-[10px] text-white/60 w-10 text-right">
                         {item.probability}%
                       </span>
                     </div>
@@ -171,6 +175,7 @@ export default function RoundingWidget({
         <Suspense fallback={null}>
           <RoundingModal
             currentTemp={rangeData.displayedF}
+            runningHigh={runningHigh}
             observationType={observationType}
             onClose={() => setIsModalOpen(false)}
           />
@@ -182,6 +187,7 @@ export default function RoundingWidget({
 
 RoundingWidget.propTypes = {
   currentTemp: PropTypes.number,
+  runningHigh: PropTypes.number,
   observationType: PropTypes.oneOf(['asos', 'metar']),
   loading: PropTypes.bool,
 };
