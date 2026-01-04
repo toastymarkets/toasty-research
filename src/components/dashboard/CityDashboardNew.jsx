@@ -8,6 +8,7 @@ import { useNWSObservationHistory } from '../../hooks/useNWSObservationHistory';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 import { DataChipProvider } from '../../context/DataChipContext';
 import { DashboardWeatherBackground } from '../weather/DynamicWeatherBackground';
+import { FrogFriend } from '../frog';
 
 // Weather Components
 import {
@@ -209,17 +210,23 @@ function CityDashboardContent({ city, citySlug }) {
       </Link>
 
       {/* Hero Section - compact */}
-      <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 pt-4 md:pt-12">
-        <HeroWeather
-          cityName={city.name}
-          temperature={currentConditions.temperature}
-          condition={currentConditions.condition}
-          high={currentConditions.high}
-          low={currentConditions.low}
-          stationId={city.stationId}
-          localTime={localTime}
-          loading={isLoading}
-        />
+      <div className="w-full relative pt-4 md:pt-12">
+        <div className="max-w-5xl mx-auto px-2 sm:px-3">
+          <HeroWeather
+            cityName={city.name}
+            temperature={currentConditions.temperature}
+            condition={currentConditions.condition}
+            high={currentConditions.high}
+            low={currentConditions.low}
+            stationId={city.stationId}
+            localTime={localTime}
+            loading={isLoading}
+          />
+        </div>
+        {/* Frog Friend - right side of hero area */}
+        <div className="absolute right-4 bottom-0 md:right-8 lg:right-16 hidden sm:block">
+          <FrogFriend condition={currentConditions.condition} />
+        </div>
       </div>
 
       {/* Hourly Forecast - Real NWS observation data */}
