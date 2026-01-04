@@ -1,3 +1,7 @@
+---
+description: Create a new widget with boilerplate code and register it in the widget registry.
+---
+
 Create a new widget with boilerplate code and register it in the widget registry.
 
 This command scaffolds a new widget component following project patterns.

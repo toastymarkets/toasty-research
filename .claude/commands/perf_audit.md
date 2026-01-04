@@ -1,3 +1,7 @@
+---
+description: Analyze app performance and bundle composition to identify optimization opportunities.
+---
+
 Analyze app performance and bundle composition to identify optimization opportunities.
 
 This command helps find large dependencies, missing lazy loading, and common performance issues.

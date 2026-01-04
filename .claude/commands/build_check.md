@@ -1,3 +1,7 @@
+---
+description: Run production build and verify it succeeds before pushing changes.
+---
+
 Run production build and verify it succeeds before pushing changes.
 
 This command catches build errors and reports bundle sizes to ensure code is production-ready.
