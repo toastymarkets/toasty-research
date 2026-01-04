@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapPin, Calendar, Cloud, Archive, FileText } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
 import { DataChipNode } from '../notepad/extensions/DataChipNode';
 
 /**
@@ -41,6 +42,10 @@ export default function ExpandedNoteView({ note, storageKey }) {
         heading: { levels: [1, 2, 3] },
       }),
       DataChipNode,
+      Image.configure({
+        inline: false,
+        allowBase64: true,
+      }),
     ],
     content: content,
     editable: false,
@@ -146,6 +151,7 @@ export default function ExpandedNoteView({ note, storageKey }) {
             [&_strong]:text-white [&_strong]:font-semibold
             [&_em]:italic
             [&_a]:text-blue-400 [&_a]:underline
+            [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-3 [&_img]:break-inside-avoid
           "
           style={{
             columnFill: 'auto',
