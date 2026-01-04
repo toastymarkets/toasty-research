@@ -462,7 +462,9 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
   }, [isCollapsed, expand]);
 
   // Handle button click based on current state
-  const handleToggleClick = () => {
+  const handleToggleClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     if (isCollapsed) {
       expand(); // Show sidebar
     } else if (isDashboard) {
