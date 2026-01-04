@@ -10,7 +10,6 @@ export default function FrogFriend({ condition, className = '' }) {
   const [isBlinking, setIsBlinking] = useState(false);
   const [isHopping, setIsHopping] = useState(false);
   const [eyeDirection, setEyeDirection] = useState({ x: 0, y: 0 });
-  const [showRibbit, setShowRibbit] = useState(false);
 
   // Determine weather state
   const getWeatherState = useCallback(() => {
@@ -62,10 +61,6 @@ export default function FrogFriend({ condition, className = '' }) {
     // Hop animation
     setIsHopping(true);
     setTimeout(() => setIsHopping(false), 400);
-
-    // Show ribbit
-    setShowRibbit(true);
-    setTimeout(() => setShowRibbit(false), 800);
   };
 
   return (
@@ -77,11 +72,6 @@ export default function FrogFriend({ condition, className = '' }) {
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
       aria-label="Frog friend - click to interact"
     >
-      {/* Ribbit text */}
-      {showRibbit && (
-        <div className="frog-ribbit">ribbit!</div>
-      )}
-
       <svg
         viewBox="0 0 24 28"
         className="frog-svg"
@@ -91,33 +81,33 @@ export default function FrogFriend({ condition, className = '' }) {
         {/* Standing frog - 24x28 grid, vertical pose */}
 
         {/* Back feet */}
-        <rect x="2" y="26" width="4" height="2" fill="#5a9a3a" />
-        <rect x="18" y="26" width="4" height="2" fill="#5a9a3a" />
+        <rect x="2" y="26" width="4" height="2" fill="#728574" />
+        <rect x="18" y="26" width="4" height="2" fill="#728574" />
 
         {/* Back legs */}
-        <rect x="3" y="24" width="3" height="2" fill="#6aaa4a" />
-        <rect x="18" y="24" width="3" height="2" fill="#6aaa4a" />
+        <rect x="3" y="24" width="3" height="2" fill="#829584" />
+        <rect x="18" y="24" width="3" height="2" fill="#829584" />
 
         {/* Body - pear/triangular shape, wide at bottom */}
-        <rect x="4" y="22" width="16" height="2" fill="#6aaa4a" />
-        <rect x="3" y="20" width="18" height="2" fill="#7aba5a" />
-        <rect x="4" y="18" width="16" height="2" fill="#7aba5a" />
-        <rect x="5" y="16" width="14" height="2" fill="#8aca6a" />
-        <rect x="6" y="14" width="12" height="2" fill="#8aca6a" />
-        <rect x="7" y="12" width="10" height="2" fill="#7aba5a" />
+        <rect x="4" y="22" width="16" height="2" fill="#829584" />
+        <rect x="3" y="20" width="18" height="2" fill="#92a594" />
+        <rect x="4" y="18" width="16" height="2" fill="#92a594" />
+        <rect x="5" y="16" width="14" height="2" fill="#A2C3A4" />
+        <rect x="6" y="14" width="12" height="2" fill="#A2C3A4" />
+        <rect x="7" y="12" width="10" height="2" fill="#92a594" />
 
         {/* Front legs hanging down */}
-        <rect x="4" y="20" width="2" height="6" fill="#6aaa4a" />
-        <rect x="18" y="20" width="2" height="6" fill="#6aaa4a" />
-        <rect x="3" y="25" width="3" height="2" fill="#5a9a3a" />
-        <rect x="18" y="25" width="3" height="2" fill="#5a9a3a" />
+        <rect x="4" y="20" width="2" height="6" fill="#829584" />
+        <rect x="18" y="20" width="2" height="6" fill="#829584" />
+        <rect x="3" y="25" width="3" height="2" fill="#728574" />
+        <rect x="18" y="25" width="3" height="2" fill="#728574" />
 
         {/* Belly - lighter center */}
-        <rect x="8" y="16" width="8" height="6" fill="#a8da7a" />
-        <rect x="9" y="22" width="6" height="2" fill="#b8ea8a" />
+        <rect x="8" y="16" width="8" height="6" fill="#b2d3b4" />
+        <rect x="9" y="22" width="6" height="2" fill="#c2e3c4" />
 
         {/* Head area */}
-        <rect x="8" y="10" width="8" height="2" fill="#7aba5a" />
+        <rect x="8" y="10" width="8" height="2" fill="#92a594" />
 
         {/* Left eye - golden, bulging on top */}
         {!isBlinking ? (
@@ -150,21 +140,21 @@ export default function FrogFriend({ condition, className = '' }) {
         )}
 
         {/* Nose/face details */}
-        <rect x="10" y="10" width="4" height="1" fill="#6aaa4a" />
+        <rect x="10" y="10" width="4" height="1" fill="#829584" />
 
         {/* Mouth */}
         {weatherState === 'scared' ? (
-          <rect x="10" y="12" width="4" height="2" fill="#4a8a3a" />
+          <rect x="10" y="12" width="4" height="2" fill="#627564" />
         ) : (
           <>
-            <rect x="9" y="13" width="2" height="1" fill="#4a8a3a" />
-            <rect x="13" y="13" width="2" height="1" fill="#4a8a3a" />
+            <rect x="9" y="13" width="2" height="1" fill="#627564" />
+            <rect x="13" y="13" width="2" height="1" fill="#627564" />
           </>
         )}
 
         {/* Dark outline accents */}
-        <rect x="3" y="20" width="1" height="4" fill="#4a8a3a" />
-        <rect x="20" y="20" width="1" height="4" fill="#4a8a3a" />
+        <rect x="3" y="20" width="1" height="4" fill="#627564" />
+        <rect x="20" y="20" width="1" height="4" fill="#627564" />
 
         {/* Weather accessories */}
         {weatherState === 'sunny' && (
