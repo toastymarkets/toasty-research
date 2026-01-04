@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import './frog.css';
 
@@ -12,6 +12,11 @@ export default function FrogFriend({ condition, className = '' }) {
   const [emote, setEmote] = useState('idle'); // idle, happy, sad, angry, surprised, sleeping, eating, confused
   const [isSleeping, setIsSleeping] = useState(false);
   const [idleTimer, setIdleTimer] = useState(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [facingLeft, setFacingLeft] = useState(false);
+
+  // Bounds for hopping around (pixels from starting position)
+  const BOUNDS = { x: 80, y: 30 };
 
   // Determine weather-based emote
   const getWeatherEmote = useCallback(() => {
@@ -57,6 +62,56 @@ export default function FrogFriend({ condition, className = '' }) {
 
     return () => clearTimeout(sleepTimeout);
   }, [emote]);
+
+  // Track values in refs to avoid re-triggering effects
+  const positionRef = useRef(position);
+  positionRef.current = position;
+  const getWeatherEmoteRef = useRef(getWeatherEmote);
+  getWeatherEmoteRef.current = getWeatherEmote;
+
+  // Random hopping around
+  useEffect(() => {
+    if (isSleeping) return;
+
+    const hopAround = () => {
+      // Calculate new position within bounds
+      const newX = (Math.random() - 0.5) * 2 * BOUNDS.x;
+      const newY = Math.random() * -BOUNDS.y; // Only hop upward from base
+
+      // Update facing direction based on movement
+      if (newX < positionRef.current.x) {
+        setFacingLeft(true);
+      } else if (newX > positionRef.current.x) {
+        setFacingLeft(false);
+      }
+
+      // Trigger hop animation
+      setIsHopping(true);
+      setEmote('happy');
+
+      // Update position mid-hop
+      setTimeout(() => {
+        setPosition({ x: newX, y: newY });
+      }, 200);
+
+      // End hop animation
+      setTimeout(() => {
+        setIsHopping(false);
+        setEmote(getWeatherEmoteRef.current());
+      }, 400);
+    };
+
+    // Hop every 5-8 seconds
+    const hopInterval = setInterval(hopAround, 6000);
+
+    // Also do an initial hop after a short delay
+    const initialHop = setTimeout(hopAround, 2000);
+
+    return () => {
+      clearInterval(hopInterval);
+      clearTimeout(initialHop);
+    };
+  }, [isSleeping]);
 
   // Click handler
   const handleClick = () => {
@@ -315,6 +370,10 @@ export default function FrogFriend({ condition, className = '' }) {
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
       aria-label="Frog friend - click to interact"
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px) scaleX(${facingLeft ? -1 : 1})`,
+        transition: isHopping ? 'transform 0.4s ease-out' : 'transform 0.1s ease',
+      }}
     >
       <svg
         viewBox="0 0 20 16"

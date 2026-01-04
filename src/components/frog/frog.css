@@ -5,7 +5,6 @@
   height: 29px;
   cursor: pointer;
   position: relative;
-  transition: transform 0.1s ease, opacity 0.3s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   image-rendering: pixelated;
@@ -13,11 +12,14 @@
 }
 
 .frog-container:hover {
-  transform: scale(1.1);
   opacity: 0.9;
 }
 
-.frog-container:active {
+.frog-container:hover .frog-svg {
+  transform: scale(1.1);
+}
+
+.frog-container:active .frog-svg {
   transform: scale(0.95);
 }
 
@@ -27,6 +29,7 @@
   animation: frog-breathe 3s ease-in-out infinite;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  transition: transform 0.1s ease;
 }
 
 /* Breathing animation */
@@ -39,8 +42,8 @@
   }
 }
 
-/* Hopping animation */
-.frog-hopping {
+/* Hopping animation - applied to SVG so container can handle position */
+.frog-hopping .frog-svg {
   animation: frog-hop 0.4s ease-out;
 }
 
@@ -151,12 +154,13 @@
 @media (prefers-reduced-motion: reduce) {
   .frog-svg,
   .frog-sleeping .frog-svg,
+  .frog-hopping .frog-svg,
   .frog-zzz text,
   .frog-confused rect {
     animation: none;
   }
 
-  .frog-hopping {
-    animation: none;
+  .frog-container {
+    transition: none !important;
   }
 }
