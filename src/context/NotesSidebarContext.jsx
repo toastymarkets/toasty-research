@@ -1,16 +1,48 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 
 const NotesSidebarContext = createContext(null);
 
 export function NotesSidebarProvider({ children }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Three-state view mode: 'collapsed' | 'sidebar' | 'dashboard'
+  const [viewMode, setViewMode] = useState('sidebar');
+  const [selectedNoteKey, setSelectedNoteKey] = useState(null);
 
-  const toggle = () => setIsCollapsed(prev => !prev);
-  const collapse = () => setIsCollapsed(true);
-  const expand = () => setIsCollapsed(false);
+  // Derived state for backward compatibility
+  const isCollapsed = viewMode === 'collapsed';
+  const isDashboard = viewMode === 'dashboard';
+  const isSidebar = viewMode === 'sidebar';
+
+  // Sidebar toggle (between collapsed and sidebar)
+  const toggle = useCallback(() => {
+    setViewMode(prev => prev === 'collapsed' ? 'sidebar' : 'collapsed');
+  }, []);
+
+  const collapse = useCallback(() => setViewMode('collapsed'), []);
+  const expand = useCallback(() => setViewMode('sidebar'), []);
+
+  // Dashboard controls
+  const openDashboard = useCallback(() => setViewMode('dashboard'), []);
+  const closeDashboard = useCallback(() => setViewMode('sidebar'), []);
+
+  // Note selection for dashboard
+  const selectNote = useCallback((key) => setSelectedNoteKey(key), []);
+  const clearSelection = useCallback(() => setSelectedNoteKey(null), []);
 
   return (
-    <NotesSidebarContext.Provider value={{ isCollapsed, toggle, collapse, expand }}>
+    <NotesSidebarContext.Provider value={{
+      viewMode,
+      isCollapsed,
+      isDashboard,
+      isSidebar,
+      selectedNoteKey,
+      toggle,
+      collapse,
+      expand,
+      openDashboard,
+      closeDashboard,
+      selectNote,
+      clearSelection,
+    }}>
       {children}
     </NotesSidebarContext.Provider>
   );
