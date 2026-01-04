@@ -2,6 +2,21 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.4.0] - 2026-01-03
+
+### Added
+- Research Notes Dashboard with full-page expandable view
+- Multi-column newspaper-style grid layout for notes
+- NotesDashboardSidebar with search, filter (All/Today/Week/Archived), and sort options
+- NoteCardPreview component with read-only TipTap preview
+- Auto-expand current note when opening dashboard
+- Click-to-select note highlighting with auto-scroll
+
+### Changed
+- Sidebar toggle button now expands to dashboard view (three-state: collapsed/sidebar/dashboard)
+- Note card text uses proportional sizing (text-xs) matching site design
+- Expanded notes have max-height with vertical scroll to prevent infinite expansion
+
 ## [1.3.0] - 2026-01-03
 
 ### Added
