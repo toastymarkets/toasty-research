@@ -478,7 +478,7 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
   const getButtonPosition = () => {
     if (isCollapsed) return 'right-4';
     // Keep button on the right side even in dashboard mode to avoid overlap with left sidebar
-    if (isDashboard) return 'right-[calc(100vw-22rem+0.75rem)]'; // Just inside dashboard panel
+    if (isDashboard) return 'right-[calc(100vw-15.75rem+0.75rem)]'; // Just inside dashboard panel
     return 'right-[21.5rem]'; // Next to sidebar
   };
 
@@ -521,7 +521,7 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
           transition-all duration-300 ease-in-out
           ${isCollapsed ? 'w-80 translate-x-[calc(100%+12px)]' : ''}
           ${!isCollapsed && !isDashboard ? 'w-80 translate-x-0' : ''}
-          ${isDashboard ? 'w-[calc(100vw-22rem)] translate-x-0' : ''}
+          ${isDashboard ? 'w-[calc(100vw-15.75rem)] translate-x-0' : ''}
         `}
       >
         <NotepadProvider storageKey={storageKey}>
