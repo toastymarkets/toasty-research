@@ -1,0 +1,166 @@
+/* Frog Friend Styles */
+
+.frog-container {
+  width: 36px;
+  height: 29px;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  image-rendering: pixelated;
+  opacity: 0.5;
+}
+
+.frog-container:hover {
+  opacity: 0.9;
+}
+
+.frog-container:hover .frog-svg {
+  transform: scale(1.1);
+}
+
+.frog-container:active .frog-svg {
+  transform: scale(0.95);
+}
+
+.frog-svg {
+  width: 100%;
+  height: 100%;
+  animation: frog-breathe 3s ease-in-out infinite;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transition: transform 0.1s ease;
+}
+
+/* Breathing animation */
+@keyframes frog-breathe {
+  0%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.02);
+  }
+}
+
+/* Hopping animation - applied to SVG so container can handle position */
+.frog-hopping .frog-svg {
+  animation: frog-hop 0.4s ease-out;
+}
+
+@keyframes frog-hop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  30% {
+    transform: translateY(-12px) scale(1.05);
+  }
+  50% {
+    transform: translateY(-16px) scale(1.08);
+  }
+  70% {
+    transform: translateY(-8px) scale(1.03);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Sleeping state */
+.frog-sleeping .frog-svg {
+  animation: frog-sleep-breathe 4s ease-in-out infinite;
+}
+
+@keyframes frog-sleep-breathe {
+  0%, 100% {
+    transform: scaleY(1) scaleX(1);
+  }
+  50% {
+    transform: scaleY(0.95) scaleX(1.02);
+  }
+}
+
+/* ZZZ floating animation */
+.frog-zzz text {
+  animation: zzz-float 2s ease-in-out infinite;
+}
+
+.frog-zzz text:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.frog-zzz text:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.frog-zzz text:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes zzz-float {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* Confused dots animation */
+.frog-confused rect {
+  animation: confused-blink 1s ease-in-out infinite;
+}
+
+.frog-confused rect:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.frog-confused rect:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.frog-confused rect:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes confused-blink {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Eye transitions */
+.frog-eye-white {
+  transition: ry 0.1s ease;
+}
+
+.frog-pupil {
+  transition: cx 0.3s ease, cy 0.3s ease;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .frog-container {
+    width: 27px;
+    height: 22px;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .frog-svg,
+  .frog-sleeping .frog-svg,
+  .frog-hopping .frog-svg,
+  .frog-zzz text,
+  .frog-confused rect {
+    animation: none;
+  }
+
+  .frog-container {
+    transition: none !important;
+  }
+}

@@ -59,7 +59,7 @@ export default function HeroWeather({
   const displayLow = formatTemp(low);
 
   return (
-    <div className="flex flex-col items-center text-center py-2 md:py-4 w-full">
+    <div className="flex flex-col items-center text-center py-2 md:py-4 w-full relative">
       {/* Station badge */}
       {stationId && localTime && (
         <div className="glass-badge mb-2">

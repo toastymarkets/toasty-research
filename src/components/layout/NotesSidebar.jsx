@@ -1,17 +1,19 @@
-import { FileText, ChevronLeft, Check, Loader2, FilePlus, Trash2, ChevronDown, Clock, X, ExternalLink } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, Check, Loader2, FilePlus, Trash2, ChevronDown, Clock, X, ExternalLink } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 import { CopilotProvider } from '../../context/CopilotContext';
 import NotepadEditor from '../notepad/NotepadEditor';
 import ConfirmPopover from '../ui/ConfirmPopover';
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { getAllResearchNotes } from '../../utils/researchLogUtils';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { DataChipNode } from '../notepad/extensions/DataChipNode';
 import { gatherCopilotContext } from '../../utils/copilotHelpers';
+import NotesDashboardSidebar from './NotesDashboardSidebar';
+import NotesGridView from './NotesGridView';
 
 // Context to pass copilot data to NotepadEditor
 const CopilotDataContext = createContext(null);
@@ -374,8 +376,73 @@ function ResearchLog() {
  * Apple Weather style panel
  */
 export default function NotesSidebar({ storageKey, cityName, city, weather, markets, observations }) {
-  const { isCollapsed, toggle, expand } = useNotesSidebar();
+  const { isCollapsed, isDashboard, toggle, expand, collapse, openDashboard, closeDashboard, selectedNoteKey, selectNote } = useNotesSidebar();
   const [activeView, setActiveView] = useState('notes'); // 'notes' | 'log'
+
+  // Dashboard state
+  const [dashboardNotes, setDashboardNotes] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Load notes when dashboard opens
+  useEffect(() => {
+    if (isDashboard) {
+      const allNotes = getAllResearchNotes();
+      setDashboardNotes(allNotes);
+    }
+  }, [isDashboard]);
+
+  // Filter and sort notes for dashboard
+  const filteredNotes = useMemo(() => {
+    if (!isDashboard) return [];
+    let result = [...dashboardNotes];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(note =>
+        note.topic?.toLowerCase().includes(query) ||
+        note.location?.toLowerCase().includes(query) ||
+        note.weatherType?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply category filter
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+    switch (filter) {
+      case 'today':
+        result = result.filter(note => new Date(note.lastSaved) >= startOfToday);
+        break;
+      case 'week':
+        result = result.filter(note => new Date(note.lastSaved) >= startOfWeek);
+        break;
+      case 'archived':
+        result = result.filter(note => note.isArchived);
+        break;
+      default:
+        break;
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'topic':
+          return (a.topic || '').localeCompare(b.topic || '');
+        case 'location':
+          return (a.location || '').localeCompare(b.location || '');
+        case 'date':
+        default:
+          return new Date(b.lastSaved) - new Date(a.lastSaved);
+      }
+    });
+
+    return result;
+  }, [isDashboard, dashboardNotes, filter, sortBy, searchQuery]);
 
   // Gather context for copilot (used by /ai slash command)
   const copilotContext = gatherCopilotContext({ city, weather, markets, observations });
@@ -394,22 +461,52 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
     return () => window.removeEventListener(NOTE_INSERTION_EVENT, handleInsertion);
   }, [isCollapsed, expand]);
 
+  // Handle button click based on current state
+  const handleToggleClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isCollapsed) {
+      expand(); // Show sidebar
+    } else if (isDashboard) {
+      closeDashboard(); // Back to sidebar/note-taking mode
+    } else {
+      openDashboard(); // Expand to dashboard
+    }
+  };
+
+  // Get button position based on state
+  const getButtonPosition = () => {
+    if (isCollapsed) return 'right-4';
+    // Keep button on the right side even in dashboard mode to avoid overlap with left sidebar
+    if (isDashboard) return 'right-[calc(100vw-20.5rem+0.75rem)]'; // Just inside dashboard panel
+    return 'right-[21.5rem]'; // Next to sidebar
+  };
+
+  // Get button title based on state
+  const getButtonTitle = () => {
+    if (isCollapsed) return 'Show notes';
+    if (isDashboard) return 'Back to notes';
+    return 'Expand to dashboard';
+  };
+
   return (
     <>
-      {/* Collapse/Expand button - always visible */}
+      {/* Toggle button - always visible */}
       <button
-        onClick={toggle}
+        onClick={handleToggleClick}
         className={`
-          fixed top-5 z-40
+          fixed top-5 z-[85]
           p-2 rounded-lg
           bg-black/30 backdrop-blur-xl border border-white/10
           hover:bg-white/10 transition-all duration-300
-          ${isCollapsed ? 'right-4' : 'right-[21.5rem]'}
+          ${getButtonPosition()}
         `}
-        title={isCollapsed ? 'Show notes' : 'Hide notes'}
+        title={getButtonTitle()}
       >
         {isCollapsed ? (
           <FileText className="w-5 h-5 text-white/70" />
+        ) : isDashboard ? (
+          <ChevronRight className="w-5 h-5 text-white/70" />
         ) : (
           <ChevronLeft className="w-5 h-5 text-white/70" />
         )}
@@ -418,17 +515,58 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
       {/* Sidebar panel - Apple Weather style */}
       <aside
         className={`
-          fixed right-3 top-3 bottom-3 w-80 z-30
+          fixed right-3 top-3 bottom-3 z-30
           bg-black/30 backdrop-blur-2xl
           border border-white/10 rounded-2xl overflow-hidden
-          transition-transform duration-300 ease-in-out
-          ${isCollapsed ? 'translate-x-[calc(100%+12px)]' : 'translate-x-0'}
+          transition-all duration-300 ease-in-out
+          ${isCollapsed ? 'w-80 translate-x-[calc(100%+12px)]' : ''}
+          ${!isCollapsed && !isDashboard ? 'w-80 translate-x-0' : ''}
+          ${isDashboard ? 'w-[calc(100vw-20.5rem)] translate-x-0' : ''}
         `}
       >
         <NotepadProvider storageKey={storageKey}>
           <CopilotProvider>
           <CopilotDataContext.Provider value={copilotContext}>
-          <div className="h-full flex flex-col">
+          {isDashboard ? (
+            /* Dashboard expanded view */
+            <div className="h-full flex">
+              {/* Left sidebar with notes table */}
+              <NotesDashboardSidebar
+                notes={filteredNotes}
+                selectedNoteKey={selectedNoteKey}
+                onSelectNote={selectNote}
+                filter={filter}
+                onFilterChange={setFilter}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+              />
+
+              {/* Right content - notes grid */}
+              <div className="flex-1 flex flex-col min-w-0 border-l border-white/10">
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-white/10">
+                  <h1 className="text-lg font-semibold text-white">Research Notes</h1>
+                  <p className="text-xs text-white/50 mt-0.5">
+                    {filteredNotes.length} note{filteredNotes.length !== 1 ? 's' : ''}
+                    {filter !== 'all' && ` (${filter})`}
+                  </p>
+                </div>
+
+                {/* Notes grid */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  <NotesGridView
+                    notes={filteredNotes}
+                    selectedNoteKey={selectedNoteKey}
+                    currentStorageKey={storageKey}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Normal sidebar view */
+            <div className="h-full flex flex-col">
               {/* Header */}
               <div className="p-3">
                 <div className="flex items-center justify-between">
@@ -492,7 +630,8 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
                   <ResearchLog />
                 </div>
               </div>
-          </div>
+            </div>
+          )}
           </CopilotDataContext.Provider>
           </CopilotProvider>
         </NotepadProvider>

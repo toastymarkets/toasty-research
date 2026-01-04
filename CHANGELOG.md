@@ -2,6 +2,48 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.4.1] - 2026-01-03
+
+### Changed
+- Dashboard toggle button now returns to note-taking sidebar instead of fully collapsing
+- Toggle button repositioned to right side in dashboard mode to avoid overlap with navigation
+
+### Fixed
+- Dashboard panel width now aligns flush with city cards sidebar (no overlap or gap)
+- Fixed dashboard collapse accidentally navigating to homepage
+- Fixed unique key warning in NotesDashboardSidebar component
+
+## [1.4.0] - 2026-01-03
+
+### Added
+- Research Notes Dashboard with full-page expandable view
+- Multi-column newspaper-style grid layout for notes
+- NotesDashboardSidebar with search, filter (All/Today/Week/Archived), and sort options
+- NoteCardPreview component with read-only TipTap preview
+- Auto-expand current note when opening dashboard
+- Click-to-select note highlighting with auto-scroll
+
+### Changed
+- Sidebar toggle button now expands to dashboard view (three-state: collapsed/sidebar/dashboard)
+- Note card text uses proportional sizing (text-xs) matching site design
+- Expanded notes have max-height with vertical scroll to prevent infinite expansion
+
+## [1.3.0] - 2026-01-03
+
+### Added
+- FrogFriend interactive pixel art mascot on city dashboards
+- 8 frog emotes: idle, happy, sad, angry, surprised, sleeping, eating, confused
+- Weather-reactive emotes (rain→sad, thunder→angry, snow→surprised, fog→confused, clear→happy)
+- Sleep mode with floating zzz after 1 minute of inactivity
+- Click interactions: hop, eat fly, wake from sleep
+- Autonomous hopping behavior: frog hops to random positions every 6 seconds
+
+### Changed
+- Frog design rebuilt with proper raised eye bumps matching sprite reference
+- Simplified happy emote to subtle smile (removed tongue)
+- Reduced frog size to 36×29px for subtlety
+- Frog flips direction based on movement
+
 ## [1.2.2] - 2026-01-03
 
 ### Changed
