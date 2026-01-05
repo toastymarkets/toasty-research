@@ -1,13 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { CloudRain, RefreshCw, ChevronRight, Droplets } from 'lucide-react';
+import { CloudRain, Snowflake, RefreshCw, ChevronRight, Droplets } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
   Cell,
   ReferenceLine,
   LabelList,
@@ -17,8 +16,8 @@ import { useClimateNormals } from '../../hooks/useClimateNormals';
 import { CITY_BY_SLUG } from '../../config/cities';
 import RainHistoryModal from '../weather/RainHistoryModal';
 
-// Historical highs for January (approximate values from records)
-const HISTORICAL_HIGHS = {
+// Historical rain highs for January (approximate values from records)
+const HISTORICAL_RAIN_HIGHS = {
   'los-angeles': { value: 12.71, year: 1995 },
   'chicago': { value: 8.2, year: 1967 },
   'new-york': { value: 7.99, year: 1979 },
@@ -35,6 +34,46 @@ const HISTORICAL_HIGHS = {
   'detroit': { value: 5.18, year: 1950 },
   'salt-lake-city': { value: 5.83, year: 1993 },
   'new-orleans': { value: 14.27, year: 1991 },
+};
+
+// Historical snow highs for January (approximate values from records)
+const HISTORICAL_SNOW_HIGHS = {
+  'new-york': { value: 36.0, year: 1996 },
+  'chicago': { value: 30.0, year: 1999 },
+  'boston': { value: 35.5, year: 2005 },
+  'denver': { value: 27.1, year: 1982 },
+  'detroit': { value: 24.5, year: 1999 },
+  'philadelphia': { value: 30.7, year: 1996 },
+  'washington-dc': { value: 28.0, year: 1996 },
+  'salt-lake-city': { value: 26.4, year: 1993 },
+  'seattle': { value: 21.4, year: 1950 },
+  'dallas': { value: 7.8, year: 2010 },
+  'los-angeles': { value: 2.0, year: 1949 },
+  'miami': { value: 0.0, year: null },
+  'austin': { value: 4.4, year: 1985 },
+  'houston': { value: 4.4, year: 1895 },
+  'san-francisco': { value: 3.7, year: 1887 },
+  'new-orleans': { value: 8.2, year: 1895 },
+};
+
+// Snow climate normals for January (inches, 1991-2020 NOAA data)
+const SNOW_NORMALS = {
+  'new-york': 7.0,
+  'chicago': 11.3,
+  'boston': 12.9,
+  'denver': 6.7,
+  'detroit': 12.3,
+  'philadelphia': 6.4,
+  'washington-dc': 5.6,
+  'salt-lake-city': 12.0,
+  'seattle': 1.0,
+  'dallas': 0.3,
+  'los-angeles': 0.0,
+  'miami': 0.0,
+  'austin': 0.1,
+  'houston': 0.0,
+  'san-francisco': 0.0,
+  'new-orleans': 0.0,
 };
 
 /**
@@ -108,69 +147,228 @@ function useLastYearPrecipitation(citySlug) {
 }
 
 /**
- * RainWidget - Compact monthly precipitation comparison
+ * Fetch last year's full month snow from IEM CLI archive
+ * Uses the CLI (Climatological Report) endpoint which has reliable historical data
+ */
+function useLastYearSnow(citySlug) {
+  const [lastYearTotal, setLastYearTotal] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchLastYear() {
+      const city = CITY_BY_SLUG[citySlug];
+      if (!city?.stationId) {
+        setLoading(false);
+        setLastYearTotal(0);
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const lastYear = now.getFullYear() - 1;
+        const month = now.getMonth() + 1;
+
+        const lastDayOfMonth = new Date(lastYear, month, 0).getDate();
+        const url = `https://mesonet.agron.iastate.edu/json/cli.py?station=${city.stationId}&year=${lastYear}&month=${month}&day=${lastDayOfMonth}`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data?.results && data.results.length > 0) {
+          const targetPrefix = `${lastYear}-${String(month).padStart(2, '0')}`;
+          const monthResults = data.results.filter(r =>
+            r.valid && r.valid.startsWith(targetPrefix)
+          );
+
+          const result = monthResults[monthResults.length - 1] || data.results[0];
+          const monthTotal = result.snow_month;
+          if (monthTotal !== null && monthTotal !== undefined && monthTotal !== 'M' && monthTotal !== 'T') {
+            setLastYearTotal(parseFloat(monthTotal));
+          } else if (monthTotal === 'T') {
+            setLastYearTotal(0); // Trace amount
+          } else {
+            setLastYearTotal(null); // Missing data
+          }
+        } else {
+          setLastYearTotal(null);
+        }
+      } catch (err) {
+        console.error('Error fetching last year snow:', err);
+        setError(err.message);
+        setLastYearTotal(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLastYear();
+  }, [citySlug]);
+
+  return { lastYearTotal, loading, error };
+}
+
+/**
+ * Fetch current month snow MTD from IEM CLI archive
+ */
+function useCurrentSnow(citySlug) {
+  const [mtdTotal, setMtdTotal] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchCurrentSnow() {
+      const city = CITY_BY_SLUG[citySlug];
+      if (!city?.stationId) {
+        setLoading(false);
+        setMtdTotal(0);
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const day = now.getDate();
+
+        const url = `https://mesonet.agron.iastate.edu/json/cli.py?station=${city.stationId}&year=${year}&month=${month}&day=${day}`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data?.results && data.results.length > 0) {
+          const targetPrefix = `${year}-${String(month).padStart(2, '0')}`;
+          const monthResults = data.results.filter(r =>
+            r.valid && r.valid.startsWith(targetPrefix)
+          );
+
+          // Get most recent day with data
+          const result = monthResults[monthResults.length - 1];
+          if (result) {
+            const monthTotal = result.snow_month;
+            if (monthTotal !== null && monthTotal !== undefined && monthTotal !== 'M' && monthTotal !== 'T') {
+              setMtdTotal(parseFloat(monthTotal));
+            } else if (monthTotal === 'T') {
+              setMtdTotal(0); // Trace
+            } else {
+              setMtdTotal(null);
+            }
+          } else {
+            setMtdTotal(null);
+          }
+        } else {
+          setMtdTotal(null);
+        }
+      } catch (err) {
+        console.error('Error fetching current snow:', err);
+        setError(err.message);
+        setMtdTotal(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCurrentSnow();
+  }, [citySlug]);
+
+  const now = new Date();
+  const monthName = now.toLocaleString('en-US', { month: 'long' });
+
+  return { mtdTotal, monthName, loading, error };
+}
+
+/**
+ * RainWidget - Compact monthly precipitation/snow comparison
  * Shows this season vs last season with normal reference line
+ * Includes Rain/Snow tabs
  */
 export default function RainWidget({ citySlug, cityName }) {
   const [showModal, setShowModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('rain'); // 'rain' or 'snow'
 
-  // Fetch data
+  // Fetch rain data
   const {
-    mtdTotal,
+    mtdTotal: rainMtd,
     monthName,
-    loading: mtdLoading,
-    error: mtdError,
-    refetch: refetchMtd,
+    loading: rainMtdLoading,
+    error: rainMtdError,
+    refetch: refetchRain,
   } = useNWSPrecipitation(citySlug);
 
   const {
-    currentMonthNormal,
+    currentMonthNormal: rainNormal,
     monthlyNormals,
     annualNormal,
     stationName: normalsStation,
   } = useClimateNormals(citySlug);
 
-  const { lastYearTotal, loading: lastYearLoading } = useLastYearPrecipitation(citySlug);
+  const { lastYearTotal: rainLastYear, loading: rainLastYearLoading } = useLastYearPrecipitation(citySlug);
 
-  // Current actual MTD
-  const actualMtd = mtdTotal ?? 0;
+  // Fetch snow data
+  const { mtdTotal: snowMtd, loading: snowMtdLoading, error: snowMtdError } = useCurrentSnow(citySlug);
+  const { lastYearTotal: snowLastYear, loading: snowLastYearLoading } = useLastYearSnow(citySlug);
+  const snowNormal = SNOW_NORMALS[citySlug] ?? 0;
+
+  // Current actual MTD based on active tab
+  const actualMtd = activeTab === 'rain' ? (rainMtd ?? 0) : (snowMtd ?? 0);
+  const lastYearTotal = activeTab === 'rain' ? rainLastYear : snowLastYear;
+  const currentNormal = activeTab === 'rain' ? rainNormal : snowNormal;
 
   // Historical high for this month
-  const historicalHigh = HISTORICAL_HIGHS[citySlug];
+  const historicalHigh = activeTab === 'rain'
+    ? HISTORICAL_RAIN_HIGHS[citySlug]
+    : HISTORICAL_SNOW_HIGHS[citySlug];
 
   // Prepare chart data - two bars with labels
   const chartData = useMemo(() => {
     const data = [];
+    const unit = activeTab === 'rain' ? '"' : '"';
+    const barColor = activeTab === 'rain' ? '#22D3EE' : '#A5B4FC'; // cyan-400 for rain, indigo-300 for snow
 
-    // Last year (same period) - always include even if 0
+    // Last year - always include even if 0
     data.push({
       name: '2025',
       value: lastYearTotal ?? 0,
       fill: '#64748B', // slate-500
-      label: lastYearTotal !== null ? `${lastYearTotal.toFixed(2)}"` : '...',
+      label: lastYearTotal !== null ? `${lastYearTotal.toFixed(1)}${unit}` : '...',
     });
 
     // This year MTD
     data.push({
       name: '2026',
       value: actualMtd,
-      fill: '#22D3EE', // cyan-400
-      label: `${actualMtd.toFixed(2)}"`,
+      fill: barColor,
+      label: `${actualMtd.toFixed(1)}${unit}`,
     });
 
     return data;
-  }, [actualMtd, lastYearTotal]);
+  }, [actualMtd, lastYearTotal, activeTab]);
 
   // Handle refresh
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await refetchMtd();
+    if (activeTab === 'rain') {
+      await refetchRain();
+    }
+    // Snow data refreshes on mount, no explicit refetch
     setIsRefreshing(false);
   };
 
   // Loading state
-  const isLoading = (mtdLoading && mtdTotal === null) || lastYearLoading;
+  const isLoading = activeTab === 'rain'
+    ? ((rainMtdLoading && rainMtd === null) || rainLastYearLoading)
+    : (snowMtdLoading || snowLastYearLoading);
+
+  const mtdError = activeTab === 'rain' ? rainMtdError : snowMtdError;
 
   // Custom label renderer for bars
   const renderCustomLabel = (props) => {
@@ -192,11 +390,34 @@ export default function RainWidget({ citySlug, cityName }) {
   return (
     <>
       <div className="glass-widget h-full flex flex-col overflow-hidden">
-        {/* Header */}
+        {/* Header with Tabs */}
         <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between border-b border-white/10">
-          <div className="flex items-center gap-1.5">
-            <CloudRain className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-xs font-medium text-white">Rain</span>
+          <div className="flex items-center gap-2">
+            {/* Tab buttons */}
+            <div className="flex items-center gap-0.5 bg-white/5 rounded-md p-0.5">
+              <button
+                onClick={() => setActiveTab('rain')}
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                  activeTab === 'rain'
+                    ? 'bg-white/15 text-white'
+                    : 'text-white/50 hover:text-white/70'
+                }`}
+              >
+                <CloudRain className="w-3 h-3" />
+                Rain
+              </button>
+              <button
+                onClick={() => setActiveTab('snow')}
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                  activeTab === 'snow'
+                    ? 'bg-white/15 text-white'
+                    : 'text-white/50 hover:text-white/70'
+                }`}
+              >
+                <Snowflake className="w-3 h-3" />
+                Snow
+              </button>
+            </div>
             <span className="text-[10px] text-white/40">{monthName}</span>
           </div>
           <button
@@ -218,6 +439,13 @@ export default function RainWidget({ citySlug, cityName }) {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-red-400/70 text-xs">{mtdError}</div>
             </div>
+          ) : (activeTab === 'snow' && snowMtd === null && snowLastYear === null) ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-white/40 text-xs text-center">
+                <Snowflake className="w-6 h-6 mx-auto mb-1 opacity-30" />
+                No snow data available
+              </div>
+            </div>
           ) : (
             <>
               {/* MTD Display - Compact inline */}
@@ -228,9 +456,9 @@ export default function RainWidget({ citySlug, cityName }) {
                   </span>
                   <span className="text-xs text-white/50">"</span>
                 </div>
-                {currentMonthNormal && (
+                {currentNormal > 0 && (
                   <span className="text-[10px] text-white/40">
-                    avg {currentMonthNormal.toFixed(1)}"
+                    avg {currentNormal.toFixed(1)}"
                   </span>
                 )}
               </div>
@@ -259,9 +487,9 @@ export default function RainWidget({ citySlug, cityName }) {
                       domain={[0, 'auto']}
                     />
                     {/* Normal reference line (dotted) */}
-                    {currentMonthNormal && (
+                    {currentNormal > 0 && (
                       <ReferenceLine
-                        y={currentMonthNormal}
+                        y={currentNormal}
                         stroke="rgba(255,255,255,0.5)"
                         strokeDasharray="4 4"
                         strokeWidth={1.5}
@@ -286,7 +514,7 @@ export default function RainWidget({ citySlug, cityName }) {
               </div>
 
               {/* Historical high note */}
-              {historicalHigh && (
+              {historicalHigh && historicalHigh.year && (
                 <div className="text-[9px] text-white/30 text-center mt-1">
                   Record: {historicalHigh.value}" ({historicalHigh.year})
                 </div>
@@ -296,16 +524,22 @@ export default function RainWidget({ citySlug, cityName }) {
         </div>
 
         {/* Footer */}
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-3 py-1.5 border-t border-white/10 flex items-center justify-between hover:bg-white/5 transition-colors"
-        >
-          <div className="flex items-center gap-1 text-[10px] text-white/40">
-            <Droplets className="w-2.5 h-2.5" />
-            <span>Monthly normals</span>
+        {activeTab === 'rain' ? (
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-3 py-1.5 border-t border-white/10 flex items-center justify-between hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-1 text-[10px] text-white/40">
+              <Droplets className="w-2.5 h-2.5" />
+              <span>Monthly normals</span>
+            </div>
+            <ChevronRight className="w-3 h-3 text-white/30" />
+          </button>
+        ) : (
+          <div className="px-3 py-1.5 border-t border-white/10 text-[10px] text-white/30 text-center">
+            Source: IEM Climate Data
           </div>
-          <ChevronRight className="w-3 h-3 text-white/30" />
-        </button>
+        )}
       </div>
 
       {/* History Modal */}
