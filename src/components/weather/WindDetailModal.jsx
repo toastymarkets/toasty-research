@@ -1,16 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { X, Wind } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
 } from 'recharts';
 
 /**
@@ -58,6 +55,19 @@ export default function WindDetailModal({
   timezone = 'America/New_York',
   cityName,
 }) {
+  // Delay chart rendering to prevent Recharts dimension warnings
+  const [chartReady, setChartReady] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Delay to ensure container has dimensions before rendering chart
+      const timer = setTimeout(() => setChartReady(true), 100);
+      return () => clearTimeout(timer);
+    } else {
+      setChartReady(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // Process observations for wind data
@@ -222,12 +232,16 @@ export default function WindDetailModal({
             {/* Wind Speed Chart */}
             <div className="px-4 py-3">
               <div className="h-[180px]">
-                {windData.length === 0 ? (
+                {!chartReady ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="w-full h-full bg-white/5 rounded-lg animate-pulse" />
+                  </div>
+                ) : windData.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-white/40 text-sm">
                     No wind data available
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={150}>
                     <AreaChart data={windData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="windGradient" x1="0" y1="0" x2="0" y2="1">
