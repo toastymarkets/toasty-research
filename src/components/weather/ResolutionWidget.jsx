@@ -8,8 +8,8 @@ import { useDSM } from '../../hooks/useDSM';
 import { useCliCountdown } from '../../hooks/useDataReleaseCountdown';
 
 /**
- * ResolutionWidget - Displays official CLI settlement data with toggle for DSM
- * Design inspired by Apple Weather "Averages" widget
+ * ResolutionWidget - Displays both CLI (settlement) and DSM (live) data side-by-side
+ * Shows clear timestamps and countdown to next CLI release
  */
 export function ResolutionWidget({
   stationId,
@@ -19,51 +19,41 @@ export function ResolutionWidget({
   loading: externalLoading = false,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeView, setActiveView] = useState('cli'); // 'cli' | 'dsm'
 
   const { data: cliData, loading: cliLoading } = useCLIReport(stationId);
   const { data: dsmData, loading: dsmLoading, stationName: dsmStationName } = useDSM(citySlug);
   const cliCountdown = useCliCountdown(stationId);
 
-  // Only show loading on initial load, not when switching views
+  // Only show loading on initial load
   const isInitialLoading = (cliLoading && dsmLoading) || externalLoading;
 
-  // Format date for display
+  // Format date for CLI display (e.g., "Jan 4")
   const formatDate = (dateStr) => {
     if (!dateStr) return '--';
     const date = new Date(dateStr + 'T12:00:00');
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Get current data based on view
-  const getData = () => {
-    if (activeView === 'cli' && cliData) {
-      return {
-        high: cliData.high,
-        low: cliData.low,
-        label: 'CLI',
-        sublabel: formatDate(cliData.valid),
-      };
+  // Format time for CLI display (e.g., "5:15a")
+  const formatTime = (timeStr) => {
+    if (!timeStr || timeStr === 'M') return '';
+    const match = timeStr.match(/^(\d{1,2})(\d{2})\s*(AM|PM)$/i);
+    if (match) {
+      const [, hour, min, period] = match;
+      return `${hour}:${min}${period.toLowerCase().charAt(0)}`;
     }
-    if (activeView === 'dsm' && dsmData) {
-      return {
-        high: dsmData.highF != null ? Math.round(dsmData.highF) : null,
-        low: dsmData.lowF != null ? Math.round(dsmData.lowF) : null,
-        label: 'DSM',
-        sublabel: 'so far today',
-      };
-    }
-    return null;
+    return '';
   };
 
-  const data = getData();
-  const hasNoData = !data && !isInitialLoading;
+  // Get CLI high value
+  const cliHigh = cliData?.high;
+  const cliTimestamp = cliData?.valid ? formatDate(cliData.valid) : null;
+  const cliHighTime = cliData?.high_time ? formatTime(cliData.high_time) : null;
 
-  // Toggle handler
-  const cycleView = (e) => {
-    e.stopPropagation();
-    setActiveView(prev => prev === 'cli' ? 'dsm' : 'cli');
-  };
+  // Get DSM high value
+  const dsmHigh = dsmData?.highF != null ? Math.round(dsmData.highF) : null;
+
+  const hasAnyData = cliHigh != null || dsmHigh != null;
 
   if (isInitialLoading) {
     return (
@@ -74,16 +64,24 @@ export function ResolutionWidget({
         className="cursor-pointer"
         onClick={() => setIsModalOpen(true)}
       >
-        <div className="flex flex-col h-full py-3">
-          <div className="w-16 h-4 bg-white/10 rounded mb-3" />
-          <div className="w-20 h-10 bg-white/10 rounded mb-2" />
-          <div className="w-12 h-3 bg-white/10 rounded" />
+        <div className="flex flex-col h-full">
+          <div className="flex gap-3 mb-2">
+            <div className="flex-1">
+              <div className="w-8 h-3 bg-white/10 rounded mb-1" />
+              <div className="w-10 h-6 bg-white/10 rounded" />
+            </div>
+            <div className="flex-1">
+              <div className="w-8 h-3 bg-white/10 rounded mb-1" />
+              <div className="w-10 h-6 bg-white/10 rounded" />
+            </div>
+          </div>
+          <div className="w-16 h-3 bg-white/10 rounded mt-auto" />
         </div>
       </GlassWidget>
     );
   }
 
-  if (hasNoData) {
+  if (!hasAnyData) {
     return (
       <>
         <GlassWidget
@@ -93,13 +91,13 @@ export function ResolutionWidget({
           className="cursor-pointer"
           onClick={() => setIsModalOpen(true)}
         >
-          <div className="flex flex-col h-full py-3">
+          <div className="flex flex-col h-full">
             {cliCountdown ? (
               <>
-                <div className="text-4xl font-light text-white tracking-tight">
-                  {cliCountdown.hours}h {cliCountdown.minutes}m
+                <div className="text-2xl font-light text-white tracking-tight">
+                  {cliCountdown.formatted}
                 </div>
-                <div className="text-sm text-white/70 mt-1">
+                <div className="text-xs text-white/50 mt-1">
                   until next CLI
                 </div>
               </>
@@ -137,60 +135,44 @@ export function ResolutionWidget({
         onClick={() => setIsModalOpen(true)}
       >
         <div className="flex flex-col h-full">
-          {/* Toggle Pills */}
-          <div className="flex gap-1 mb-2">
-            <button
-              onClick={cycleView}
-              className={`px-2 py-0.5 text-[10px] font-medium rounded-full transition-all ${
-                activeView === 'cli'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/5 text-white/40 hover:text-white/60'
-              }`}
-            >
-              CLI
-            </button>
-            <button
-              onClick={cycleView}
-              className={`px-2 py-0.5 text-[10px] font-medium rounded-full transition-all ${
-                activeView === 'dsm'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/5 text-white/40 hover:text-white/60'
-              }`}
-            >
-              DSM
-            </button>
+          {/* Side-by-side CLI and DSM */}
+          <div className="flex gap-2">
+            {/* CLI Column - Settlement */}
+            <div className="flex-1 bg-white/5 rounded-lg p-2">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[9px] font-medium text-green-400 uppercase tracking-wide">CLI</span>
+                <span className="text-[8px] text-white/30">Settlement</span>
+              </div>
+              <div className="text-xl font-semibold text-white tabular-nums">
+                {cliHigh != null ? `${cliHigh}°` : '--'}
+              </div>
+              <div className="text-[9px] text-white/40 mt-0.5">
+                {cliTimestamp || 'Pending'}
+                {cliHighTime && ` ${cliHighTime}`}
+              </div>
+            </div>
+
+            {/* DSM Column - Live */}
+            <div className="flex-1 bg-white/5 rounded-lg p-2">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[9px] font-medium text-cyan-400 uppercase tracking-wide">DSM</span>
+                <span className="text-[8px] text-white/30">Live</span>
+              </div>
+              <div className="text-xl font-semibold text-white tabular-nums">
+                {dsmHigh != null ? `${dsmHigh}°` : '--'}
+              </div>
+              <div className="text-[9px] text-white/40 mt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                High so far
+              </div>
+            </div>
           </div>
 
-          {/* Hero High */}
-          <div className="text-3xl font-light text-white tracking-tight">
-            {data?.high != null ? `${data.high}°` : '--'}
-          </div>
-
-          {/* Report timestamp */}
-          <div className="text-xs text-white/50 mt-1">
-            {activeView === 'cli' && cliData?.valid && (
-              <>Report: {formatDate(cliData.valid)}</>
-            )}
-            {activeView === 'dsm' && (
-              <>High so far today</>
-            )}
-          </div>
-
-          {/* Countdown / Status - bottom */}
-          {(activeView === 'dsm' || cliCountdown) && (
-            <div className="mt-auto pt-2 text-sm border-t border-white/10">
-              {activeView === 'cli' && cliCountdown && (
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-white/50">Next CLI</span>
-                  <span className="text-amber-400 font-medium">{cliCountdown.formatted}</span>
-                </div>
-              )}
-              {activeView === 'dsm' && (
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-white/50">Status</span>
-                  <span className="text-green-400 font-medium">Live</span>
-                </div>
-              )}
+          {/* Countdown - Always visible */}
+          {cliCountdown && (
+            <div className="mt-auto pt-2 flex items-center justify-between border-t border-white/10">
+              <span className="text-[10px] text-white/50">Next CLI</span>
+              <span className="text-[11px] text-amber-400 font-medium">{cliCountdown.formatted}</span>
             </div>
           )}
         </div>
