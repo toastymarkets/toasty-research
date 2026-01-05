@@ -2,6 +2,21 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.5.0] - 2026-01-04
+
+### Added
+- Rain Widget showing month-to-date precipitation with year-over-year comparison
+- Bar chart comparing current year MTD vs previous year full month total
+- Snow tab with year-over-year snow accumulation comparison
+- Monthly climate normals modal (1991-2020 NOAA data)
+- Historical record precipitation display for each city
+- RAIN_WIDGET_GUIDE.md with data validation instructions
+
+### Data Sources
+- Rain/Snow MTD: IEM CLI API (`precip_month`, `snow_month` fields)
+- Previous year totals: IEM CLI archive (last day of month)
+- Climate normals: Hardcoded NOAA 1991-2020 averages
+
 ## [1.4.1] - 2026-01-03
 
 ### Changed
