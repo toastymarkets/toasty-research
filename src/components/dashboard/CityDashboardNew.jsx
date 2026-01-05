@@ -23,12 +23,12 @@ import {
   WeatherMap,
   WindWidget,
   ResolutionWidget,
-  PressureWidget,
   RoundingWidget,
   NearbyStations,
   AlertsWidget,
 } from '../weather';
 import RainWidget from '../widgets/RainWidget';
+import RainSnowBracketsWidget from '../widgets/RainSnowBracketsWidget';
 
 // Kalshi market data
 import { useKalshiMarketsFromContext } from '../../hooks/useAllKalshiMarkets';
@@ -332,12 +332,11 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* Pressure */}
+          {/* Rain/Snow Trading */}
           <WidgetGridV2.Area area="pressure">
-            <PressureWidget
-              value={weatherDetails.pressure}
-              trend="steady"
-              loading={weatherLoading}
+            <RainSnowBracketsWidget
+              citySlug={citySlug}
+              cityName={city.name}
             />
           </WidgetGridV2.Area>
 
