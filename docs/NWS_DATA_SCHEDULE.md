@@ -16,28 +16,28 @@ All times are in UTC. CLI is the official resolution source for Kalshi temperatu
 
 | Station | City | CLI Time | 24hr High | METAR | DSMs |
 |---------|------|----------|-----------|-------|------|
-| KATL | Atlanta, GA | 09:17 | 04:52 | :52 | 2 |
+| KATL | Atlanta, GA | 09:17 | 04:52 | :52 | 3 |
 | KAUS | Austin, TX | 08:01 | 05:53 | :53 | 3 |
 | KBOS | Boston, MA | 05:30 | 04:54 | :54 | 3 |
 | KCLT | Charlotte, NC | 07:26 | 04:52 | :52 | 3 |
 | KMDW | Chicago, IL | 06:46 | 05:53 | :53 | 2 |
 | KDFW | Dallas, TX | 06:40 | 05:53 | :53 | 3 |
 | KDAL | Dallas Love Field, TX | — | 05:53 | :53 | 3 |
-| KDEN | Denver, CO | 07:31 | 06:53 | :53 | 3 |
+| KDEN | Denver, CO | 07:31 | 06:53 | :53 | 4 |
 | KDTW | Detroit, MI | 06:40 | 04:53 | :53 | — |
 | KHOU | Houston, TX | 06:29 | 05:53 | :53 | 4 |
 | KJAX | Jacksonville, FL | 06:32 | 04:56 | :56 | 2 |
 | KLGA | LaGuardia, NY | 06:18 | 04:51 | :51 | 3 |
 | KLAS | Las Vegas, NV | 08:44 | — | :56 | — |
 | KLAX | Los Angeles, CA | 09:28 | 07:53 | :53 | 2 |
-| KMIA | Miami, FL | 09:22 | 04:53 | :53 | 3 |
+| KMIA | Miami, FL | 09:22 | 04:53 | :53 | 4 |
 | KMSP | Minneapolis, MN | 07:12 | 05:53 | :53 | — |
 | KBNA | Nashville, TN | 07:01 | 05:53 | :53 | 3 |
 | KNYC | New York, NY | 06:18 | 04:51 | :51 | 2 |
 | KOKC | Oklahoma City, OK | 07:28 | 05:52 | :52 | 3 |
 | KPHL | Philadelphia, PA | 05:55 | 04:54 | :54 | 2 |
 | KPHX | Phoenix, AZ | 08:16 | 06:51 | :51 | 3 |
-| KSAT | San Antonio, TX | 08:01 | 05:51 | :51 | 3 |
+| KSAT | San Antonio, TX | 08:01 | 05:51 | :51 | 4 |
 | KSFO | San Francisco, CA | 08:51 | 07:56 | :56 | 2 |
 | KSEA | Seattle, WA | 09:33 | 07:53 | :53 | 2 |
 | KTPA | Tampa, FL | 09:27 | 04:53 | :53 | 3 |
@@ -87,6 +87,7 @@ For each station, the following resources are available:
 - **CLI Report Feed**: Official settlement data via IEM
 - **IEM ASOS History**: Historical observation data
 - **IEM DSM Feed**: Daily summary messages
+- **wethr.net City Resources**: https://wethr.net/edu/city-resources - Comprehensive data release schedule for all markets
 
 ## CLI vs DSM
 
