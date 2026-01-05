@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight, ChevronDown, Plus, Copy, Check, ExternalLink, BookOpen } from 'lucide-react';
+import { FileText, X, ChevronRight, ChevronDown, ChevronLeft, Plus, Copy, Check, ExternalLink, BookOpen } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 import { getGlossaryForOffice, termAppearsInText } from '../../data/cityGlossaries';
@@ -1327,7 +1327,7 @@ function ExpandedDiscussionInline({ discussion, onCollapse }) {
                 className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                 title="Collapse"
               >
-                <ChevronDown className="w-3.5 h-3.5 text-white/70" />
+                <ChevronLeft className="w-3.5 h-3.5 text-white/70" />
               </button>
             )}
           </div>
