@@ -2,6 +2,18 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.7.0] - 2026-01-05
+
+### Added
+- RainSnowBracketsWidget showing Kalshi rain/snow market odds
+- Rain/Snow toggle tabs with auto-selection based on market availability
+- Probability bars with dynamic coloring based on odds
+- "Add to notes" integration for market brackets
+- Countdown timer to market close
+
+### Changed
+- Replaced PressureWidget with RainSnowBracketsWidget in city dashboard
+
 ## [1.6.0] - 2026-01-05
 
 ### Added
