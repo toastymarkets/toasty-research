@@ -2,6 +2,14 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.7.1] - 2026-01-05
+
+### Changed
+- Redesigned ResolutionWidget to show CLI and DSM side-by-side (replaces toggle)
+- CLI column shows official settlement high with date and time of observation
+- DSM column shows live "high so far" with pulsing indicator
+- Countdown to next CLI now always visible
+
 ## [1.7.0] - 2026-01-05
 
 ### Added
