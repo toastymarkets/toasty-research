@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { CITY_BY_SLUG } from '../../config/cities';
@@ -27,8 +27,8 @@ import {
   RoundingWidget,
   NearbyStations,
   AlertsWidget,
-  PrecipitationWidget,
 } from '../weather';
+import RainWidget from '../widgets/RainWidget';
 
 // Kalshi market data
 import { useKalshiMarketsFromContext } from '../../hooks/useAllKalshiMarkets';
@@ -168,6 +168,7 @@ function CityDashboardContent({ city, citySlug }) {
   const isLoading = weatherLoading && forecastLoading;
   const notepadStorageKey = `toasty_research_notes_v1_city_${citySlug}`;
   const { isCollapsed: notesSidebarCollapsed } = useNotesSidebar();
+  const heroRef = useRef(null);
 
   return (
     <>
@@ -210,7 +211,7 @@ function CityDashboardContent({ city, citySlug }) {
       </Link>
 
       {/* Hero Section - compact */}
-      <div className="w-full relative pt-4 md:pt-12">
+      <div ref={heroRef} className="w-full relative pt-4 md:pt-12">
         <div className="max-w-5xl mx-auto px-2 sm:px-3">
           <HeroWeather
             cityName={city.name}
@@ -223,10 +224,11 @@ function CityDashboardContent({ city, citySlug }) {
             loading={isLoading}
           />
         </div>
-        {/* Frog Friend - right side of hero area */}
-        <div className="absolute right-4 bottom-0 md:right-8 lg:right-16 hidden sm:block">
-          <FrogFriend condition={currentConditions.condition} />
-        </div>
+      </div>
+
+      {/* Frog Friend - Physics-based movement across dashboard */}
+      <div className="hidden sm:block">
+        <FrogFriend condition={currentConditions.condition} heroRef={heroRef} />
       </div>
 
       {/* Hourly Forecast - Real NWS observation data */}
@@ -326,9 +328,9 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* Precipitation */}
+          {/* Rain Accumulation */}
           <WidgetGridV2.Area area="visibility">
-            <PrecipitationWidget
+            <RainWidget
               citySlug={citySlug}
               cityName={city.name}
             />

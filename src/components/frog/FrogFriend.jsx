@@ -1,22 +1,29 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
+import { useFrogPhysics } from '../../hooks/useFrogPhysics';
 import './frog.css';
 
 /**
  * FrogFriend - Interactive mascot that lives in the dashboard
- * Pixel art frog with idle animations, weather reactions, and click interactions
+ * Pixel art frog with physics-based movement, weather reactions, and click interactions
  */
-export default function FrogFriend({ condition, className = '' }) {
+export default function FrogFriend({ condition, className = '', heroRef }) {
   const [isBlinking, setIsBlinking] = useState(false);
-  const [isHopping, setIsHopping] = useState(false);
   const [emote, setEmote] = useState('idle'); // idle, happy, sad, angry, surprised, sleeping, eating, confused
   const [isSleeping, setIsSleeping] = useState(false);
   const [idleTimer, setIdleTimer] = useState(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [facingLeft, setFacingLeft] = useState(false);
 
-  // Bounds for hopping around (pixels from starting position)
-  const BOUNDS = { x: 80, y: 30 };
+  // Physics-based position and hopping
+  const { position, isGrounded, facingLeft, hop, isInitialized } = useFrogPhysics({
+    heroRef,
+    isSleeping,
+    onHopStart: () => {
+      setEmote('happy');
+    },
+    onLand: () => {
+      setEmote(getWeatherEmoteRef.current());
+    },
+  });
 
   // Determine weather-based emote
   const getWeatherEmote = useCallback(() => {
@@ -31,12 +38,16 @@ export default function FrogFriend({ condition, className = '' }) {
     return 'idle';
   }, [condition]);
 
+  // Keep ref to getWeatherEmote for callbacks
+  const getWeatherEmoteRef = useRef(getWeatherEmote);
+  getWeatherEmoteRef.current = getWeatherEmote;
+
   // Set emote based on weather (when not overridden by interaction)
   useEffect(() => {
-    if (!isSleeping && emote !== 'eating') {
+    if (!isSleeping && emote !== 'eating' && isGrounded) {
       setEmote(getWeatherEmote());
     }
-  }, [condition, getWeatherEmote, isSleeping, emote]);
+  }, [condition, getWeatherEmote, isSleeping, emote, isGrounded]);
 
   // Random blink effect
   useEffect(() => {
@@ -63,55 +74,25 @@ export default function FrogFriend({ condition, className = '' }) {
     return () => clearTimeout(sleepTimeout);
   }, [emote]);
 
-  // Track values in refs to avoid re-triggering effects
-  const positionRef = useRef(position);
-  positionRef.current = position;
-  const getWeatherEmoteRef = useRef(getWeatherEmote);
-  getWeatherEmoteRef.current = getWeatherEmote;
-
-  // Random hopping around
+  // Random hopping with physics
   useEffect(() => {
-    if (isSleeping) return;
+    if (isSleeping || !isInitialized) return;
 
     const hopAround = () => {
-      // Calculate new position within bounds
-      const newX = (Math.random() - 0.5) * 2 * BOUNDS.x;
-      const newY = Math.random() * -BOUNDS.y; // Only hop upward from base
-
-      // Update facing direction based on movement
-      if (newX < positionRef.current.x) {
-        setFacingLeft(true);
-      } else if (newX > positionRef.current.x) {
-        setFacingLeft(false);
-      }
-
-      // Trigger hop animation
-      setIsHopping(true);
-      setEmote('happy');
-
-      // Update position mid-hop
-      setTimeout(() => {
-        setPosition({ x: newX, y: newY });
-      }, 200);
-
-      // End hop animation
-      setTimeout(() => {
-        setIsHopping(false);
-        setEmote(getWeatherEmoteRef.current());
-      }, 400);
+      hop('random');
     };
 
-    // Hop every 5-8 seconds
+    // Hop every 6 seconds
     const hopInterval = setInterval(hopAround, 6000);
 
-    // Also do an initial hop after a short delay
+    // Initial hop after a short delay
     const initialHop = setTimeout(hopAround, 2000);
 
     return () => {
       clearInterval(hopInterval);
       clearTimeout(initialHop);
     };
-  }, [isSleeping]);
+  }, [isSleeping, hop, isInitialized]);
 
   // Click handler
   const handleClick = () => {
@@ -130,13 +111,8 @@ export default function FrogFriend({ condition, className = '' }) {
     const actions = ['happy', 'eating', 'hop'];
     const action = actions[Math.floor(Math.random() * actions.length)];
 
-    if (action === 'hop') {
-      setIsHopping(true);
-      setEmote('happy');
-      setTimeout(() => {
-        setIsHopping(false);
-        setEmote(getWeatherEmote());
-      }, 400);
+    if (action === 'hop' && isGrounded) {
+      hop('random');
     } else if (action === 'eating') {
       setEmote('eating');
       setTimeout(() => setEmote(getWeatherEmote()), 1500);
@@ -362,17 +338,23 @@ export default function FrogFriend({ condition, className = '' }) {
     return null;
   };
 
+  // Don't render until physics is initialized
+  if (!isInitialized) {
+    return null;
+  }
+
   return (
     <div
-      className={`frog-container ${className} ${isHopping ? 'frog-hopping' : ''} ${isSleeping ? 'frog-sleeping' : ''}`}
+      className={`frog-container-physics ${className} ${!isGrounded ? 'frog-airborne' : ''} ${isSleeping ? 'frog-sleeping' : ''}`}
       onClick={handleClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
       aria-label="Frog friend - click to interact"
       style={{
-        transform: `translate(${position.x}px, ${position.y}px) scaleX(${facingLeft ? -1 : 1})`,
-        transition: isHopping ? 'transform 0.4s ease-out' : 'transform 0.1s ease',
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        transform: `scaleX(${facingLeft ? -1 : 1})`,
       }}
     >
       <svg
@@ -433,4 +415,5 @@ export default function FrogFriend({ condition, className = '' }) {
 FrogFriend.propTypes = {
   condition: PropTypes.string,
   className: PropTypes.string,
+  heroRef: PropTypes.shape({ current: PropTypes.instanceOf(Element) }),
 };
