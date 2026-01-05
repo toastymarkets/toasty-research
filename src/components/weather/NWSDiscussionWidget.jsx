@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight, Plus, Copy, Check, ExternalLink, BookOpen } from 'lucide-react';
+import { FileText, X, ChevronRight, ChevronDown, ChevronLeft, Plus, Copy, Check, ExternalLink, BookOpen } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 import { getGlossaryForOffice, termAppearsInText } from '../../data/cityGlossaries';
@@ -251,7 +251,7 @@ const KEYWORD_DEFINITIONS = {
 };
 
 /**
- * Insert discussion text into notes
+ * Insert discussion text into notes as a blockquote
  */
 function insertDiscussionToNotes(text, source = 'NWS Discussion') {
   const event = new CustomEvent(NOTE_INSERTION_EVENT, {
@@ -259,13 +259,21 @@ function insertDiscussionToNotes(text, source = 'NWS Discussion') {
       type: 'discussion',
       content: {
         type: 'doc',
-        content: [{
-          type: 'paragraph',
-          content: [{
-            type: 'dataChip',
-            attrs: { value: text, label: '', type: 'forecast', source, timestamp: new Date().toISOString() }
-          }]
-        }]
+        content: [
+          {
+            type: 'blockquote',
+            content: [{
+              type: 'paragraph',
+              content: [{ type: 'text', text }]
+            }]
+          },
+          {
+            type: 'paragraph',
+            content: [
+              { type: 'text', marks: [{ type: 'italic' }], text: `— ${source}` }
+            ]
+          }
+        ]
       },
       rawData: { text, source },
     }
@@ -275,13 +283,17 @@ function insertDiscussionToNotes(text, source = 'NWS Discussion') {
 
 /**
  * NWSDiscussionWidget - Shows NWS Area Forecast Discussion
- * Compact view with full discussion modal on click
+ * Supports two modes:
+ * - Compact: Small card that opens modal on click (default)
+ * - Expanded: Inline expanded view that fills the grid area
  */
 export default function NWSDiscussionWidget({
   lat,
   lon,
   citySlug,
   loading: externalLoading = false,
+  isExpanded = false,
+  onToggleExpand = null,
 }) {
   const [discussion, setDiscussion] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -376,8 +388,8 @@ export default function NWSDiscussionWidget({
 
   if (loading || externalLoading) {
     return (
-      <GlassWidget title="DISCUSSION" icon={FileText} size="small">
-        <div className="flex items-center justify-center h-full animate-pulse">
+      <GlassWidget title="DISCUSSION" icon={FileText} size={isExpanded ? 'large' : 'small'}>
+        <div className={`flex items-center justify-center h-full animate-pulse ${isExpanded ? 'min-h-[300px]' : ''}`}>
           <div className="w-full h-12 bg-white/10 rounded" />
         </div>
       </GlassWidget>
@@ -386,8 +398,8 @@ export default function NWSDiscussionWidget({
 
   if (error || !discussion) {
     return (
-      <GlassWidget title="DISCUSSION" icon={FileText} size="small">
-        <div className="flex items-center justify-center h-full text-white/40 text-xs">
+      <GlassWidget title="DISCUSSION" icon={FileText} size={isExpanded ? 'large' : 'small'}>
+        <div className={`flex items-center justify-center h-full text-white/40 text-xs ${isExpanded ? 'min-h-[300px]' : ''}`}>
           Unable to load discussion
         </div>
       </GlassWidget>
@@ -402,13 +414,33 @@ export default function NWSDiscussionWidget({
   // Get synopsis excerpt for preview
   const synopsisExcerpt = extractSynopsisExcerpt(discussion.synopsis);
 
+  // Handle click - either toggle expansion or open modal
+  const handleClick = () => {
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  // Render expanded inline view
+  if (isExpanded) {
+    return (
+      <ExpandedDiscussionInline
+        discussion={discussion}
+        onCollapse={onToggleExpand}
+      />
+    );
+  }
+
+  // Render compact widget
   return (
     <>
       <GlassWidget
         title="DISCUSSION"
         icon={FileText}
         size="small"
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleClick}
         className="cursor-pointer"
         headerRight={
           <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors whitespace-nowrap">
@@ -454,8 +486,8 @@ export default function NWSDiscussionWidget({
         </div>
       </GlassWidget>
 
-      {/* Detail Modal */}
-      {isModalOpen && (
+      {/* Detail Modal - only when not using inline expansion */}
+      {isModalOpen && !onToggleExpand && (
         <DiscussionModal
           discussion={discussion}
           onClose={() => setIsModalOpen(false)}
@@ -470,6 +502,8 @@ NWSDiscussionWidget.propTypes = {
   lon: PropTypes.number.isRequired,
   citySlug: PropTypes.string.isRequired,
   loading: PropTypes.bool,
+  isExpanded: PropTypes.bool,
+  onToggleExpand: PropTypes.func,
 };
 
 /**
@@ -626,35 +660,70 @@ function extractSynopsisExcerpt(synopsis) {
 }
 
 /**
- * HighlightedKeyword - Clickable keyword with definition tooltip
- * Hover: shows definition, Click: adds to notes
+ * HighlightedKeyword - Clickable keyword with definition popup
+ * Click: shows definition with option to add to notes
  */
 function HighlightedKeyword({ text, category, office }) {
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const popupRef = useRef(null);
+  const buttonRef = useRef(null);
   const colorClass = CATEGORY_COLORS[category] || 'bg-white/20 text-white/80';
   const definition = KEYWORD_DEFINITIONS[text.toLowerCase()];
 
-  const handleClick = (e) => {
+  // Close popup when clicking outside
+  useEffect(() => {
+    if (!showPopup) return;
+
+    const handleClickOutside = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target) &&
+          buttonRef.current && !buttonRef.current.contains(e.target)) {
+        setShowPopup(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPopup]);
+
+  const handleKeywordClick = (e) => {
+    e.stopPropagation();
+    if (definition) {
+      setShowPopup(!showPopup);
+    } else {
+      // No definition, add directly to notes
+      insertDiscussionToNotes(text, `NWS ${office}`);
+    }
+  };
+
+  const handleAddToNotes = (e) => {
     e.stopPropagation();
     insertDiscussionToNotes(text, `NWS ${office}`);
+    setShowPopup(false);
   };
 
   return (
     <span className="relative inline">
       <button
-        onClick={handleClick}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
+        ref={buttonRef}
+        onClick={handleKeywordClick}
         className={`${colorClass} px-1 py-0.5 rounded cursor-pointer transition-colors`}
-        title={`Click to add "${text}" to notes`}
       >
         {text}
       </button>
-      {showTooltip && definition && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2.5 text-[11px] bg-black/95 text-white rounded-lg shadow-xl z-50 pointer-events-none leading-relaxed border border-white/10">
-          <span className="font-semibold text-white block mb-1 capitalize">{text}</span>
-          <span className="text-white/80">{definition}</span>
-          <span className="block mt-1.5 text-[9px] text-white/40">Click to add to notes</span>
+      {showPopup && definition && (
+        <span
+          ref={popupRef}
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 text-[11px] bg-black/95 text-white rounded-lg shadow-xl z-50 leading-relaxed border border-white/10"
+        >
+          <span className="font-semibold text-white block mb-1.5 capitalize">{text}</span>
+          <span className="text-white/80 block mb-3">{definition}</span>
+          <button
+            onClick={handleAddToNotes}
+            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Add to notes
+          </button>
         </span>
       )}
     </span>
@@ -1129,4 +1198,223 @@ DiscussionModal.propTypes = {
     fullText: PropTypes.string,
   }).isRequired,
   onClose: PropTypes.func.isRequired,
+};
+
+/**
+ * ExpandedDiscussionInline - Full forecast discussion rendered inline (not as modal)
+ * Used when the widget is expanded in the grid
+ */
+function ExpandedDiscussionInline({ discussion, onCollapse }) {
+  const [activeSection, setActiveSection] = useState('synopsis');
+  const [selectionPopup, setSelectionPopup] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const contentRef = useRef(null);
+
+  // Combine all discussion text for glossary term detection
+  const fullDiscussionText = [
+    discussion.synopsis,
+    discussion.nearTerm,
+    discussion.shortTerm,
+    discussion.longTerm,
+    discussion.aviation,
+    discussion.marine,
+  ].filter(Boolean).join(' ');
+
+  // Check if glossary exists for this office
+  const hasGlossary = !!getGlossaryForOffice(discussion.office);
+
+  const sections = [
+    { id: 'synopsis', label: 'Synopsis', content: discussion.synopsis },
+    { id: 'nearTerm', label: 'Near Term', content: discussion.nearTerm },
+    { id: 'shortTerm', label: 'Short Term', content: discussion.shortTerm },
+    { id: 'longTerm', label: 'Long Term', content: discussion.longTerm },
+    { id: 'aviation', label: 'Aviation', content: discussion.aviation },
+    { id: 'marine', label: 'Marine', content: discussion.marine },
+    ...(hasGlossary ? [{ id: 'glossary', label: 'Glossary', isGlossary: true }] : []),
+  ].filter(s => s.content || s.isGlossary);
+
+  // Handle text selection
+  const handleMouseUp = useCallback(() => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const containerRect = contentRef.current?.getBoundingClientRect();
+
+      if (containerRect) {
+        setSelectionPopup({
+          text: selection.toString().trim(),
+          x: rect.left + rect.width / 2 - containerRect.left,
+          y: rect.top - containerRect.top - 10,
+        });
+      }
+    } else {
+      setSelectionPopup(null);
+    }
+  }, []);
+
+  // Handle adding selection to notes
+  const handleAddSelectionToNotes = () => {
+    if (selectionPopup?.text) {
+      insertDiscussionToNotes(selectionPopup.text, `NWS ${discussion.office}`);
+      setSelectionPopup(null);
+      window.getSelection()?.removeAllRanges();
+    }
+  };
+
+  // Handle copy all
+  const handleCopyAll = async () => {
+    const activeContent = sections.find(s => s.id === activeSection)?.content;
+    if (activeContent) {
+      await navigator.clipboard.writeText(activeContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Hide popup on click outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (!selection || selection.toString().trim().length === 0) {
+          setSelectionPopup(null);
+        }
+      }, 100);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="glass-widget h-full flex flex-col rounded-2xl overflow-hidden animate-[glass-scale-in_200ms_ease-out]">
+      {/* Header */}
+      <div className="px-4 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-white/50" />
+            <div>
+              <h2 className="text-sm font-semibold text-white">Forecast Discussion</h2>
+              <p className="text-[10px] text-white/50">
+                NWS {discussion.office} • {formatTime(discussion.issuanceTime)}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <a
+              href={`https://forecast.weather.gov/product.php?site=${discussion.office}&issuedby=${discussion.office}&product=AFD`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              title="View on NWS"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-white/70" />
+            </a>
+            <button
+              onClick={handleCopyAll}
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              title="Copy section"
+            >
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-green-400" />
+              ) : (
+                <Copy className="w-3.5 h-3.5 text-white/70" />
+              )}
+            </button>
+            {onCollapse && (
+              <button
+                onClick={onCollapse}
+                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                title="Collapse"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 text-white/70" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Section tabs */}
+        <div className="flex gap-1 mt-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`
+                px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all
+                ${activeSection === section.id
+                  ? 'bg-white/20 text-white'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                }
+              `}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div
+        ref={contentRef}
+        className="relative flex-1 overflow-y-auto p-4"
+        onMouseUp={handleMouseUp}
+      >
+        {/* Selection popup */}
+        {selectionPopup && (
+          <button
+            onClick={handleAddSelectionToNotes}
+            className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
+            style={{
+              left: `${selectionPopup.x}px`,
+              top: `${selectionPopup.y}px`,
+              transform: 'translate(-50%, -100%)',
+            }}
+          >
+            <Plus className="w-3 h-3" />
+            Add to notes
+          </button>
+        )}
+
+        {sections.map((section) => (
+          <div
+            key={section.id}
+            className={activeSection === section.id ? 'block' : 'hidden'}
+          >
+            {section.isGlossary ? (
+              <GlossaryContent
+                office={discussion.office}
+                fullText={fullDiscussionText}
+              />
+            ) : (
+              <div className="text-sm text-white/70 leading-relaxed">
+                {parseAndHighlight(section.content, discussion.office)}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-2 bg-white/5 border-t border-white/10 flex-shrink-0">
+        <p className="text-[9px] text-white/40 text-center">
+          Click highlighted terms or select text to add to notes
+        </p>
+      </div>
+    </div>
+  );
+}
+
+ExpandedDiscussionInline.propTypes = {
+  discussion: PropTypes.shape({
+    office: PropTypes.string,
+    issuanceTime: PropTypes.string,
+    synopsis: PropTypes.string,
+    nearTerm: PropTypes.string,
+    shortTerm: PropTypes.string,
+    longTerm: PropTypes.string,
+    aviation: PropTypes.string,
+    marine: PropTypes.string,
+    fullText: PropTypes.string,
+  }).isRequired,
+  onCollapse: PropTypes.func,
 };
