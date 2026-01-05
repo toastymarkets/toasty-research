@@ -5,7 +5,7 @@ import GlassWidget from './GlassWidget';
 import ResolutionModal from './ResolutionModal';
 import { useCLIReport } from '../../hooks/useCLIReport';
 import { useDSM } from '../../hooks/useDSM';
-import { useCliCountdown } from '../../hooks/useDataReleaseCountdown';
+import { useCliCountdown, useDataReleaseCountdown } from '../../hooks/useDataReleaseCountdown';
 
 /**
  * ResolutionWidget - Displays both CLI (settlement) and DSM (live) data side-by-side
@@ -23,6 +23,7 @@ export function ResolutionWidget({
   const { data: cliData, loading: cliLoading } = useCLIReport(stationId);
   const { data: dsmData, loading: dsmLoading, stationName: dsmStationName } = useDSM(citySlug);
   const cliCountdown = useCliCountdown(stationId);
+  const { sixHour: dsmCountdown } = useDataReleaseCountdown(stationId);
 
   // Only show loading on initial load
   const isInitialLoading = (cliLoading && dsmLoading) || externalLoading;
@@ -52,6 +53,8 @@ export function ResolutionWidget({
 
   // Get DSM high value
   const dsmHigh = dsmData?.highF != null ? Math.round(dsmData.highF) : null;
+  // DSM date is always today
+  const dsmDate = formatDate(new Date().toISOString().split('T')[0]);
 
   const hasAnyData = cliHigh != null || dsmHigh != null;
 
@@ -163,18 +166,26 @@ export function ResolutionWidget({
               </div>
               <div className="text-[9px] text-white/40 mt-0.5 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                High so far
+                {dsmDate}
               </div>
             </div>
           </div>
 
-          {/* Countdown - Always visible */}
-          {cliCountdown && (
-            <div className="mt-auto pt-2 flex items-center justify-between border-t border-white/10">
-              <span className="text-[10px] text-white/50">Next CLI</span>
-              <span className="text-[11px] text-amber-400 font-medium">{cliCountdown.formatted}</span>
-            </div>
-          )}
+          {/* Countdowns - Always visible */}
+          <div className="mt-auto pt-2 flex items-center justify-between border-t border-white/10">
+            {cliCountdown && (
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-white/50">Next CLI</span>
+                <span className="text-[11px] text-amber-400 font-medium">{cliCountdown.formatted}</span>
+              </div>
+            )}
+            {dsmCountdown && (
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-white/50">Next DSM</span>
+                <span className="text-[11px] text-cyan-400 font-medium">{dsmCountdown.formatted}</span>
+              </div>
+            )}
+          </div>
         </div>
       </GlassWidget>
 

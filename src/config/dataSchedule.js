@@ -20,7 +20,7 @@ export const DATA_SCHEDULE = {
     cliVariability: 35, // ±35 minutes
     highTime24h: '04:52',
     metarMinute: 52,
-    dsmCount: 2,
+    dsmCount: 3,
   },
   // Austin, TX
   KAUS: {
@@ -89,7 +89,7 @@ export const DATA_SCHEDULE = {
     cliVariability: 35,
     highTime24h: '06:53',
     metarMinute: 53,
-    dsmCount: 3,
+    dsmCount: 4,
   },
   // Detroit, MI
   KDTW: {
@@ -159,7 +159,7 @@ export const DATA_SCHEDULE = {
     cliVariability: 35,
     highTime24h: '04:53',
     metarMinute: 53,
-    dsmCount: 3,
+    dsmCount: 4,
   },
   // Minneapolis, MN
   KMSP: {
@@ -229,7 +229,7 @@ export const DATA_SCHEDULE = {
     cliVariability: 35,
     highTime24h: '05:51',
     metarMinute: 51,
-    dsmCount: 3,
+    dsmCount: 4,
   },
   // San Francisco, CA
   KSFO: {
