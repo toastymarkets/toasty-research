@@ -2,6 +2,16 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.7.2] - 2026-01-05
+
+### Changed
+- DSM column now displays date with pulsing live indicator
+- Footer shows dual countdowns: "Next CLI" and "Next DSM" side-by-side
+- Updated DSM counts from wethr.net reference data (Atlanta, Denver, Miami, San Antonio)
+
+### Documentation
+- Added wethr.net city resources link to NWS data schedule docs
+
 ## [1.7.1] - 2026-01-05
 
 ### Changed
