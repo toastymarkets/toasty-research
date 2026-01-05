@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { CloudRain, Snowflake, RefreshCw, ChevronRight, Droplets } from 'lucide-react';
 import {
@@ -11,7 +11,6 @@ import {
   ReferenceLine,
   LabelList,
 } from 'recharts';
-import { useNWSPrecipitation } from '../../hooks/useNWSPrecipitation';
 import { useClimateNormals } from '../../hooks/useClimateNormals';
 import { CITY_BY_SLUG } from '../../config/cities';
 import RainHistoryModal from '../weather/RainHistoryModal';
@@ -75,6 +74,104 @@ const SNOW_NORMALS = {
   'san-francisco': 0.0,
   'new-orleans': 0.0,
 };
+
+/**
+ * Fetch current month rain MTD from IEM CLI archive
+ * Uses CLI (Climatological Report) which has official NWS precipitation data
+ * This is more reliable than summing hourly METAR observations
+ */
+function useCurrentRainFromCLI(citySlug) {
+  const [mtdTotal, setMtdTotal] = useState(null);
+  const [mtdNormal, setMtdNormal] = useState(null);
+  const [todayPrecip, setTodayPrecip] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    const city = CITY_BY_SLUG[citySlug];
+    if (!city?.stationId) {
+      setLoading(false);
+      setMtdTotal(0);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
+
+      const url = `https://mesonet.agron.iastate.edu/json/cli.py?station=${city.stationId}&year=${year}&month=${month}&day=${day}`;
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data?.results && data.results.length > 0) {
+        const targetPrefix = `${year}-${String(month).padStart(2, '0')}`;
+        const monthResults = data.results.filter(r =>
+          r.valid && r.valid.startsWith(targetPrefix)
+        );
+
+        // Get most recent day with data
+        const result = monthResults[monthResults.length - 1];
+        if (result) {
+          // precip_month = MTD total
+          const monthTotal = result.precip_month;
+          if (monthTotal !== null && monthTotal !== undefined && monthTotal !== 'M') {
+            if (monthTotal === 'T') {
+              setMtdTotal(0.001); // Trace - show as non-zero but tiny
+            } else {
+              setMtdTotal(parseFloat(monthTotal));
+            }
+          } else {
+            setMtdTotal(0);
+          }
+
+          // precip_month_normal = prorated MTD normal (what the normal should be by this day)
+          const mtdNormalValue = result.precip_month_normal;
+          if (mtdNormalValue !== null && mtdNormalValue !== undefined && mtdNormalValue !== 'M') {
+            setMtdNormal(parseFloat(mtdNormalValue));
+          }
+
+          // precip = today's precipitation
+          const todayValue = result.precip;
+          if (todayValue !== null && todayValue !== undefined) {
+            if (todayValue === 'T') {
+              setTodayPrecip('T'); // Keep as trace string
+            } else if (todayValue !== 'M') {
+              setTodayPrecip(parseFloat(todayValue));
+            }
+          }
+        } else {
+          setMtdTotal(0);
+        }
+      } else {
+        setMtdTotal(0);
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching current rain from CLI:', err);
+      setError(err.message);
+      setMtdTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [citySlug]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const now = new Date();
+  const monthName = now.toLocaleString('en-US', { month: 'long' });
+
+  return { mtdTotal, mtdNormal, todayPrecip, monthName, loading, error, refetch: fetchData };
+}
 
 /**
  * Fetch last year's full month precipitation from IEM CLI archive
@@ -295,17 +392,20 @@ export default function RainWidget({ citySlug, cityName }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('rain'); // 'rain' or 'snow'
 
-  // Fetch rain data
+  // Fetch rain data from IEM CLI (official NWS data)
   const {
     mtdTotal: rainMtd,
+    mtdNormal: rainMtdNormal, // Prorated MTD normal from CLI
+    todayPrecip: rainToday,
     monthName,
     loading: rainMtdLoading,
     error: rainMtdError,
     refetch: refetchRain,
-  } = useNWSPrecipitation(citySlug);
+  } = useCurrentRainFromCLI(citySlug);
 
+  // Full month normals for modal
   const {
-    currentMonthNormal: rainNormal,
+    currentMonthNormal: rainMonthNormal,
     monthlyNormals,
     annualNormal,
     stationName: normalsStation,
@@ -321,7 +421,10 @@ export default function RainWidget({ citySlug, cityName }) {
   // Current actual MTD based on active tab
   const actualMtd = activeTab === 'rain' ? (rainMtd ?? 0) : (snowMtd ?? 0);
   const lastYearTotal = activeTab === 'rain' ? rainLastYear : snowLastYear;
-  const currentNormal = activeTab === 'rain' ? rainNormal : snowNormal;
+  // Use prorated MTD normal for rain (from CLI), full month for snow
+  const currentNormal = activeTab === 'rain' ? (rainMtdNormal ?? rainMonthNormal) : snowNormal;
+  // Today's precipitation (for display)
+  const todayPrecip = activeTab === 'rain' ? rainToday : null;
 
   // Historical high for this month
   const historicalHigh = activeTab === 'rain'
@@ -370,17 +473,18 @@ export default function RainWidget({ citySlug, cityName }) {
 
   const mtdError = activeTab === 'rain' ? rainMtdError : snowMtdError;
 
-  // Custom label renderer for bars
+  // Custom label renderer for bars - bold for current year (index 1)
   const renderCustomLabel = (props) => {
-    const { x, y, width, value } = props;
+    const { x, y, width, value, index } = props;
+    const isCurrentYear = index === 1;
     return (
       <text
         x={x + width / 2}
         y={y - 5}
-        fill="rgba(255,255,255,0.8)"
+        fill={isCurrentYear ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.6)"}
         textAnchor="middle"
-        fontSize={10}
-        fontWeight="500"
+        fontSize={isCurrentYear ? 12 : 10}
+        fontWeight={isCurrentYear ? "700" : "400"}
       >
         {typeof value === 'number' ? `${value.toFixed(2)}"` : value}
       </text>
@@ -448,77 +552,73 @@ export default function RainWidget({ citySlug, cityName }) {
             </div>
           ) : (
             <>
-              {/* MTD Display - Compact inline */}
-              <div className="flex items-baseline justify-between mb-1">
-                <div className="flex items-baseline gap-0.5">
-                  <span className="text-xl font-light text-white tabular-nums">
-                    {actualMtd.toFixed(2)}
-                  </span>
-                  <span className="text-xs text-white/50">"</span>
+              {/* Chart with side label */}
+              <div className="flex-1 flex min-h-[90px]">
+                {/* Bar Chart - no Y-axis, bars show values */}
+                <div className="flex-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={chartData}
+                      margin={{ top: 18, right: 8, left: 8, bottom: 0 }}
+                      barCategoryGap="30%"
+                    >
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)' }}
+                        tickLine={false}
+                        axisLine={false}
+                        interval={0}
+                      />
+                      {/* Hidden Y-axis just for scaling */}
+                      <YAxis hide domain={[0, 'auto']} />
+                      {/* Normal reference line */}
+                      {currentNormal > 0 && (
+                        <ReferenceLine
+                          y={currentNormal}
+                          stroke="rgba(34,211,238,0.4)"
+                          strokeDasharray="4 3"
+                          strokeWidth={1}
+                        />
+                      )}
+                      <Bar
+                        dataKey="value"
+                        radius={[3, 3, 0, 0]}
+                        maxBarSize={52}
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} fillOpacity={0.85} />
+                        ))}
+                        <LabelList
+                          dataKey="value"
+                          position="top"
+                          content={renderCustomLabel}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
+                {/* Side label for normal */}
                 {currentNormal > 0 && (
-                  <span className="text-[10px] text-white/40">
-                    avg {currentNormal.toFixed(1)}"
-                  </span>
+                  <div className="flex flex-col justify-center pr-1 -ml-1">
+                    <div className="text-[9px] text-cyan-400/60 whitespace-nowrap leading-tight">
+                      <div>{currentNormal.toFixed(2)}"</div>
+                      <div className="text-white/30">avg</div>
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Vertical Bar Chart */}
-              <div className="flex-1 min-h-[80px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 20, right: 5, left: -20, bottom: 0 }}
-                    barCategoryGap="25%"
-                  >
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
-                      tickLine={false}
-                      axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                      interval={0}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 8, fill: 'rgba(255,255,255,0.3)' }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v) => `${v}"`}
-                      width={28}
-                      domain={[0, 'auto']}
-                    />
-                    {/* Normal reference line (dotted) */}
-                    {currentNormal > 0 && (
-                      <ReferenceLine
-                        y={currentNormal}
-                        stroke="rgba(255,255,255,0.5)"
-                        strokeDasharray="4 4"
-                        strokeWidth={1.5}
-                      />
-                    )}
-                    <Bar
-                      dataKey="value"
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={45}
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} fillOpacity={0.9} />
-                      ))}
-                      <LabelList
-                        dataKey="value"
-                        position="top"
-                        content={renderCustomLabel}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              {/* Bottom row: Record + context */}
+              <div className="flex items-center justify-between px-1 text-[9px] text-white/30">
+                {historicalHigh && historicalHigh.year && (
+                  <span>Record: {historicalHigh.value}" ({historicalHigh.year})</span>
+                )}
+                {currentNormal > 0 && actualMtd > 0 && (
+                  <span className={actualMtd >= currentNormal ? 'text-cyan-400/50' : 'text-white/30'}>
+                    {actualMtd >= currentNormal ? '+' : ''}{((actualMtd / currentNormal - 1) * 100).toFixed(0)}% of avg
+                  </span>
+                )}
               </div>
-
-              {/* Historical high note */}
-              {historicalHigh && historicalHigh.year && (
-                <div className="text-[9px] text-white/30 text-center mt-1">
-                  Record: {historicalHigh.value}" ({historicalHigh.year})
-                </div>
-              )}
             </>
           )}
         </div>
