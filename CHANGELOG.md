@@ -2,6 +2,25 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.4.2] - 2026-01-04
+
+### Added
+- Rain Widget showing month-to-date precipitation with year-over-year comparison
+- Bar chart comparing current year MTD vs previous year full month total
+- Monthly climate normals modal (1991-2020 NOAA data)
+- Historical record precipitation display for each city
+
+### Fixed
+- IEM CLI API parsing: filter results by target year/month before extracting data
+  - API returns all historical records, not just requested date
+  - Now correctly takes last day of month for full month total
+  - Verified against [LA Almanac](https://www.laalmanac.com/weather/we09aa.php): January 2025 = 0.94"
+
+### Data Sources
+- Current MTD: NWS observations API (`precipitationLastHour`)
+- Previous year: IEM CLI archive (`precip_month` field)
+- Climate normals: Hardcoded NOAA 1991-2020 averages
+
 ## [1.4.1] - 2026-01-03
 
 ### Changed
