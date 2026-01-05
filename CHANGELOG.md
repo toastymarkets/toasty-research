@@ -2,6 +2,19 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.6.0] - 2026-01-05
+
+### Added
+- Inline expansion for NWS Discussion widget (replaces modal overlay pattern)
+- Click-based keyword definitions (replaces hover tooltips)
+- Blockquote format for discussion text inserted into research notes
+- `docs/WIDGET_EXPANSION_LEARNINGS.md` documenting the expansion pattern for future widgets
+
+### Changed
+- Discussion widget now expands to 3 columns within the grid when clicked
+- Models and Market Brackets widgets hide during Discussion expansion
+- Collapse button arrow points left instead of down
+
 ## [1.5.0] - 2026-01-04
 
 ### Added
