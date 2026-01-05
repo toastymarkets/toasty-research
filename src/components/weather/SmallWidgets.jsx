@@ -1,4 +1,4 @@
-import { useState, memo, lazy, Suspense } from 'react';
+import { useState, memo, lazy, Suspense, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
   Sun,
@@ -85,84 +85,187 @@ const getWindDirection = (degrees) => {
   return directions[index];
 };
 
-// ASCII Wind Animation Component - Dynamic flowing characters with compass
+// Particle-based ASCII Wind Animation Component
 const ASCIIWindAnimation = ({ direction = 0, speed = 0 }) => {
-  // Get cardinal direction for display
-  const getCardinal = (deg) => {
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    return dirs[Math.round(deg / 45) % 8];
-  };
+  const containerRef = useRef(null);
+  const particlesRef = useRef([]);
+  const animationRef = useRef(null);
+  const [, forceUpdate] = useState(0);
 
-  // Wind intensity affects character set and density
-  const isStrong = speed > 15;
-  const isModerate = speed > 6;
+  // Determine if wind is more horizontal or vertical
+  // direction: 0=N, 90=E, 180=S, 270=W
+  // Particles move opposite: N wind → particles go south (vertical)
+  const normalizedDir = ((direction % 360) + 360) % 360;
+  const isVertical = (normalizedDir >= 315 || normalizedDir < 45) || // from N
+                     (normalizedDir >= 135 && normalizedDir < 225);   // from S
+  const isHorizontal = (normalizedDir >= 45 && normalizedDir < 135) || // from E
+                       (normalizedDir >= 225 && normalizedDir < 315);  // from W
 
-  // Animation duration inversely proportional to speed
-  // Range: 2.5s (calm) to 0.5s (strong wind 25+ mph)
-  const duration = Math.max(0.5, 2.5 - (speed / 12));
+  // Wind characters based on intensity AND direction
+  // Using subtle characters - mostly dots with slight variation for strong winds
+  const getChar = useCallback((layer) => {
+    if (speed === 0) return '·';
 
-  // Number of streamlines based on intensity
-  const numStreams = isStrong ? 5 : isModerate ? 4 : 3;
-
-  // CSS keyframes for smooth flowing animation
-  const keyframes = `
-    @keyframes streamFlow {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(200%); }
+    if (isVertical) {
+      // Vertical movement (N/S wind)
+      if (speed > 25) return layer === 0 ? '∣' : '·';
+      if (speed > 18) return layer === 0 ? '·' : '·';
+      return '·';
+    } else if (isHorizontal) {
+      // Horizontal movement (E/W wind)
+      if (speed > 25) return layer === 0 ? '−' : '·';
+      if (speed > 18) return layer === 0 ? '·' : '·';
+      return '·';
     }
-  `;
+    // Diagonal or default - just dots
+    return '·';
+  }, [speed, isVertical, isHorizontal]);
 
-  // Generate stream characters based on intensity
-  const getStreamChars = (streamIdx) => {
-    if (speed === 0) return '· · · ·';
-    if (isStrong) return '═══►';
-    if (isModerate) return '───►';
-    return '- - -›';
-  };
+  // Convert wind direction to screen coordinates
+  // Wind direction = where wind comes FROM (meteorological convention)
+  // 0° = from North, 90° = from East, 180° = from South, 270° = from West
+  // Particles move in opposite direction (toward), mapped to screen coords:
+  // Screen: 0° = right (+X), 90° = down (+Y), 180° = left (-X), 270° = up (-Y)
+  // Formula: screen_angle = wind_direction + 90°
+  const dirRad = ((direction + 90) * Math.PI) / 180;
+
+  // Particle count based on wind speed - high density
+  const maxParticles = Math.min(80, Math.max(35, Math.floor(speed * 3)));
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const width = container.offsetWidth || 100;
+    const height = container.offsetHeight || 50;
+
+    // Initialize particles
+    const createParticle = (init = false) => {
+      const layer = Math.floor(Math.random() * 3); // 0=front, 1=mid, 2=back
+      const layerSpeed = 1 - layer * 0.3; // Front moves faster
+      const baseSpeed = Math.max(0.8, speed / 6);
+
+      // Calculate velocity components
+      const vx = Math.cos(dirRad) * baseSpeed * layerSpeed * (0.8 + Math.random() * 0.4);
+      const vy = Math.sin(dirRad) * baseSpeed * layerSpeed * (0.8 + Math.random() * 0.4);
+
+      // Spawn from the upwind edge (opposite to movement direction)
+      let x, y;
+      if (init) {
+        x = Math.random() * width;
+        y = Math.random() * height;
+      } else {
+        // Determine spawn edge based on movement direction
+        if (Math.abs(vx) > Math.abs(vy)) {
+          // Horizontal movement dominant - spawn from left or right edge
+          x = vx > 0 ? -5 : width + 5;
+          y = Math.random() * height;
+        } else {
+          // Vertical movement dominant - spawn from top or bottom edge
+          x = Math.random() * width;
+          y = vy > 0 ? -5 : height + 5;
+        }
+      }
+
+      // Vary size more dramatically - range from 6px to 16px
+      const baseSize = 8 + Math.random() * 8; // 8-16px range
+      const layerScale = 1 - layer * 0.25; // Front layer larger
+      const finalSize = baseSize * layerScale;
+
+      return {
+        x,
+        y,
+        vx,
+        vy,
+        layer,
+        opacity: (0.3 + (2 - layer) * 0.25) * (0.5 + Math.random() * 0.5),
+        char: getChar(layer),
+        size: finalSize,
+      };
+    };
+
+    // Reset particles when speed/direction changes significantly
+    particlesRef.current = Array.from({ length: maxParticles }, () => createParticle(true));
+
+    let lastTime = performance.now();
+
+    const animate = (currentTime) => {
+      const deltaTime = Math.min(50, currentTime - lastTime);
+      lastTime = currentTime;
+
+      const speedFactor = deltaTime / 16; // Normalize to ~60fps
+
+      particlesRef.current = particlesRef.current.map(p => {
+        let newX = p.x + p.vx * speedFactor;
+        let newY = p.y + p.vy * speedFactor;
+
+        // Reset particle if it goes off screen
+        const outOfBounds =
+          newX < -20 || newX > width + 20 ||
+          newY < -10 || newY > height + 10;
+
+        if (outOfBounds) {
+          return createParticle(false);
+        }
+
+        return { ...p, x: newX, y: newY };
+      });
+
+      forceUpdate(n => n + 1);
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    if (speed > 0) {
+      animationRef.current = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [speed, direction, dirRad, maxParticles, getChar]);
 
   return (
-    <div className="relative w-full h-full overflow-hidden rounded-lg flex">
-      <style>{keyframes}</style>
+    <div
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30"
+    >
+      {/* Particles */}
+      {particlesRef.current.map((p, i) => (
+        <span
+          key={i}
+          className="absolute font-mono text-cyan-300 pointer-events-none select-none"
+          style={{
+            left: p.x,
+            top: p.y,
+            opacity: p.opacity,
+            fontSize: p.size,
+            textShadow: p.layer === 0 ? '0 0 4px rgba(34,211,238,0.6)' : 'none',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 3 - p.layer,
+          }}
+        >
+          {p.char}
+        </span>
+      ))}
 
-      {/* Left: Mini compass showing direction */}
-      <div className="w-10 h-full flex items-center justify-center flex-shrink-0">
-        <div className="relative w-8 h-8">
-          {/* Compass circle */}
-          <svg viewBox="0 0 32 32" className="w-full h-full">
-            <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-            {/* Direction arrow */}
-            <g transform={`rotate(${direction}, 16, 16)`}>
-              <path d="M16,4 L14,12 L16,10 L18,12 Z" fill="white" opacity="0.9" />
-              <line x1="16" y1="10" x2="16" y2="20" stroke="white" strokeWidth="1.5" opacity="0.6" />
-            </g>
-            {/* N indicator */}
-            <text x="16" y="5" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="4">N</text>
-          </svg>
+      {/* Subtle direction indicator in corner */}
+      <div className="absolute bottom-1 right-1 opacity-40">
+        <svg viewBox="0 0 20 20" className="w-4 h-4">
+          <circle cx="10" cy="10" r="8" fill="none" stroke="white" strokeWidth="0.5" opacity="0.3" />
+          <g transform={`rotate(${direction}, 10, 10)`}>
+            <path d="M10,3 L8.5,7 L10,6 L11.5,7 Z" fill="white" opacity="0.6" />
+          </g>
+        </svg>
+      </div>
+
+      {/* "Calm" indicator when no wind */}
+      {speed === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-white/30 text-xs font-mono">calm</span>
         </div>
-      </div>
-
-      {/* Right: Streaming particles */}
-      <div className="flex-1 flex flex-col justify-center overflow-hidden pr-1">
-        {[...Array(numStreams)].map((_, i) => (
-          <div
-            key={i}
-            className="h-3 overflow-hidden flex items-center"
-            style={{ opacity: 0.3 + (i % 2) * 0.3 + (speed / 40) }}
-          >
-            <span
-              className="text-[10px] font-mono text-cyan-300 whitespace-nowrap inline-block"
-              style={{
-                animation: speed > 0
-                  ? `streamFlow ${duration + (i * 0.15)}s linear ${i * 0.2}s infinite`
-                  : 'none',
-                textShadow: isStrong ? '0 0 4px rgba(34,211,238,0.5)' : 'none',
-              }}
-            >
-              {getStreamChars(i)}
-            </span>
-          </div>
-        ))}
-      </div>
+      )}
     </div>
   );
 };
@@ -313,27 +416,29 @@ export const WindWidget = memo(function WindWidget({
           onClick={() => setIsModalOpen(true)}
         >
           <div className="flex flex-col flex-1 gap-1">
-            {/* Top: ASCII Animation */}
-            <div className="h-[48px] bg-black/20 rounded-lg overflow-hidden">
+            {/* Top: ASCII Animation - 60% of widget */}
+            <div className="flex-[3] min-h-[60px] bg-black/20 rounded-lg overflow-hidden">
               <ASCIIWindAnimation direction={directionDeg} speed={speedMph} />
             </div>
 
-            {/* Bottom: Speed and direction info */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-light text-white">{speedMph}</span>
-                <span className="text-xs text-white/60">mph</span>
+            {/* Bottom: Speed and direction info - 40% */}
+            <div className="flex-[2] flex flex-col justify-center">
+              <div className="flex items-center justify-between">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-light text-white">{speedMph}</span>
+                  <span className="text-[10px] text-white/60">mph</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-medium text-white">{directionCardinal}</span>
+                  <span className="text-[10px] text-white/50 ml-1">{Math.round(directionDeg)}°</span>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="text-sm font-medium text-white">{directionCardinal}</span>
-                <span className="text-xs text-white/50 ml-1">{Math.round(directionDeg)}°</span>
-              </div>
+              {gustsMph && (
+                <div className="text-[10px] text-white/50">
+                  Gusts {gustsMph} mph
+                </div>
+              )}
             </div>
-            {gustsMph && (
-              <div className="text-[11px] text-white/50">
-                Gusts {gustsMph} mph
-              </div>
-            )}
           </div>
         </GlassWidget>
 

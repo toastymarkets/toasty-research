@@ -249,6 +249,47 @@ box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 | `.animate-lightning` | Storm flashes |
 | `.animate-twinkle` | Star sparkle |
 
+### ASCII Particle Animations
+
+For dynamic weather visualizations, we use a **particle-based ASCII animation system**. This creates an organic, terminal-inspired aesthetic while conveying weather data intuitively.
+
+#### Design Principles
+- **Subtlety over flash**: Use simple characters (`·`) rather than complex symbols
+- **Direction-aware**: Particle movement matches meteorological wind direction
+- **Speed-proportional**: Animation velocity reflects real-world intensity
+- **Depth through variation**: Multiple layers with different sizes/opacities create parallax
+
+#### Character Selection
+| Condition | Direction | Characters |
+|-----------|-----------|------------|
+| Light wind | Any | `·` (middle dot) |
+| Strong vertical | N/S | `∣` (light vertical bar) |
+| Strong horizontal | E/W | `−` (minus sign) |
+| Diagonal/default | Any | `·` |
+
+#### Particle Properties
+| Property | Range | Purpose |
+|----------|-------|---------|
+| Count | 35-80 | Density based on intensity |
+| Size | 8-16px | Random variation for depth |
+| Opacity | 0.3-0.8 | Layer-based depth effect |
+| Layers | 3 | Front (fast/bright), mid, back (slow/dim) |
+
+#### Animation Mechanics
+- Use `requestAnimationFrame` for smooth 60fps animation
+- Normalize frame timing with `deltaTime` for consistent speed
+- Spawn particles from upwind edge based on direction
+- Reset particles when they exit viewport bounds
+
+#### Color Palette
+| Element | Color | Tailwind |
+|---------|-------|----------|
+| Particles | Cyan | `text-cyan-300` |
+| Glow (strong) | Cyan glow | `text-shadow: 0 0 4px rgba(34,211,238,0.6)` |
+| Background | Dark gradient | `bg-gradient-to-br from-slate-900/50 to-slate-800/30` |
+
+See [docs/WIND_WIDGET.md](./WIND_WIDGET.md) for full implementation reference.
+
 ---
 
 ## Weather Backgrounds
