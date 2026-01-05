@@ -1,5 +1,6 @@
 /* Frog Friend Styles */
 
+/* Original relative positioning (legacy) */
 .frog-container {
   width: 36px;
   height: 29px;
@@ -11,15 +12,33 @@
   opacity: 0.5;
 }
 
-.frog-container:hover {
+/* Physics-based fixed positioning */
+.frog-container-physics {
+  width: 36px;
+  height: 29px;
+  cursor: pointer;
+  position: fixed;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  image-rendering: pixelated;
+  opacity: 0.7;
+  z-index: 1000; /* High z-index to ensure visibility */
+  pointer-events: auto;
+  will-change: left, top; /* Optimize for animation */
+}
+
+.frog-container:hover,
+.frog-container-physics:hover {
   opacity: 0.9;
 }
 
-.frog-container:hover .frog-svg {
+.frog-container:hover .frog-svg,
+.frog-container-physics:hover .frog-svg {
   transform: scale(1.1);
 }
 
-.frog-container:active .frog-svg {
+.frog-container:active .frog-svg,
+.frog-container-physics:active .frog-svg {
   transform: scale(0.95);
 }
 
@@ -62,6 +81,20 @@
   }
   100% {
     transform: translateY(0) scale(1);
+  }
+}
+
+/* Airborne squash-and-stretch for physics mode */
+.frog-airborne .frog-svg {
+  animation: frog-airborne-squash 0.15s ease-out forwards;
+}
+
+@keyframes frog-airborne-squash {
+  0% {
+    transform: scaleY(1) scaleX(1);
+  }
+  100% {
+    transform: scaleY(0.9) scaleX(1.1);
   }
 }
 

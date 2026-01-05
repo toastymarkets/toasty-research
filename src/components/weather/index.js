@@ -18,6 +18,7 @@ export { default as NearbyStations } from './NearbyStations';
 export { default as AlertsWidget } from './AlertsWidget';
 export { default as ResolutionWidget } from './ResolutionWidget';
 export { default as ResolutionModal } from './ResolutionModal';
+export { default as RainHistoryModal } from './RainHistoryModal';
 
 // Small Widgets
 export {
