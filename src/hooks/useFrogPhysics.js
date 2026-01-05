@@ -17,6 +17,7 @@ const FROG_HEIGHT = 29;
 
 /**
  * Calculate dynamic boundaries based on viewport and layout
+ * Constrains frog to the max-w-5xl content area (observations widget width)
  * @param {HTMLElement|null} heroElement - Reference to hero section for floor calculation
  * @returns {Object} Boundary coordinates
  */
@@ -24,15 +25,23 @@ function calculateBoundaries(heroElement) {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const isMobile = viewportWidth < 768;
+  const isDesktop = viewportWidth >= 768;
   const hasNotesSidebar = viewportWidth >= 1024;
 
-  // Left boundary: left sidebar edge (or screen edge on mobile)
-  const leftBound = isMobile ? 16 : 12;
+  // Content area is max-w-5xl (1024px) centered in available space
+  const sidebarWidth = isDesktop ? 304 : 0; // Left sidebar width on desktop
+  const notesSidebarWidth = hasNotesSidebar ? 340 : 0;
+  const availableWidth = viewportWidth - sidebarWidth - notesSidebarWidth;
+  const contentWidth = Math.min(1024, availableWidth - 24); // max-w-5xl with padding
+  const contentStart = sidebarWidth + (availableWidth - contentWidth) / 2;
 
-  // Right boundary: before notes sidebar or screen edge
-  const rightBound = hasNotesSidebar
-    ? viewportWidth - 332 - FROG_WIDTH // Notes sidebar (320px + 12px margin) + frog width
-    : viewportWidth - 50;
+  // Left boundary: start of content area
+  const leftBound = isMobile ? 16 : contentStart;
+
+  // Right boundary: end of content area
+  const rightBound = isMobile
+    ? viewportWidth - 50
+    : contentStart + contentWidth - FROG_WIDTH;
 
   // Floor: bottom of hero section (tracks with scroll)
   let floor = viewportHeight - 100;

@@ -11,7 +11,6 @@ export default function FrogFriend({ condition, className = '', heroRef }) {
   const [isBlinking, setIsBlinking] = useState(false);
   const [emote, setEmote] = useState('idle'); // idle, happy, sad, angry, surprised, sleeping, eating, confused
   const [isSleeping, setIsSleeping] = useState(false);
-  const [idleTimer, setIdleTimer] = useState(null);
 
   // Physics-based position and hopping
   const { position, isGrounded, facingLeft, hop, isInitialized } = useFrogPhysics({
@@ -64,32 +63,69 @@ export default function FrogFriend({ condition, className = '', heroRef }) {
     return () => clearInterval(blinkInterval);
   }, [isSleeping]);
 
-  // Sleep after inactivity
+  // Track hop count for sleep cycles
+  const hopCountRef = useRef(0);
+  const maxHopsBeforeSleep = useRef(Math.floor(Math.random() * 4) + 2); // 2-5 hops
+
+  // Sleep/wake cycle management
   useEffect(() => {
-    const sleepTimeout = setTimeout(() => {
-      setIsSleeping(true);
-      setEmote('sleeping');
-    }, 60000); // Sleep after 1 minute of no interaction
+    if (!isInitialized) return;
 
-    return () => clearTimeout(sleepTimeout);
-  }, [emote]);
+    if (isSleeping) {
+      // Wake up after random sleep duration (15-45 seconds)
+      const sleepDuration = 15000 + Math.random() * 30000;
+      const wakeTimeout = setTimeout(() => {
+        setIsSleeping(false);
+        setEmote('idle');
+        hopCountRef.current = 0;
+        maxHopsBeforeSleep.current = Math.floor(Math.random() * 4) + 2;
+      }, sleepDuration);
 
-  // Random hopping with physics
+      return () => clearTimeout(wakeTimeout);
+    }
+  }, [isSleeping, isInitialized]);
+
+  // Random hopping with physics - more dormant behavior
   useEffect(() => {
     if (isSleeping || !isInitialized) return;
 
     const hopAround = () => {
-      hop('random');
+      hopCountRef.current += 1;
+
+      // Check if should go to sleep after this hop
+      if (hopCountRef.current >= maxHopsBeforeSleep.current) {
+        hop('random');
+        // Go to sleep after landing
+        setTimeout(() => {
+          setIsSleeping(true);
+          setEmote('sleeping');
+        }, 1000);
+      } else {
+        hop('random');
+      }
     };
 
-    // Hop every 6 seconds
-    const hopInterval = setInterval(hopAround, 6000);
+    // Hop less frequently (8-15 seconds between hops)
+    const getNextHopDelay = () => 8000 + Math.random() * 7000;
+
+    let hopTimeout;
+    const scheduleNextHop = () => {
+      hopTimeout = setTimeout(() => {
+        if (!isSleeping) {
+          hopAround();
+          scheduleNextHop();
+        }
+      }, getNextHopDelay());
+    };
 
     // Initial hop after a short delay
-    const initialHop = setTimeout(hopAround, 2000);
+    const initialHop = setTimeout(() => {
+      hopAround();
+      scheduleNextHop();
+    }, 3000);
 
     return () => {
-      clearInterval(hopInterval);
+      clearTimeout(hopTimeout);
       clearTimeout(initialHop);
     };
   }, [isSleeping, hop, isInitialized]);
@@ -100,12 +136,11 @@ export default function FrogFriend({ condition, className = '', heroRef }) {
     if (isSleeping) {
       setIsSleeping(false);
       setEmote('surprised');
+      hopCountRef.current = 0; // Reset hop count
+      maxHopsBeforeSleep.current = Math.floor(Math.random() * 4) + 2;
       setTimeout(() => setEmote(getWeatherEmote()), 1000);
       return;
     }
-
-    // Clear any existing idle timer
-    if (idleTimer) clearTimeout(idleTimer);
 
     // Random action on click
     const actions = ['happy', 'eating', 'hop'];
@@ -113,6 +148,7 @@ export default function FrogFriend({ condition, className = '', heroRef }) {
 
     if (action === 'hop' && isGrounded) {
       hop('random');
+      hopCountRef.current += 1; // Count this hop
     } else if (action === 'eating') {
       setEmote('eating');
       setTimeout(() => setEmote(getWeatherEmote()), 1500);
@@ -120,13 +156,6 @@ export default function FrogFriend({ condition, className = '', heroRef }) {
       setEmote('happy');
       setTimeout(() => setEmote(getWeatherEmote()), 1000);
     }
-
-    // Reset sleep timer
-    const timer = setTimeout(() => {
-      setIsSleeping(true);
-      setEmote('sleeping');
-    }, 60000);
-    setIdleTimer(timer);
   };
 
   // Render eyes based on emote - positioned ON the eye bumps
