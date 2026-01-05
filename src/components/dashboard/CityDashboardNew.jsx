@@ -170,6 +170,13 @@ function CityDashboardContent({ city, citySlug }) {
   const { isCollapsed: notesSidebarCollapsed } = useNotesSidebar();
   const heroRef = useRef(null);
 
+  // Widget expansion state (for inline expansion pattern)
+  const [expandedWidget, setExpandedWidget] = useState(null);
+  const isDiscussionExpanded = expandedWidget === 'discussion';
+  const handleToggleDiscussion = () => {
+    setExpandedWidget(prev => prev === 'discussion' ? null : 'discussion');
+  };
+
   return (
     <>
       {/* Dynamic weather background */}
@@ -246,21 +253,25 @@ function CityDashboardContent({ city, citySlug }) {
 
       {/* Widget Grid V2 - CSS Grid with named areas */}
       <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 mt-2 pb-4">
-        <WidgetGridV2>
-          {/* Models Widget */}
-          <WidgetGridV2.Area area="models">
-            <ModelsWidget citySlug={citySlug} loading={forecastLoading} />
-          </WidgetGridV2.Area>
+        <WidgetGridV2 expandedWidget={expandedWidget}>
+          {/* Models Widget - Hidden when discussion expanded */}
+          {!isDiscussionExpanded && (
+            <WidgetGridV2.Area area="models">
+              <ModelsWidget citySlug={citySlug} loading={forecastLoading} />
+            </WidgetGridV2.Area>
+          )}
 
-          {/* Market Brackets - Vertical layout (spans 2 rows) */}
-          <WidgetGridV2.Area area="brackets">
-            <MarketBrackets
-              citySlug={citySlug}
-              cityName={city.name}
-              loading={forecastLoading}
-              variant="vertical"
-            />
-          </WidgetGridV2.Area>
+          {/* Market Brackets - Hidden when discussion expanded */}
+          {!isDiscussionExpanded && (
+            <WidgetGridV2.Area area="brackets">
+              <MarketBrackets
+                citySlug={citySlug}
+                cityName={city.name}
+                loading={forecastLoading}
+                variant="vertical"
+              />
+            </WidgetGridV2.Area>
+          )}
 
           {/* Weather Map (2x2) */}
           <WidgetGridV2.Area area="map">
@@ -279,6 +290,8 @@ function CityDashboardContent({ city, citySlug }) {
               lat={city.lat}
               lon={city.lon}
               citySlug={citySlug}
+              isExpanded={isDiscussionExpanded}
+              onToggleExpand={handleToggleDiscussion}
             />
           </WidgetGridV2.Area>
 

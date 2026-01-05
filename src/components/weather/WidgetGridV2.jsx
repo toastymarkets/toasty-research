@@ -3,16 +3,19 @@ import PropTypes from 'prop-types';
 /**
  * WidgetGridV2 - Apple Weather inspired grid layout with explicit areas
  * Uses CSS Grid with named template areas for precise widget placement
+ * Supports widget expansion via expandedWidget prop
  */
-export default function WidgetGridV2({ children, className = '' }) {
+export default function WidgetGridV2({ children, className = '', expandedWidget = null }) {
+  // Build class name with expansion modifier
+  const gridClassName = [
+    'widget-grid-v2',
+    'grid gap-2 w-full max-w-full overflow-hidden',
+    expandedWidget === 'discussion' && 'discussion-expanded',
+    className,
+  ].filter(Boolean).join(' ');
+
   return (
-    <div
-      className={`
-        widget-grid-v2
-        grid gap-2 w-full max-w-full overflow-hidden
-        ${className}
-      `}
-    >
+    <div className={gridClassName}>
       {children}
     </div>
   );
@@ -21,6 +24,7 @@ export default function WidgetGridV2({ children, className = '' }) {
 WidgetGridV2.propTypes = {
   children: PropTypes.node,
   className: PropTypes.string,
+  expandedWidget: PropTypes.string,
 };
 
 /**
