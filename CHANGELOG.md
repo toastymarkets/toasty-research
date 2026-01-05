@@ -9,6 +9,10 @@ All notable changes to Toasty Weather Research Dashboard.
 - Bar chart comparing current year MTD vs previous year full month total
 - Monthly climate normals modal (1991-2020 NOAA data)
 - Historical record precipitation display for each city
+- **Snow tab** with year-over-year snow accumulation comparison
+  - Toggle between Rain/Snow tabs in widget header
+  - Snow climate normals and historical records for 16 cities
+  - Graceful handling of missing snow data ("M" values)
 
 ### Fixed
 - IEM CLI API parsing: filter results by target year/month before extracting data
@@ -17,8 +21,9 @@ All notable changes to Toasty Weather Research Dashboard.
   - Verified against [LA Almanac](https://www.laalmanac.com/weather/we09aa.php): January 2025 = 0.94"
 
 ### Data Sources
-- Current MTD: NWS observations API (`precipitationLastHour`)
-- Previous year: IEM CLI archive (`precip_month` field)
+- Rain MTD: NWS observations API (`precipitationLastHour`)
+- Rain previous year: IEM CLI archive (`precip_month` field)
+- Snow MTD/previous year: IEM CLI archive (`snow_month` field)
 - Climate normals: Hardcoded NOAA 1991-2020 averages
 
 ## [1.4.1] - 2026-01-03
