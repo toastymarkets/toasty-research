@@ -5,6 +5,7 @@ import ForecastDiscussion from '../components/widgets/ForecastDiscussion';
 import NWSHourlyForecast from '../components/widgets/NWSHourlyForecast';
 import LiveMarketBrackets from '../components/widgets/LiveMarketBrackets';
 import DailySummary from '../components/widgets/DailySummary';
+import RainWidget from '../components/widgets/RainWidget';
 
 /**
  * Widget Registry
@@ -102,6 +103,19 @@ export const WIDGET_REGISTRY = {
     defaultH: 4,
     minW: 3,
     minH: 3,
+  },
+  'rain-accumulation': {
+    id: 'rain-accumulation',
+    name: 'Rain Accumulation',
+    description: 'Monthly precipitation with actual vs forecast vs market vs historical comparison',
+    icon: 'CloudRain',
+    component: RainWidget,
+    category: 'weather',
+    requiredProps: ['citySlug', 'cityName'],
+    defaultW: 4,
+    defaultH: 5,
+    minW: 3,
+    minH: 4,
   },
 };
 
