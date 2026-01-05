@@ -130,6 +130,18 @@ See **[docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md)** for comprehensive
 - **Interactive elements**: Blue highlights, hover states
 - **Weather backgrounds**: Time-based gradients with animated overlays
 
+## Git Workflow
+
+### Changelog & Version Updates
+- **Never update CHANGELOG.md or package.json version on feature branches**
+- This avoids merge conflicts when multiple PRs are in flight
+- After a PR merges to main, update changelog and version on main directly
+
+### Branch Hygiene
+- Keep feature branches small and short-lived
+- One feature = one branch
+- Rebase on main before opening a PR: `git fetch origin main && git rebase origin/main`
+
 ## Playwright MCP Guidelines
 
 To minimize context usage when using the Playwright browser tools:
