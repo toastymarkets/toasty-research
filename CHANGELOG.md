@@ -2,6 +2,20 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.8.0] - 2026-01-05
+
+### Added
+- Educational "Learn" tab in ModelsWidget modal with model cards and trading tips
+- Hover tooltips on compact widget showing model metadata and known biases
+- Confidence badge (High/Med/Low) based on model spread
+- Research-backed model metadata: fullName, provider, resolution, forecastRange, bestFor, knownBias
+- `docs/WEATHER_MODELS_RESEARCH.md` - comprehensive weather model research document
+
+### Changed
+- Tab bar in modal to switch between "Forecast" and "Learn" views
+- Model cards in Learn tab show provider, resolution, best use cases, and bias warnings
+- Spread indicator now includes color-coded confidence level
+
 ## [1.7.2] - 2026-01-05
 
 ### Changed
