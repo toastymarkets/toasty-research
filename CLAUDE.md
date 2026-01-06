@@ -142,6 +142,60 @@ See **[docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md)** for comprehensive
 - One feature = one branch
 - Rebase on main before opening a PR: `git fetch origin main && git rebase origin/main`
 
+## Development Workflow & Session Management
+
+### Project Skills (Slash Commands)
+
+Available in `.claude/commands/`:
+- **/summary** - Generate comprehensive session summary before PR
+- **/ship** - Commit all changes, push, and create PR
+- **/build_check** - Run production build and verify it succeeds
+- **/review_feature** - Test and review widget/feature functionality
+- **/widget_new** - Create new widget with boilerplate
+- **/cleanup_servers** - Kill all dev servers except most recent
+- **/perf_audit** - Analyze app performance and bundle composition
+
+### Session Summary Best Practices
+
+When completing a feature or wrapping up a session:
+
+1. **Use `/summary`** to document all work completed
+2. **Format**: Include branch, commits, phases, statistics, and status
+3. **Be specific**: Quantify changes ("Added 30 keywords" not "Added keywords")
+4. **Group logically**: Organize by feature/phase, not chronologically
+5. **Use emojis**: 🎯 Major Accomplishments, 📊 Statistics, ✅ Status
+6. **Note testing**: What was verified to work
+7. **Then use `/ship`** to commit, push, and create PR with the summary
+
+**Example Summary Structure:**
+```markdown
+## Complete Session Summary
+
+**Branch**: `feature/discussion-keywords-review`
+**Total Commits**: 7
+
+### 🎯 Major Accomplishments
+
+#### 1️⃣ **Multi-City Keyword Analysis** (30+ new keywords)
+- Analyzed AFDs from all 6 NWS offices
+- Added high-value terms forecasters actually use
+- Identified office-specific writing styles
+
+#### 2️⃣ **UI Fixes**
+- Fixed selection popup hiding behind header
+- Removed clutter from widget headers
+
+### 📊 Statistics
+- **New keywords**: 35
+- **Files modified**: 3
+- **Cities analyzed**: 6
+
+### ✅ Ready to Merge
+All changes tested and committed.
+```
+
+This format provides clear context for PR reviewers and future sessions.
+
 ## Playwright MCP Guidelines
 
 To minimize context usage when using the Playwright browser tools:
