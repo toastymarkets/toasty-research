@@ -12,49 +12,66 @@ const WEATHER_KEYWORDS = {
   // Temperature patterns
   temperature: [
     'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
-    'above normal', 'below normal', 'near normal', 'record high', 'record low',
+    'above normal', 'below normal', 'near normal', 'above average', 'above-average temperature',
+    'record high', 'record low', 'record-breaking', 'records',
     'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
-    'warmer', 'cooler', 'warm', 'cold',
+    'warmer', 'cooler', 'warm', 'cold', 'dew point', 'dewpoint',
+    'inversion', 'temperature inversion', 'radiational cooling',
   ],
   // Pressure/fronts
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
     'frontal boundary', 'frontal passage',
-    'low pressure', 'high pressure', 'trough', 'troughing', 'ridge', 'upper level',
+    'low pressure', 'high pressure', 'trough', 'troughing', 'ridge', 'surface ridge', 'upper level',
     'surface low', 'surface high', 'shortwave', 'short wave', 'longwave',
-    'cutoff low', 'closed low', 'blocking pattern', 'zonal flow',
+    'cutoff low', 'closed low', 'upper low', 'blocking pattern', 'zonal flow',
     'return flow', 'upper level disturbance', 'Pacific front',
+    'jet stream', 'polar vortex', 'pressure gradient', 'isobar',
+    'positively tilted', 'negatively tilted', 'weak flow', 'nnw flow', 'nw flow',
+    'ne flow', 'sw flow', 'se flow', 'westerly flow', 'easterly flow',
+    'storm system', 'storm systems', 'synoptic waves', 'dynamic system',
+    'kinematic forcing', 'moisture laden warm conveyer', 'warm conveyer',
+    'secondary low', 'polar front', 'backdoor cold front',
+    'upper-level support', 'reduced upper-level support',
   ],
   // Precipitation
   precipitation: [
-    'rain chances', 'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
-    'shower', 'drizzle', 'downpour', 'heavy rain', 'light rain',
-    'accumulation', 'precip', 'precipitation', 'moisture',
+    'rain chances', 'rain', 'snow', 'sleet', 'freezing rain', 'freezing', 'wintry mix', 'thunderstorm',
+    'shower', 'showers', 'light shower', 'light showers', 'drizzle', 'downpour', 'heavy rain', 'light rain',
+    'soaking rain', 'sprinkles', 'flurries', 'isolated shower', 'measurable snow',
+    'accumulation', 'precip', 'precipitation', 'moisture', 'copious amounts',
     'convection', 'instability', 'cape', 'lifted index',
-    'dry', 'low clouds',
+    'dry', 'low clouds', 'fog', 'dense fog', 'mist', 'virga',
+    'stratus', 'cumulus', 'cirrus', 'cloud cover', 'overcast',
+    'partly cloudy', 'partly to mostly cloudy', 'mostly cloudy', 'sunny skies', 'clear skies',
   ],
   // Wind
   wind: [
-    'wind advisory', 'high wind', 'gust', 'gusty', 'gusty winds', 'gusty southerly winds',
+    'wind advisory', 'high wind', 'gust', 'gusts', 'gusty', 'gusty winds', 'gusty southerly winds',
     'gusty south winds', 'breezy', 'windy',
     'santa ana', 'chinook', 'offshore flow', 'onshore flow',
-    'wind shift', 'veering', 'backing',
+    'wind shift', 'veering', 'backing', 'jet', 'low level jet', 'mountain wave',
   ],
   // Confidence/uncertainty
   confidence: [
-    'uncertainty', 'confidence', 'likely', 'unlikely', 'possible',
-    'expected', 'forecast', 'outlook', 'trend', 'timing',
-    'models agree', 'model spread', 'ensemble', 'ensemble solutions', 'deterministic',
+    'uncertainty', 'confidence', 'unlikely',
+    'forecast', 'outlook', 'trend', 'timing',
+    'models agree', 'model spread', 'ensemble', 'ensemble solutions',
+    'model guidance', 'solution', 'model solution',
+    'improving model agreement', 'uncertainty remains high',
   ],
   // Hazards - fire, severe weather, dangerous conditions
   hazards: [
     'fire weather', 'fire concerns', 'fuel moisture', 'red flag warning',
     'wind chill', 'heat index', 'severe', 'tornado', 'hail',
     'flash flood', 'flood', 'ice storm', 'blizzard',
+    'advisory', 'warning', 'watch', 'freezing fog',
+    'elevated fire weather', 'dense fog advisory',
   ],
-  // Aviation terms
+  // Aviation / Technical terms
   aviation: [
-    'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling',
+    'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling', 'visibility', 'VSBY',
+    'CWA', 'EPS', 'QPF',
   ],
   // Locations - city-specific geographic references
   locations: [
@@ -64,16 +81,19 @@ const WEATHER_KEYWORDS = {
     'connecticut', 'new jersey',
     // Chicago/LOT area
     'lake michigan', 'lakefront', 'lake effect', 'lake enhanced',
-    'wisconsin', 'indiana', 'i-88', 'i-90',
+    'wisconsin', 'indiana', 'i-88', 'i-90', 'i-80', 'northern il', 'moline',
+    'southern plains',
     // LA/LOX area
-    'point conception', 'santa barbara', 'ventura', 'los angeles county',
-    'los angeles basin', 'san fernando valley', 'antelope valley',
+    'point conception', 'pt conception', 'santa barbara', 'sba', 'ventura', 'los angeles county',
+    'la county', 'los angeles basin', 'san fernando valley', 'antelope valley',
     'catalina', 'channel islands', 'san gabriel', 'central coast',
-    'orange county', 'san diego', 'inland empire', 'high desert',
+    'orange county', 'san diego', 'inland empire', 'high desert', 'slo', 'san luis obispo',
+    'i-5 corridor', 'mountain passes',
     // Denver/BOU area
     'front range', 'palmer divide', 'i-25', 'i-70', 'boulder',
     'fort collins', 'denver metro', 'continental divide',
     'northern mountains', 'central mountains', 'southern mountains',
+    'lower foothills', 'elevated terrain',
     // Austin/EWX area
     'hill country', 'edwards plateau', 'rio grande', 'south central texas',
     'balcones', 'i-35', 'i-10', 'san antonio', 'guadalupe',
@@ -103,6 +123,8 @@ const CATEGORY_COLORS = {
   hazards: 'bg-red-500/30 text-red-300 hover:bg-red-500/50',
   aviation: 'bg-gray-500/30 text-gray-300 hover:bg-gray-500/50',
   tempRange: 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/50',
+  rainfallAmount: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
+  degreeRange: 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/50',
   locations: 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50',
 };
 
@@ -186,6 +208,9 @@ const KEYWORD_DEFINITIONS = {
   'wintry mix': 'A combination of rain, snow, sleet, or freezing rain.',
   'thunderstorm': 'A storm with lightning and thunder, often with heavy rain and gusty winds.',
   'shower': 'Brief period of precipitation from convective clouds.',
+  'showers': 'Multiple brief periods of precipitation from convective clouds.',
+  'light shower': 'Brief, light precipitation event.',
+  'light showers': 'Multiple brief, light precipitation events.',
   'drizzle': 'Light precipitation with very small water droplets.',
   'downpour': 'Very heavy rainfall over a short period.',
   'heavy rain': 'Rainfall at a rate of 0.3 inches or more per hour.',
@@ -198,6 +223,11 @@ const KEYWORD_DEFINITIONS = {
   'instability': 'Atmospheric condition where air parcels rise easily, favoring storm development.',
   'cape': 'Convective Available Potential Energy - measure of storm potential. Higher values = more severe.',
   'lifted index': 'Stability measure. Negative values indicate unstable air and storm potential.',
+  'partly cloudy': 'Sky coverage of 3/8 to 5/8 clouds.',
+  'partly to mostly cloudy': 'Sky coverage transitioning from partly to mostly cloudy.',
+  'mostly cloudy': 'Sky coverage of 5/8 to 7/8 clouds.',
+  'sunny skies': 'Clear conditions with little to no cloud cover.',
+  'clear skies': 'No clouds present, excellent visibility.',
 
   // Wind
   'wind advisory': 'Sustained winds of 31-39 mph and/or gusts to 57 mph expected.',
@@ -228,6 +258,59 @@ const KEYWORD_DEFINITIONS = {
   'model spread': 'Disagreement between weather models, indicating forecast uncertainty.',
   'ensemble': 'Collection of model runs used to assess forecast uncertainty.',
   'deterministic': 'A single model run, as opposed to an ensemble average.',
+  'guidance': 'Computer model output used to inform forecasts.',
+  'model guidance': 'Numerical weather prediction model output.',
+  'solution': 'A specific forecast scenario predicted by a weather model.',
+  'model solution': 'The predicted weather pattern from a specific model run.',
+
+  // Additional temperature terms
+  'dew point': 'Temperature at which air becomes saturated and dew forms. Higher dew points indicate more moisture.',
+  'dewpoint': 'Temperature at which air becomes saturated and dew forms. Higher dew points indicate more moisture.',
+  'inversion': 'Layer where temperature increases with height, trapping pollution and cold air below.',
+  'temperature inversion': 'Layer where temperature increases with height instead of decreasing.',
+
+  // Additional synoptic terms
+  'upper low': 'Low pressure system in the upper atmosphere, often bringing unsettled weather.',
+  'jet stream': 'Fast-moving river of air at 30,000+ ft that steers weather systems.',
+  'polar vortex': 'Large area of cold air circling the poles. When it weakens, cold air spills south.',
+  'pressure gradient': 'Change in pressure over distance. Stronger gradients mean stronger winds.',
+  'isobar': 'Line on a weather map connecting points of equal atmospheric pressure.',
+  'positively tilted': 'Trough or ridge tilted from northwest to southeast, usually less amplified.',
+  'negatively tilted': 'Trough or ridge tilted from southwest to northeast, usually more amplified and dynamic.',
+  'weak flow': 'Light winds in the upper atmosphere, often leading to slow-moving weather systems.',
+  'nnw flow': 'North-northwest wind direction.',
+  'nw flow': 'Northwest wind direction.',
+  'ne flow': 'Northeast wind direction.',
+  'sw flow': 'Southwest wind direction.',
+  'se flow': 'Southeast wind direction.',
+  'westerly flow': 'Winds from the west, typical pattern across mid-latitudes.',
+  'easterly flow': 'Winds from the east, can bring maritime moisture or continental air.',
+
+  // Additional precipitation terms
+  'fog': 'Cloud at ground level reducing visibility below 1 mile.',
+  'dense fog': 'Heavy fog reducing visibility to 1/4 mile or less.',
+  'mist': 'Light precipitation with droplets smaller than drizzle, reducing visibility.',
+  'virga': 'Precipitation that falls from clouds but evaporates before reaching the ground.',
+  'stratus': 'Low, gray cloud layer that often brings drizzle or light rain.',
+  'cumulus': 'Puffy, cotton-like clouds that can grow into thunderstorms.',
+  'cirrus': 'Thin, wispy high clouds made of ice crystals, often indicating weather changes.',
+  'cloud cover': 'Amount of sky covered by clouds, affecting temperature and precipitation.',
+  'overcast': 'Sky completely covered by clouds.',
+
+  // Additional wind terms
+  'gusts': 'Brief increases in wind speed, typically lasting less than 20 seconds.',
+  'jet': 'Short for jet stream or low-level jet - fast-moving air currents.',
+  'low level jet': 'Fast winds at low altitudes (below 10,000 ft) that transport moisture and trigger storms.',
+
+  // Additional hazards
+  'advisory': 'Issued for weather conditions that may cause inconvenience or hazards.',
+  'warning': 'Issued for dangerous weather conditions that pose a threat to life or property.',
+  'watch': 'Conditions are favorable for hazardous weather to develop.',
+  'freezing fog': 'Fog that occurs when temperatures are below freezing, coating surfaces with ice.',
+
+  // Additional aviation terms
+  'visibility': 'Distance at which objects can be clearly seen. Critical for flight safety.',
+  'VSBY': 'NWS abbreviation for visibility in weather reports and forecasts.',
 
   // Locations
   'moriches inlet': 'Inlet on the south shore of Long Island, NY connecting Moriches Bay to the Atlantic.',
@@ -238,12 +321,18 @@ const KEYWORD_DEFINITIONS = {
   'san miguel island': 'Westernmost of California\'s Channel Islands, often referenced in marine forecasts.',
   'central coast': 'California coastal region from San Luis Obispo to Santa Barbara.',
   'santa barbara': 'Coastal city in Southern California, between LA and San Luis Obispo.',
+  'sba': 'Abbreviation for Santa Barbara, coastal city in Southern California.',
   'ventura': 'Coastal county between Los Angeles and Santa Barbara.',
   'los angeles basin': 'Low-lying area containing LA and surrounding cities, often traps marine layer.',
+  'la county': 'Los Angeles County, most populous county in the US.',
   'san fernando valley': 'Valley north of LA, often warmer than coastal areas.',
   'inland empire': 'Region east of LA including Riverside and San Bernardino, often hot and dry.',
   'high desert': 'Desert region of SoCal at higher elevation (3000+ ft), includes Victorville/Lancaster.',
   'antelope valley': 'Desert valley in northern LA County, known for temperature extremes.',
+  'slo': 'Abbreviation for San Luis Obispo, coastal city on California\'s Central Coast.',
+  'san luis obispo': 'Coastal city on California\'s Central Coast, often abbreviated as SLO.',
+  'point conception': 'Critical coastal boundary where California coastline turns 90°, dividing marine forecast zones.',
+  'pt conception': 'Abbreviation for Point Conception, critical coastal boundary where California coastline turns 90°.',
   'coastal waters': 'Ocean areas near the shoreline, typically within 60 miles.',
   'inland areas': 'Regions away from the coast, often with more extreme temperatures.',
   'mountains': 'Elevated terrain that affects local weather patterns.',
@@ -454,12 +543,6 @@ export default function NWSDiscussionWidget({
         className="cursor-pointer"
         headerRight={
           <div className="flex items-center gap-1.5">
-            {hasFreshBulletin && (
-              <span className="text-[10px] bg-amber-500/20 text-amber-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full whitespace-nowrap" title="New NWS report available">
-                <Newspaper className="w-3 h-3" />
-                Report
-              </span>
-            )}
             <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors whitespace-nowrap">
               More
               <ChevronRight className="w-3 h-3" />
@@ -857,7 +940,7 @@ function extractKeywords(text) {
 }
 
 /**
- * Parse text and highlight meteorological keywords and temperature ranges
+ * Parse text and highlight meteorological keywords, temperature ranges, rainfall amounts, and degree ranges
  */
 function parseAndHighlight(text, office) {
   if (!text) return null;
@@ -871,8 +954,14 @@ function parseAndHighlight(text, office) {
   // "temperatures in the mid 60s", "highs of 75 to 80"
   const tempRangePattern = `\\b(highs?|lows?|temperatures?)\\s+(in the\\s+|of\\s+)?(lower\\s+|mid\\s+|upper\\s+)?(\\d{1,2}0s)(\\s+to\\s+(the\\s+)?(lower\\s+|mid\\s+|upper\\s+)?\\d{1,2}0s)?\\b`;
 
-  // Combined pattern - temp ranges first (they're longer), then keywords
-  const combinedPattern = new RegExp(`(${tempRangePattern})|(${keywordPattern})`, 'gi');
+  // Rainfall amount pattern - matches "0.5-1\" rainfall", "1-2 inches of rain", etc.
+  const rainfallPattern = `\\b\\d+\\.?\\d*\\s*(-|to)\\s*\\d+\\.?\\d*\\s*(inch(es)?|"|in)\\s*(of\\s+)?(rain(fall)?|precip(itation)?|liquid|snow|accumulation)?\\b`;
+
+  // Degree range pattern - matches "40-50 degrees", "40 to 50 degrees", etc.
+  const degreePattern = `\\b\\d{1,3}\\s*(-|to)\\s*\\d{1,3}\\s*degrees?\\b`;
+
+  // Combined pattern - longer patterns first to avoid partial matches, then keywords
+  const combinedPattern = new RegExp(`(${tempRangePattern})|(${rainfallPattern})|(${degreePattern})|(${keywordPattern})`, 'gi');
 
   const parts = [];
   let lastIndex = 0;
@@ -886,9 +975,17 @@ function parseAndHighlight(text, office) {
 
     const matchedText = match[0];
 
-    // Determine if it's a temp range or keyword
-    const isTempRange = /^(highs?|lows?|temperatures?)\s+/i.test(matchedText);
-    const category = isTempRange ? 'tempRange' : KEYWORD_MAP.get(matchedText.toLowerCase());
+    // Determine category by testing which pattern matched
+    let category;
+    if (/^(highs?|lows?|temperatures?)\s+/i.test(matchedText)) {
+      category = 'tempRange';
+    } else if (/\d+\.?\d*\s*(-|to)\s*\d+\.?\d*\s*(inch(es)?|"|in)/i.test(matchedText)) {
+      category = 'rainfallAmount';
+    } else if (/\d{1,3}\s*(-|to)\s*\d{1,3}\s*degrees?/i.test(matchedText)) {
+      category = 'degreeRange';
+    } else {
+      category = KEYWORD_MAP.get(matchedText.toLowerCase());
+    }
 
     parts.push(
       <HighlightedKeyword
@@ -1037,10 +1134,15 @@ function DiscussionModal({ discussion, onClose }) {
       const containerRect = contentRef.current?.getBoundingClientRect();
 
       if (containerRect) {
+        // Calculate Y position with minimum offset to avoid hiding behind header
+        const rawY = rect.top - containerRect.top - 10;
+        const minY = 80; // Minimum Y to clear sticky header and tabs
+        const finalY = Math.max(rawY, minY);
+
         setSelectionPopup({
           text: selection.toString().trim(),
           x: rect.left + rect.width / 2 - containerRect.left,
-          y: rect.top - containerRect.top - 10,
+          y: finalY,
         });
       }
     } else {
@@ -1161,7 +1263,7 @@ function DiscussionModal({ discussion, onClose }) {
             {selectionPopup && (
               <button
                 onClick={handleAddSelectionToNotes}
-                className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
+                className="absolute z-[100] flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
                 style={{
                   left: `${selectionPopup.x}px`,
                   top: `${selectionPopup.y}px`,
@@ -1265,10 +1367,15 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
       const containerRect = contentRef.current?.getBoundingClientRect();
 
       if (containerRect) {
+        // Calculate Y position with minimum offset to avoid hiding behind header
+        const rawY = rect.top - containerRect.top - 10;
+        const minY = 80; // Minimum Y to clear sticky header and tabs
+        const finalY = Math.max(rawY, minY);
+
         setSelectionPopup({
           text: selection.toString().trim(),
           x: rect.left + rect.width / 2 - containerRect.left,
-          y: rect.top - containerRect.top - 10,
+          y: finalY,
         });
       }
     } else {
@@ -1437,7 +1544,7 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
             {selectionPopup && (
               <button
                 onClick={handleAddSelectionToNotes}
-                className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
+                className="absolute z-[100] flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
                 style={{
                   left: `${selectionPopup.x}px`,
                   top: `${selectionPopup.y}px`,
