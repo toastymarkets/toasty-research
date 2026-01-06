@@ -917,13 +917,22 @@ body {
 }
 
 /* Discussion widget expanded - uses 6 columns for wider discussion (4 cols) + map (2 cols) */
+/* All bottom widgets span 2 columns each for balanced sizing */
 .widget-grid-v2.discussion-expanded {
   grid-template-columns: repeat(6, 1fr);
   grid-template-areas:
     "discussion   discussion   discussion  discussion  map         map"
     "discussion   discussion   discussion  discussion  map         map"
     "models       brackets     nearby      nearby      alerts      smallstack"
-    "pressure     visibility   visibility  forecast    forecast    rounding";
+    "pressure     pressure     visibility  visibility  forecast    forecast"
+    "rounding     rounding     .           .           .           .";
+}
+
+/* Min-width constraints to prevent widgets from becoming too narrow */
+.widget-grid-v2.discussion-expanded [style*="grid-area: pressure"],
+.widget-grid-v2.discussion-expanded [style*="grid-area: rounding"],
+.widget-grid-v2.discussion-expanded [style*="grid-area: forecast"] {
+  min-width: 140px;
 }
 
 /* Expanded discussion widget sizing */
