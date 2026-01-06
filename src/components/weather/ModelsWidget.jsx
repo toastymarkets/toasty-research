@@ -67,43 +67,37 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
         }
       >
         <div className="flex flex-col h-full justify-between">
-          {/* Model values grid - 3x2 layout */}
-          <div className="grid grid-cols-6 gap-x-0.5 text-center">
-            {/* Temperature row with colored dots */}
+          {/* Model values - 2 rows of 3 */}
+          <div className="grid grid-cols-3 gap-x-3 gap-y-1">
             {models.slice(0, 6).map((model) => (
-              <div key={model.id} className="flex flex-col items-center">
-                <div className="flex items-center gap-0.5">
-                  <div
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: model.color }}
-                  />
-                  <span className="text-xs font-medium text-white tabular-nums">
-                    {model.daily[0]?.high}°
-                  </span>
-                </div>
-                <span className="text-[8px] text-white/40 uppercase tracking-tight">
+              <div key={model.id} className="flex items-center gap-1.5">
+                <div
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: model.color }}
+                />
+                <span className="text-[11px] font-medium text-white tabular-nums">
+                  {model.daily[0]?.high}°
+                </span>
+                <span className="text-[9px] text-white/40">
                   {model.name.slice(0, 3)}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Quick stats and agreement */}
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-2">
-              {/* Agreement indicator */}
+          {/* Agreement indicator */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 consensus.spread <= 3 ? 'bg-green-400' :
                 consensus.spread <= 6 ? 'bg-yellow-400' : 'bg-red-400'
               }`} />
-              {/* Warmest/Coldest quick stats */}
-              <span className="text-[9px] text-white/40">
-                <span className="text-orange-400">↑</span>{warmestModel?.name?.slice(0, 3)}
-                <span className="mx-1">·</span>
-                <span className="text-blue-400">↓</span>{coldestModel?.name?.slice(0, 3)}
+              <span className="text-[10px] text-white/50">
+                {consensus.spread <= 3 ? 'Models agree' :
+                 consensus.spread <= 6 ? 'Some spread' : 'High spread'}
               </span>
             </div>
-            <ChevronRight className="w-3 h-3 text-white/30" />
+            <ChevronRight className="w-3.5 h-3.5 text-white/30" />
           </div>
         </div>
       </GlassWidget>
