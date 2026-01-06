@@ -916,14 +916,14 @@ body {
     "pressure     visibility   forecast    forecast    forecast    rounding";
 }
 
-/* Discussion widget expanded - uses 5 columns to keep map 2x2 */
+/* Discussion widget expanded - uses 6 columns for wider discussion (4 cols) + map (2 cols) */
 .widget-grid-v2.discussion-expanded {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   grid-template-areas:
-    "discussion   discussion   discussion  map         map"
-    "discussion   discussion   discussion  map         map"
-    "nearby       nearby       alerts      alerts      smallstack"
-    "pressure     visibility   forecast    forecast    rounding";
+    "discussion   discussion   discussion  discussion  map         map"
+    "discussion   discussion   discussion  discussion  map         map"
+    "models       brackets     nearby      nearby      alerts      smallstack"
+    "pressure     visibility   visibility  forecast    forecast    rounding";
 }
 
 /* Expanded discussion widget sizing */
@@ -1083,16 +1083,16 @@ body {
   transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
 
-/* Tablet: Discussion expanded */
+/* Tablet: Discussion expanded - 4 columns for wider expansion */
 @media (max-width: 1024px) {
   .widget-grid-v2.discussion-expanded {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     grid-template-areas:
-      "discussion   discussion   map"
-      "discussion   discussion   map"
-      "nearby       nearby       alerts"
-      "smallstack   smallstack   forecast"
-      "pressure     visibility   rounding";
+      "discussion   discussion   discussion  map"
+      "discussion   discussion   discussion  map"
+      "models       brackets     nearby      nearby"
+      "alerts       alerts       smallstack  smallstack"
+      "pressure     visibility   forecast    rounding";
   }
 }
 
