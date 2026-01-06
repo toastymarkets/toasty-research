@@ -1134,10 +1134,15 @@ function DiscussionModal({ discussion, onClose }) {
       const containerRect = contentRef.current?.getBoundingClientRect();
 
       if (containerRect) {
+        // Calculate Y position with minimum offset to avoid hiding behind header
+        const rawY = rect.top - containerRect.top - 10;
+        const minY = 80; // Minimum Y to clear sticky header and tabs
+        const finalY = Math.max(rawY, minY);
+
         setSelectionPopup({
           text: selection.toString().trim(),
           x: rect.left + rect.width / 2 - containerRect.left,
-          y: rect.top - containerRect.top - 10,
+          y: finalY,
         });
       }
     } else {
@@ -1258,7 +1263,7 @@ function DiscussionModal({ discussion, onClose }) {
             {selectionPopup && (
               <button
                 onClick={handleAddSelectionToNotes}
-                className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
+                className="absolute z-[100] flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
                 style={{
                   left: `${selectionPopup.x}px`,
                   top: `${selectionPopup.y}px`,
@@ -1362,10 +1367,15 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
       const containerRect = contentRef.current?.getBoundingClientRect();
 
       if (containerRect) {
+        // Calculate Y position with minimum offset to avoid hiding behind header
+        const rawY = rect.top - containerRect.top - 10;
+        const minY = 80; // Minimum Y to clear sticky header and tabs
+        const finalY = Math.max(rawY, minY);
+
         setSelectionPopup({
           text: selection.toString().trim(),
           x: rect.left + rect.width / 2 - containerRect.left,
-          y: rect.top - containerRect.top - 10,
+          y: finalY,
         });
       }
     } else {
@@ -1534,7 +1544,7 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
             {selectionPopup && (
               <button
                 onClick={handleAddSelectionToNotes}
-                className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
+                className="absolute z-[100] flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
                 style={{
                   left: `${selectionPopup.x}px`,
                   top: `${selectionPopup.y}px`,
