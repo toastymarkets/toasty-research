@@ -27,6 +27,10 @@ General temperature patterns and anomalies.
 | cooler | Relative decrease in temperature |
 | warm | Above average or comfortable temperatures |
 | cold | Below average temperatures |
+| dew point | Temperature at which air becomes saturated and dew forms |
+| dewpoint | Temperature at which air becomes saturated and dew forms |
+| inversion | Layer where temperature increases with height, trapping cold air |
+| temperature inversion | Layer where temperature increases with height instead of decreasing |
 
 ### Synoptic (Blue)
 Large-scale weather patterns, fronts, and pressure systems.
