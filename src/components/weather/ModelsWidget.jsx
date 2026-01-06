@@ -13,7 +13,44 @@ import {
 import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
 import { useMultiModelForecast, MODELS } from '../../hooks/useMultiModelForecast';
-import { insertModelsToNotes } from '../../utils/noteInsertionEvents';
+import { insertModelsToNotes, NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+
+/**
+ * Insert a single model forecast to notes
+ */
+function insertSingleModelToNotes(model, dayData, dateLabel) {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  const createChip = (value, label, type) => ({
+    type: 'dataChip',
+    attrs: { value, label, type, source: '', timestamp: '' }
+  });
+
+  const content = {
+    type: 'doc',
+    content: [{
+      type: 'paragraph',
+      content: [
+        createChip(`${model.name} ${dayData.high}°F`, dateLabel, 'forecast'),
+      ]
+    }]
+  };
+
+  const event = new CustomEvent(NOTE_INSERTION_EVENT, {
+    detail: {
+      type: 'single-model',
+      content,
+      rawData: { model, dayData, dateLabel },
+    }
+  });
+
+  window.dispatchEvent(event);
+}
 
 /**
  * ModelsWidget - Shows multi-model forecast comparison
@@ -52,6 +89,15 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
   const warmestModel = sortedByHigh[0];
   const coldestModel = sortedByHigh[sortedByHigh.length - 1];
 
+  // Handle clicking a model box to add to notes
+  const handleModelClick = (e, model) => {
+    e.stopPropagation();
+    const dayData = model.daily[0];
+    if (dayData) {
+      insertSingleModelToNotes(model, dayData, 'Today');
+    }
+  };
+
   return (
     <>
       <GlassWidget
@@ -67,26 +113,33 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
         }
       >
         <div className="flex flex-col h-full justify-between">
-          {/* Model values - 2 rows of 3 */}
-          <div className="grid grid-cols-3 gap-x-3 gap-y-1">
+          {/* Model boxes - 3 columns, 2 rows */}
+          <div className="grid grid-cols-3 gap-1.5">
             {models.slice(0, 6).map((model) => (
-              <div key={model.id} className="flex items-center gap-1.5">
-                <div
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: model.color }}
-                />
-                <span className="text-[11px] font-medium text-white tabular-nums">
+              <button
+                key={model.id}
+                onClick={(e) => handleModelClick(e, model)}
+                className="flex flex-col items-center p-1.5 rounded-lg bg-white/5 hover:bg-white/15 transition-colors cursor-pointer group"
+                title={`Click to add ${model.name} forecast to notes`}
+              >
+                <div className="flex items-center gap-1">
+                  <div
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: model.color }}
+                  />
+                  <span className="text-[10px] text-white/60 group-hover:text-white/80">
+                    {model.name.slice(0, 3)}
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-white tabular-nums mt-0.5">
                   {model.daily[0]?.high}°
                 </span>
-                <span className="text-[9px] text-white/40">
-                  {model.name.slice(0, 3)}
-                </span>
-              </div>
+              </button>
             ))}
           </div>
 
           {/* Agreement indicator */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-1">
             <div className="flex items-center gap-1.5">
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 consensus.spread <= 3 ? 'bg-green-400' :
