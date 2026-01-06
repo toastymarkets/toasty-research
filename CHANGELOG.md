@@ -2,6 +2,24 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.9.0] - 2026-01-06
+
+### Added
+- NWS Public Information Statements (PNS) in Discussion widget "Reports" tab
+- `useNWSBulletins` hook for fetching PNS products from NWS API
+- "New Report" badge indicator when fresh PNS available (< 24 hours)
+- Headline extraction and keyword highlighting for PNS content
+- `docs/NWS_PNS_RESEARCH.md` - research on PNS products and API integration
+- Inline widget expansion for all dashboard widgets (desktop/tablet)
+- Multi-expansion support - multiple widgets can expand simultaneously
+- Mobile modal fallback for expanded widget content
+
+### Changed
+- Discussion widget now has "Discussion" and "Reports" tabs
+- Widget grid uses 6-column layout when Discussion is expanded for better proportions
+- Bottom row widgets (Rain Odds, Rain, Forecast, Rounding) now span 2 columns each when Discussion expanded
+- Added min-width constraints (140px) to prevent narrow widgets on small viewports
+
 ## [1.8.0] - 2026-01-05
 
 ### Added
