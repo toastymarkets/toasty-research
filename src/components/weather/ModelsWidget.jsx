@@ -1,10 +1,56 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from 'recharts';
 import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
 import { useMultiModelForecast, MODELS } from '../../hooks/useMultiModelForecast';
-import { insertModelsToNotes } from '../../utils/noteInsertionEvents';
+import { insertModelsToNotes, NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+
+/**
+ * Insert a single model forecast to notes
+ */
+function insertSingleModelToNotes(model, dayData, dateLabel) {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  const createChip = (value, label, type) => ({
+    type: 'dataChip',
+    attrs: { value, label, type, source: '', timestamp: '' }
+  });
+
+  const content = {
+    type: 'doc',
+    content: [{
+      type: 'paragraph',
+      content: [
+        createChip(`${model.name} ${dayData.high}°F`, dateLabel, 'forecast'),
+      ]
+    }]
+  };
+
+  const event = new CustomEvent(NOTE_INSERTION_EVENT, {
+    detail: {
+      type: 'single-model',
+      content,
+      rawData: { model, dayData, dateLabel },
+    }
+  });
+
+  window.dispatchEvent(event);
+}
 
 /**
  * ModelsWidget - Shows multi-model forecast comparison
@@ -38,6 +84,20 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
 
   const { models, consensus } = forecasts;
 
+  // Find warmest and coldest models
+  const sortedByHigh = [...models].sort((a, b) => (b.daily[0]?.high || 0) - (a.daily[0]?.high || 0));
+  const warmestModel = sortedByHigh[0];
+  const coldestModel = sortedByHigh[sortedByHigh.length - 1];
+
+  // Handle clicking a model box to add to notes
+  const handleModelClick = (e, model) => {
+    e.stopPropagation();
+    const dayData = model.daily[0];
+    if (dayData) {
+      insertSingleModelToNotes(model, dayData, 'Today');
+    }
+  };
+
   return (
     <>
       <GlassWidget
@@ -46,37 +106,39 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
         size="small"
         onClick={() => setIsModalOpen(true)}
         className="cursor-pointer"
+        headerRight={
+          <span className="text-xs text-white/50 tabular-nums">
+            {consensus.min}°-{consensus.max}°
+          </span>
+        }
       >
-        <div className="flex items-center justify-between h-full">
-          <div className="flex-1">
-            {/* Consensus range */}
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-light text-white">
-                {consensus.min}°-{consensus.max}°
-              </span>
-              <span className="text-xs text-white/50">today</span>
-            </div>
-
-            {/* Model dots */}
-            <div className="flex gap-1 mt-2">
-              {models.slice(0, 6).map((model) => (
-                <div
-                  key={model.id}
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: model.color }}
-                  title={`${model.name}: ${model.daily[0]?.high}°`}
-                />
-              ))}
-            </div>
-
-            {/* Spread indicator */}
-            <p className="text-[10px] text-white/40 mt-1">
-              {consensus.spread <= 3 ? 'Models agree' :
-               consensus.spread <= 6 ? 'Some variance' : 'High uncertainty'}
-            </p>
+        <div className="flex flex-col h-full justify-between">
+          {/* Model boxes - 3 columns, 2 rows */}
+          <div className="grid grid-cols-3 gap-1">
+            {models.slice(0, 6).map((model) => (
+              <button
+                key={model.id}
+                onClick={(e) => handleModelClick(e, model)}
+                className="flex flex-col items-center py-1.5 px-1 rounded-lg bg-white/5 hover:bg-white/15 transition-colors cursor-pointer group"
+                title={`Click to add ${model.name} forecast to notes`}
+              >
+                <span className="text-[9px] text-white/40 group-hover:text-white/60 uppercase tracking-wide">
+                  {model.name.slice(0, 3)}
+                </span>
+                <span className="text-sm font-medium text-white tabular-nums">
+                  {model.daily[0]?.high}°
+                </span>
+              </button>
+            ))}
           </div>
 
-          <ChevronRight className="w-4 h-4 text-white/30" />
+          {/* Agreement indicator */}
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[10px] text-white/40">
+              ±{Math.round(consensus.spread / 2)}° spread
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-white/30" />
+          </div>
         </div>
       </GlassWidget>
 
@@ -102,7 +164,22 @@ ModelsWidget.propTypes = {
 function ModelsDetailModal({ forecasts, onClose }) {
   const [selectedDay, setSelectedDay] = useState(0);
   const [addedDay, setAddedDay] = useState(null);
+  const [showChart, setShowChart] = useState(true);
   const { models, consensus, dates, city } = forecasts;
+
+  // Prepare chart data - all models over 7 days
+  const chartData = useMemo(() => {
+    return dates.slice(0, 7).map((date, idx) => {
+      const dataPoint = {
+        day: idx === 0 ? 'Today' : idx === 1 ? 'Tmw' : new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+        dayIndex: idx,
+      };
+      models.forEach(model => {
+        dataPoint[model.name] = model.daily[idx]?.high;
+      });
+      return dataPoint;
+    });
+  }, [dates, models]);
 
   // Get forecast for selected day
   const getDayForecast = (model, dayIndex) => model.daily[dayIndex];
@@ -242,8 +319,86 @@ function ModelsDetailModal({ forecasts, onClose }) {
             </div>
           </div>
 
+          {/* 7-Day Forecast Chart */}
+          {showChart && (
+            <div className="px-4 py-3 border-b border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-white/50 uppercase tracking-wide">7-Day High Temps</p>
+                <button
+                  onClick={() => setShowChart(false)}
+                  className="text-[10px] text-white/40 hover:text-white/60"
+                >
+                  Hide
+                </button>
+              </div>
+              <div className="h-[140px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <XAxis
+                      dataKey="day"
+                      tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      domain={['dataMin - 5', 'dataMax + 5']}
+                      tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={30}
+                      tickFormatter={(v) => `${v}°`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                      }}
+                      labelStyle={{ color: 'rgba(255,255,255,0.6)' }}
+                      formatter={(value, name) => [`${value}°`, name]}
+                    />
+                    {models.map((model) => (
+                      <Line
+                        key={model.id}
+                        type="monotone"
+                        dataKey={model.name}
+                        stroke={model.color}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: model.color }}
+                        activeDot={{ r: 5 }}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Mini legend */}
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                {models.map((model) => (
+                  <div key={model.id} className="flex items-center gap-1">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: model.color }}
+                    />
+                    <span className="text-[9px] text-white/50">{model.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Toggle chart button when hidden */}
+          {!showChart && (
+            <button
+              onClick={() => setShowChart(true)}
+              className="w-full px-4 py-2 text-xs text-white/50 hover:text-white/70 hover:bg-white/5 border-b border-white/10 transition-colors"
+            >
+              Show Chart
+            </button>
+          )}
+
           {/* Models list */}
-          <div className="overflow-y-auto max-h-[45vh]">
+          <div className="overflow-y-auto max-h-[35vh]">
             {models.map((model) => {
               const dayData = getDayForecast(model, selectedDay);
               if (!dayData) return null;
