@@ -114,24 +114,18 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
       >
         <div className="flex flex-col h-full justify-between">
           {/* Model boxes - 3 columns, 2 rows */}
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-3 gap-1">
             {models.slice(0, 6).map((model) => (
               <button
                 key={model.id}
                 onClick={(e) => handleModelClick(e, model)}
-                className="flex flex-col items-center p-1.5 rounded-lg bg-white/5 hover:bg-white/15 transition-colors cursor-pointer group"
+                className="flex flex-col items-center py-1.5 px-1 rounded-lg bg-white/5 hover:bg-white/15 transition-colors cursor-pointer group"
                 title={`Click to add ${model.name} forecast to notes`}
               >
-                <div className="flex items-center gap-1">
-                  <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: model.color }}
-                  />
-                  <span className="text-[10px] text-white/60 group-hover:text-white/80">
-                    {model.name.slice(0, 3)}
-                  </span>
-                </div>
-                <span className="text-sm font-medium text-white tabular-nums mt-0.5">
+                <span className="text-[9px] text-white/40 group-hover:text-white/60 uppercase tracking-wide">
+                  {model.name.slice(0, 3)}
+                </span>
+                <span className="text-sm font-medium text-white tabular-nums">
                   {model.daily[0]?.high}°
                 </span>
               </button>
@@ -140,16 +134,9 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
 
           {/* Agreement indicator */}
           <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                consensus.spread <= 3 ? 'bg-green-400' :
-                consensus.spread <= 6 ? 'bg-yellow-400' : 'bg-red-400'
-              }`} />
-              <span className="text-[10px] text-white/50">
-                {consensus.spread <= 3 ? 'Models agree' :
-                 consensus.spread <= 6 ? 'Some spread' : 'High spread'}
-              </span>
-            </div>
+            <span className="text-[10px] text-white/40">
+              ±{Math.round(consensus.spread / 2)}° spread
+            </span>
             <ChevronRight className="w-3.5 h-3.5 text-white/30" />
           </div>
         </div>
