@@ -9,28 +9,34 @@ const WEATHER_KEYWORDS = {
   // Temperature patterns
   temperature: [
     'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
-    'above normal', 'below normal', 'near normal', 'record high', 'record low',
+    'above normal', 'below normal', 'near normal', 'above average', 'above-average temperature',
+    'record high', 'record low', 'record-breaking', 'records',
     'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
     'warmer', 'cooler', 'warm', 'cold', 'dew point', 'dewpoint',
-    'inversion', 'temperature inversion',
+    'inversion', 'temperature inversion', 'radiational cooling',
   ],
   // Pressure/fronts
   synoptic: [
     'cold front', 'warm front', 'occluded front', 'stationary front',
     'frontal boundary', 'frontal passage',
-    'low pressure', 'high pressure', 'trough', 'troughing', 'ridge', 'upper level',
+    'low pressure', 'high pressure', 'trough', 'troughing', 'ridge', 'surface ridge', 'upper level',
     'surface low', 'surface high', 'shortwave', 'short wave', 'longwave',
     'cutoff low', 'closed low', 'upper low', 'blocking pattern', 'zonal flow',
     'return flow', 'upper level disturbance', 'Pacific front',
     'jet stream', 'polar vortex', 'pressure gradient', 'isobar',
     'positively tilted', 'negatively tilted', 'weak flow', 'nnw flow', 'nw flow',
     'ne flow', 'sw flow', 'se flow', 'westerly flow', 'easterly flow',
+    'storm system', 'storm systems', 'synoptic waves', 'dynamic system',
+    'kinematic forcing', 'moisture laden warm conveyer', 'warm conveyer',
+    'secondary low', 'polar front', 'backdoor cold front',
+    'upper-level support', 'reduced upper-level support',
   ],
   // Precipitation
   precipitation: [
-    'rain chances', 'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
+    'rain chances', 'rain', 'snow', 'sleet', 'freezing rain', 'freezing', 'wintry mix', 'thunderstorm',
     'shower', 'showers', 'light shower', 'light showers', 'drizzle', 'downpour', 'heavy rain', 'light rain',
-    'accumulation', 'precip', 'precipitation', 'moisture',
+    'soaking rain', 'sprinkles', 'flurries', 'isolated shower', 'measurable snow',
+    'accumulation', 'precip', 'precipitation', 'moisture', 'copious amounts',
     'convection', 'instability', 'cape', 'lifted index',
     'dry', 'low clouds', 'fog', 'dense fog', 'mist', 'virga',
     'stratus', 'cumulus', 'cirrus', 'cloud cover', 'overcast',
@@ -41,14 +47,15 @@ const WEATHER_KEYWORDS = {
     'wind advisory', 'high wind', 'gust', 'gusts', 'gusty', 'gusty winds', 'gusty southerly winds',
     'gusty south winds', 'breezy', 'windy',
     'santa ana', 'chinook', 'offshore flow', 'onshore flow',
-    'wind shift', 'veering', 'backing', 'jet', 'low level jet',
+    'wind shift', 'veering', 'backing', 'jet', 'low level jet', 'mountain wave',
   ],
   // Confidence/uncertainty
   confidence: [
     'uncertainty', 'confidence', 'unlikely',
     'forecast', 'outlook', 'trend', 'timing',
-    'models agree', 'model spread', 'ensemble', 'ensemble solutions', 'deterministic',
-    'guidance', 'model guidance', 'solution', 'model solution',
+    'models agree', 'model spread', 'ensemble', 'ensemble solutions',
+    'model guidance', 'solution', 'model solution',
+    'improving model agreement', 'uncertainty remains high',
   ],
   // Hazards - fire, severe weather, dangerous conditions
   hazards: [
@@ -56,10 +63,12 @@ const WEATHER_KEYWORDS = {
     'wind chill', 'heat index', 'severe', 'tornado', 'hail',
     'flash flood', 'flood', 'ice storm', 'blizzard',
     'advisory', 'warning', 'watch', 'freezing fog',
+    'elevated fire weather', 'dense fog advisory',
   ],
-  // Aviation terms
+  // Aviation / Technical terms
   aviation: [
     'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling', 'visibility', 'VSBY',
+    'CWA', 'EPS', 'QPF',
   ],
   // Locations - city-specific geographic references
   locations: [
@@ -69,16 +78,19 @@ const WEATHER_KEYWORDS = {
     'connecticut', 'new jersey',
     // Chicago/LOT area
     'lake michigan', 'lakefront', 'lake effect', 'lake enhanced',
-    'wisconsin', 'indiana', 'i-88', 'i-90',
+    'wisconsin', 'indiana', 'i-88', 'i-90', 'i-80', 'northern il', 'moline',
+    'southern plains',
     // LA/LOX area
     'point conception', 'pt conception', 'santa barbara', 'sba', 'ventura', 'los angeles county',
     'la county', 'los angeles basin', 'san fernando valley', 'antelope valley',
     'catalina', 'channel islands', 'san gabriel', 'central coast',
     'orange county', 'san diego', 'inland empire', 'high desert', 'slo', 'san luis obispo',
+    'i-5 corridor', 'mountain passes',
     // Denver/BOU area
     'front range', 'palmer divide', 'i-25', 'i-70', 'boulder',
     'fort collins', 'denver metro', 'continental divide',
     'northern mountains', 'central mountains', 'southern mountains',
+    'lower foothills', 'elevated terrain',
     // Austin/EWX area
     'hill country', 'edwards plateau', 'rio grande', 'south central texas',
     'balcones', 'i-35', 'i-10', 'san antonio', 'guadalupe',
@@ -94,6 +106,12 @@ const WEATHER_KEYWORDS = {
 
 // Temperature range patterns - matches "highs in the 70s", "lows in the upper 40s", etc.
 const TEMP_RANGE_PATTERN = /\b(highs?|lows?|temperatures?)\s+(in the\s+)?(lower\s+|mid\s+|upper\s+)?(\d{1,2}0s|\d{1,3}(\s*to\s*\d{1,3})?)\b/gi;
+
+// Rainfall amount patterns - matches "0.5-1\" rainfall", "1.5 inches", etc.
+const RAINFALL_PATTERN = /\b\d+\.?\d*\s*(-|to)\s*\d+\.?\d*\s*(inch(es)?|"|in)\s*(of\s+)?(rain(fall)?|precip(itation)?|liquid|snow|accumulation)?\b/gi;
+
+// Degree range patterns - matches "40-50 degrees", "40 to 50 degrees", etc.
+const DEGREE_RANGE_PATTERN = /\b\d{1,3}\s*(-|to)\s*\d{1,3}\s*degrees?\b/gi;
 
 // Flatten keywords with their categories for lookup
 const KEYWORD_MAP = new Map();
@@ -113,6 +131,8 @@ const CATEGORY_COLORS = {
   hazards: 'bg-red-500/30 text-red-300 hover:bg-red-500/50',
   aviation: 'bg-gray-500/30 text-gray-300 hover:bg-gray-500/50',
   tempRange: 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/50',
+  rainfallAmount: 'bg-cyan-500/30 text-cyan-300 hover:bg-cyan-500/50',
+  degreeRange: 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/50',
   locations: 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50',
 };
 
@@ -197,7 +217,7 @@ function HighlightedKeyword({ text, category, officeName }) {
 }
 
 /**
- * Parse text and highlight meteorological keywords and temperature ranges
+ * Parse text and highlight meteorological keywords, temperature ranges, rainfall amounts, and degree ranges
  */
 function parseAndHighlight(text, officeName) {
   if (!text) return null;
@@ -211,8 +231,14 @@ function parseAndHighlight(text, officeName) {
   // "temperatures in the mid 60s", "highs of 75 to 80"
   const tempRangePattern = `\\b(highs?|lows?|temperatures?)\\s+(in the\\s+|of\\s+)?(lower\\s+|mid\\s+|upper\\s+)?(\\d{1,2}0s)(\\s+to\\s+(the\\s+)?(lower\\s+|mid\\s+|upper\\s+)?\\d{1,2}0s)?\\b`;
 
-  // Combined pattern - temp ranges first (they're longer), then keywords
-  const combinedPattern = new RegExp(`(${tempRangePattern})|(${keywordPattern})`, 'gi');
+  // Rainfall amount pattern - matches "0.5-1\" rainfall", "1-2 inches of rain", etc.
+  const rainfallPattern = `\\b\\d+\\.?\\d*\\s*(-|to)\\s*\\d+\\.?\\d*\\s*(inch(es)?|"|in)\\s*(of\\s+)?(rain(fall)?|precip(itation)?|liquid|snow|accumulation)?\\b`;
+
+  // Degree range pattern - matches "40-50 degrees", "40 to 50 degrees", etc.
+  const degreePattern = `\\b\\d{1,3}\\s*(-|to)\\s*\\d{1,3}\\s*degrees?\\b`;
+
+  // Combined pattern - longer patterns first to avoid partial matches, then keywords
+  const combinedPattern = new RegExp(`(${tempRangePattern})|(${rainfallPattern})|(${degreePattern})|(${keywordPattern})`, 'gi');
 
   const parts = [];
   let lastIndex = 0;
@@ -226,9 +252,17 @@ function parseAndHighlight(text, officeName) {
 
     const matchedText = match[0];
 
-    // Determine if it's a temp range or keyword
-    const isTempRange = /^(highs?|lows?|temperatures?)\s+/i.test(matchedText);
-    const category = isTempRange ? 'tempRange' : KEYWORD_MAP.get(matchedText.toLowerCase());
+    // Determine category by testing which pattern matched
+    let category;
+    if (/^(highs?|lows?|temperatures?)\s+/i.test(matchedText)) {
+      category = 'tempRange';
+    } else if (/\d+\.?\d*\s*(-|to)\s*\d+\.?\d*\s*(inch(es)?|"|in)/i.test(matchedText)) {
+      category = 'rainfallAmount';
+    } else if (/\d{1,3}\s*(-|to)\s*\d{1,3}\s*degrees?/i.test(matchedText)) {
+      category = 'degreeRange';
+    } else {
+      category = KEYWORD_MAP.get(matchedText.toLowerCase());
+    }
 
     parts.push(
       <HighlightedKeyword
