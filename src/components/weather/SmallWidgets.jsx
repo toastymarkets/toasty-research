@@ -1,4 +1,4 @@
-import { useState, memo, lazy, Suspense } from 'react';
+import { useState, memo, lazy, Suspense, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
   Sun,
@@ -85,17 +85,202 @@ const getWindDirection = (degrees) => {
   return directions[index];
 };
 
-// Wind Compass SVG Component with animated wind flag
+// Particle-based ASCII Wind Animation Component
+const ASCIIWindAnimation = ({ direction = 0, speed = 0 }) => {
+  const containerRef = useRef(null);
+  const particlesRef = useRef([]);
+  const animationRef = useRef(null);
+  const [, forceUpdate] = useState(0);
+
+  // Determine if wind is more horizontal or vertical
+  // direction: 0=N, 90=E, 180=S, 270=W
+  // Particles move opposite: N wind → particles go south (vertical)
+  const normalizedDir = ((direction % 360) + 360) % 360;
+  const isVertical = (normalizedDir >= 315 || normalizedDir < 45) || // from N
+                     (normalizedDir >= 135 && normalizedDir < 225);   // from S
+  const isHorizontal = (normalizedDir >= 45 && normalizedDir < 135) || // from E
+                       (normalizedDir >= 225 && normalizedDir < 315);  // from W
+
+  // Wind characters based on intensity AND direction
+  // Using subtle characters - mostly dots with slight variation for strong winds
+  const getChar = useCallback((layer) => {
+    if (speed === 0) return '·';
+
+    if (isVertical) {
+      // Vertical movement (N/S wind)
+      if (speed > 25) return layer === 0 ? '∣' : '·';
+      if (speed > 18) return layer === 0 ? '·' : '·';
+      return '·';
+    } else if (isHorizontal) {
+      // Horizontal movement (E/W wind)
+      if (speed > 25) return layer === 0 ? '−' : '·';
+      if (speed > 18) return layer === 0 ? '·' : '·';
+      return '·';
+    }
+    // Diagonal or default - just dots
+    return '·';
+  }, [speed, isVertical, isHorizontal]);
+
+  // Convert wind direction to screen coordinates
+  // Wind direction = where wind comes FROM (meteorological convention)
+  // 0° = from North, 90° = from East, 180° = from South, 270° = from West
+  // Particles move in opposite direction (toward), mapped to screen coords:
+  // Screen: 0° = right (+X), 90° = down (+Y), 180° = left (-X), 270° = up (-Y)
+  // Formula: screen_angle = wind_direction + 90°
+  const dirRad = ((direction + 90) * Math.PI) / 180;
+
+  // Particle count based on wind speed - high density
+  const maxParticles = Math.min(80, Math.max(35, Math.floor(speed * 3)));
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const width = container.offsetWidth || 100;
+    const height = container.offsetHeight || 50;
+
+    // Initialize particles
+    const createParticle = (init = false) => {
+      const layer = Math.floor(Math.random() * 3); // 0=front, 1=mid, 2=back
+      const layerSpeed = 1 - layer * 0.3; // Front moves faster
+      const baseSpeed = Math.max(0.8, speed / 6);
+
+      // Calculate velocity components
+      const vx = Math.cos(dirRad) * baseSpeed * layerSpeed * (0.8 + Math.random() * 0.4);
+      const vy = Math.sin(dirRad) * baseSpeed * layerSpeed * (0.8 + Math.random() * 0.4);
+
+      // Spawn from the upwind edge (opposite to movement direction)
+      let x, y;
+      if (init) {
+        x = Math.random() * width;
+        y = Math.random() * height;
+      } else {
+        // Determine spawn edge based on movement direction
+        if (Math.abs(vx) > Math.abs(vy)) {
+          // Horizontal movement dominant - spawn from left or right edge
+          x = vx > 0 ? -5 : width + 5;
+          y = Math.random() * height;
+        } else {
+          // Vertical movement dominant - spawn from top or bottom edge
+          x = Math.random() * width;
+          y = vy > 0 ? -5 : height + 5;
+        }
+      }
+
+      // Vary size more dramatically - range from 6px to 16px
+      const baseSize = 8 + Math.random() * 8; // 8-16px range
+      const layerScale = 1 - layer * 0.25; // Front layer larger
+      const finalSize = baseSize * layerScale;
+
+      return {
+        x,
+        y,
+        vx,
+        vy,
+        layer,
+        opacity: (0.3 + (2 - layer) * 0.25) * (0.5 + Math.random() * 0.5),
+        char: getChar(layer),
+        size: finalSize,
+      };
+    };
+
+    // Reset particles when speed/direction changes significantly
+    particlesRef.current = Array.from({ length: maxParticles }, () => createParticle(true));
+
+    let lastTime = performance.now();
+
+    const animate = (currentTime) => {
+      const deltaTime = Math.min(50, currentTime - lastTime);
+      lastTime = currentTime;
+
+      const speedFactor = deltaTime / 16; // Normalize to ~60fps
+
+      particlesRef.current = particlesRef.current.map(p => {
+        let newX = p.x + p.vx * speedFactor;
+        let newY = p.y + p.vy * speedFactor;
+
+        // Reset particle if it goes off screen
+        const outOfBounds =
+          newX < -20 || newX > width + 20 ||
+          newY < -10 || newY > height + 10;
+
+        if (outOfBounds) {
+          return createParticle(false);
+        }
+
+        return { ...p, x: newX, y: newY };
+      });
+
+      forceUpdate(n => n + 1);
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    if (speed > 0) {
+      animationRef.current = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [speed, direction, dirRad, maxParticles, getChar]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden rounded-lg bg-gradient-to-br from-slate-900/50 to-slate-800/30"
+    >
+      {/* Particles */}
+      {particlesRef.current.map((p, i) => (
+        <span
+          key={i}
+          className="absolute font-mono text-cyan-300 pointer-events-none select-none"
+          style={{
+            left: p.x,
+            top: p.y,
+            opacity: p.opacity,
+            fontSize: p.size,
+            textShadow: p.layer === 0 ? '0 0 4px rgba(34,211,238,0.6)' : 'none',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 3 - p.layer,
+          }}
+        >
+          {p.char}
+        </span>
+      ))}
+
+      {/* Subtle direction indicator in corner */}
+      <div className="absolute bottom-1 right-1 opacity-40">
+        <svg viewBox="0 0 20 20" className="w-4 h-4">
+          <circle cx="10" cy="10" r="8" fill="none" stroke="white" strokeWidth="0.5" opacity="0.3" />
+          <g transform={`rotate(${direction}, 10, 10)`}>
+            <path d="M10,3 L8.5,7 L10,6 L11.5,7 Z" fill="white" opacity="0.6" />
+          </g>
+        </svg>
+      </div>
+
+      {/* "Calm" indicator when no wind */}
+      {speed === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-white/30 text-xs font-mono">calm</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Wind Compass SVG Component - Apple Weather style with arrow pointer (fallback/alternative)
 const WindCompass = ({ direction = 0, speed = 0 }) => {
-  // Generate tick marks (every 10 degrees = 36 ticks for finer graduation)
-  const tickMarks = [...Array(36)].map((_, i) => {
-    const angle = i * 10;
+  // Generate tick marks (every 15 degrees = 24 ticks)
+  const tickMarks = [...Array(24)].map((_, i) => {
+    const angle = i * 15;
     const isCardinal = angle % 90 === 0;
-    const isMajor = angle % 30 === 0;
     // Skip cardinal positions - we'll use labels there instead
     if (isCardinal) return null;
-    const innerRadius = isMajor ? 36 : 38;
-    const outerRadius = 42;
+    const isMajor = angle % 45 === 0;
+    const innerRadius = isMajor ? 35 : 37;
+    const outerRadius = 40;
     const radian = (angle - 90) * (Math.PI / 180);
     const x1 = 50 + innerRadius * Math.cos(radian);
     const y1 = 50 + innerRadius * Math.sin(radian);
@@ -108,88 +293,83 @@ const WindCompass = ({ direction = 0, speed = 0 }) => {
         y1={y1}
         x2={x2}
         y2={y2}
-        stroke="rgba(255,255,255,0.25)"
-        strokeWidth={isMajor ? 1 : 0.5}
+        stroke="rgba(255,255,255,0.3)"
+        strokeWidth={isMajor ? 1.5 : 0.75}
       />
     );
   });
 
-  // Animation speed based on wind - faster wind = faster wave
-  // Range: 0.4s (strong wind 30+ mph) to 3s (light breeze)
-  const animationDuration = speed > 0 ? Math.max(0.4, 3 - (speed / 10)) : 0;
-  // Wave amplitude based on wind speed (more wind = bigger waves)
-  const waveAmplitude = Math.min(6, speed * 0.4);
-  // Flag extends more when there's wind
-  const flagExtend = Math.min(8, speed * 0.5);
+  // Calculate position for the edge dot indicator
+  const dotRadius = 40;
+  const dotRadian = (direction - 90) * (Math.PI / 180);
+  const dotX = 50 + dotRadius * Math.cos(dotRadian);
+  const dotY = 50 + dotRadius * Math.sin(dotRadian);
 
   return (
     <svg viewBox="0 0 100 100" className="w-full h-full">
+      <defs>
+        {/* Glow effect for the compass */}
+        <filter id="compassGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
       {/* Outer circle */}
       <circle
         cx="50"
         cy="50"
-        r="44"
+        r="40"
         fill="none"
-        stroke="rgba(255,255,255,0.15)"
-        strokeWidth="1"
+        stroke="rgba(255,255,255,0.2)"
+        strokeWidth="1.5"
       />
 
       {/* Tick marks */}
       {tickMarks}
 
-      {/* Wind flag - rotated based on direction */}
-      <g transform={`rotate(${direction}, 50, 50)`}>
-        {/* Flag pole */}
+      {/* Cardinal direction labels - positioned OUTSIDE the circle */}
+      <text x="50" y="4" textAnchor="middle" dominantBaseline="hanging" fill="white" fontSize="9" fontWeight="600">N</text>
+      <text x="96" y="50" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.5)" fontSize="8">E</text>
+      <text x="50" y="97" textAnchor="middle" dominantBaseline="auto" fill="rgba(255,255,255,0.5)" fontSize="8">S</text>
+      <text x="4" y="50" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.5)" fontSize="8">W</text>
+
+      {/* Arrow pointer - rotated based on direction */}
+      <g transform={`rotate(${direction}, 50, 50)`} filter="url(#compassGlow)">
+        {/* Arrow pointing up (toward wind source) */}
+        <path
+          d="M 50,18 L 46,32 L 50,28 L 54,32 Z"
+          fill="white"
+        />
+        {/* Arrow shaft */}
         <line
           x1="50"
-          y1="50"
+          y1="28"
           x2="50"
-          y2="24"
+          y2="38"
           stroke="white"
-          strokeWidth="1.5"
+          strokeWidth="2"
           strokeLinecap="round"
         />
-        {/* Triangular pennant flag - attached at top of pole */}
-        <g transform="translate(50, 24)">
-          {speed === 0 ? (
-            /* Still flag - hangs down when no wind */
-            <path
-              d="M 0,0 L 0,12 L 6,6 Z"
-              fill="rgba(255,255,255,0.8)"
-            />
-          ) : (
-            /* Waving triangular flag - wave travels through the fabric */
-            <path
-              d={`M 0,0 L ${16 + flagExtend},5 L 0,10 Z`}
-              fill="rgba(255,255,255,0.85)"
-            >
-              <animate
-                attributeName="d"
-                dur={`${animationDuration}s`}
-                repeatCount="indefinite"
-                values={`
-                  M 0,0 C 5,${-waveAmplitude} 10,${waveAmplitude} ${16 + flagExtend},5 C 10,${5 + waveAmplitude} 5,${10 - waveAmplitude} 0,10 Z;
-                  M 0,0 C 5,${waveAmplitude} 10,${-waveAmplitude} ${16 + flagExtend},5 C 10,${5 - waveAmplitude} 5,${10 + waveAmplitude} 0,10 Z;
-                  M 0,0 C 5,${-waveAmplitude} 10,${waveAmplitude} ${16 + flagExtend},5 C 10,${5 + waveAmplitude} 5,${10 - waveAmplitude} 0,10 Z
-                `}
-              />
-            </path>
-          )}
-        </g>
       </g>
 
-      {/* Cardinal direction labels - positioned OUTSIDE the circle */}
-      <text x="50" y="4" textAnchor="middle" dominantBaseline="hanging" fill="white" fontSize="8" fontWeight="600">N</text>
-      <text x="97" y="50" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.5)" fontSize="7">E</text>
-      <text x="50" y="97" textAnchor="middle" dominantBaseline="auto" fill="rgba(255,255,255,0.5)" fontSize="7">S</text>
-      <text x="3" y="50" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.5)" fontSize="7">W</text>
+      {/* Edge dot indicator showing wind direction */}
+      <circle
+        cx={dotX}
+        cy={dotY}
+        r="4"
+        fill="white"
+        filter="url(#compassGlow)"
+      />
 
-      {/* Center speed display - rendered LAST so it appears on top */}
-      <circle cx="50" cy="50" r="16" fill="rgba(0,0,0,0.4)" />
-      <text x="50" y="48" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="14" fontWeight="600">
+      {/* Center speed display */}
+      <text x="50" y="48" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="16" fontWeight="600">
         {speed}
       </text>
-      <text x="50" y="61" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="7">
+      <text x="50" y="62" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="8">
         mph
       </text>
     </svg>
@@ -204,7 +384,7 @@ export const WindWidget = memo(function WindWidget({
   observations = [],
   timezone = 'America/New_York',
   cityName,
-  compact = false, // New: compact mode for 1x1 grid cell
+  compact = false, // Compact mode for 1x1 grid cell
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -212,6 +392,7 @@ export const WindWidget = memo(function WindWidget({
   const speedMph = typeof speed === 'object' ? Math.round(speed.value * 2.237) : Math.round(speed);
   const gustsMph = gusts ? (typeof gusts === 'object' ? Math.round(gusts.value * 2.237) : Math.round(gusts)) : null;
   const directionDeg = typeof direction === 'object' ? direction.value : direction;
+  const directionCardinal = getWindDirection(directionDeg);
 
   if (loading) {
     return (
@@ -223,7 +404,7 @@ export const WindWidget = memo(function WindWidget({
     );
   }
 
-  // Compact mode: Compass with succinct wind info
+  // Compact mode: ASCII animation with text below
   if (compact) {
     return (
       <>
@@ -234,20 +415,33 @@ export const WindWidget = memo(function WindWidget({
           className="cursor-pointer"
           onClick={() => setIsModalOpen(true)}
         >
-          <div className="flex-1 flex flex-col items-center justify-center">
-            {/* Prominent compass */}
-            <div className="w-[56px] h-[56px]">
-              <WindCompass direction={directionDeg} speed={speedMph} />
+          <div className="flex flex-col flex-1 gap-1">
+            {/* Top: ASCII Animation - 60% of widget */}
+            <div className="flex-[3] min-h-[60px] bg-black/20 rounded-lg overflow-hidden">
+              <ASCIIWindAnimation direction={directionDeg} speed={speedMph} />
             </div>
-            {/* Succinct wind info: "WSW 6mph" */}
-            <div className="text-sm font-medium text-white mt-1">
-              {getWindDirection(directionDeg)} {speedMph}mph
-            </div>
-            {gustsMph && (
-              <div className="text-[10px] text-white/50">
-                Gusts {gustsMph}
+
+            {/* Bottom: Speed and direction boxes - 40% */}
+            <div className="flex-[2] flex gap-1.5">
+              {/* Speed box */}
+              <div className="flex-1 bg-white/5 rounded-md px-1.5 py-1 flex flex-col justify-center items-center">
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-sm font-medium text-white tabular-nums">{speedMph}</span>
+                  <span className="text-[9px] text-white/50">mph</span>
+                </div>
+                <div className="text-[9px] text-white/40">
+                  {gustsMph ? `Gusts ${gustsMph}` : 'Speed'}
+                </div>
               </div>
-            )}
+              {/* Direction box */}
+              <div className="flex-1 bg-white/5 rounded-md px-1.5 py-1 flex flex-col justify-center items-center">
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-sm font-medium text-white">{directionCardinal}</span>
+                  <span className="text-[9px] text-white/50 tabular-nums">{Math.round(directionDeg)}°</span>
+                </div>
+                <div className="text-[9px] text-white/40">Direction</div>
+              </div>
+            </div>
           </div>
         </GlassWidget>
 
@@ -270,7 +464,7 @@ export const WindWidget = memo(function WindWidget({
     );
   }
 
-  // Default mode: Compass + text data side by side
+  // Default mode: ASCII animation featured with data below
   return (
     <>
       <GlassWidget
@@ -280,34 +474,29 @@ export const WindWidget = memo(function WindWidget({
         className="cursor-pointer"
         onClick={() => setIsModalOpen(true)}
       >
-        <div className="flex items-center justify-between flex-1 gap-3">
-          {/* Left: Text data with separator lines */}
-          <div className="flex flex-col divide-y divide-white/10 flex-1">
-            <div className="flex items-center justify-between py-1.5">
-              <span className="text-[11px] text-glass-text-muted">Wind</span>
-              <span className="text-sm font-medium text-white">{speedMph} mph</span>
+        <div className="flex flex-col flex-1 gap-3">
+          {/* Top: ASCII Animation - larger in default mode */}
+          <div className="h-[72px] bg-black/20 rounded-lg overflow-hidden">
+            <ASCIIWindAnimation direction={directionDeg} speed={speedMph} />
+          </div>
+
+          {/* Bottom: Data rows */}
+          <div className="flex flex-col flex-1 min-w-0">
+            <div className="flex items-center justify-between py-1.5 border-b border-white/10">
+              <span className="text-sm text-white/70">Speed</span>
+              <span className="text-lg font-medium text-white">{speedMph} mph</span>
             </div>
             {gustsMph && (
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-[11px] text-glass-text-muted">Gusts</span>
+              <div className="flex items-center justify-between py-1.5 border-b border-white/10">
+                <span className="text-sm text-white/70">Gusts</span>
                 <span className="text-sm font-medium text-white">{gustsMph} mph</span>
               </div>
             )}
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-[11px] text-glass-text-muted">Direction</span>
-              <span className="text-sm font-medium text-white">{Math.round(directionDeg)}° {getWindDirection(directionDeg)}</span>
+              <span className="text-sm text-white/70">Direction</span>
+              <span className="text-sm font-medium text-white">{directionCardinal} ({Math.round(directionDeg)}°)</span>
             </div>
           </div>
-
-          {/* Right: Compass */}
-          <div className="w-20 h-20 flex-shrink-0">
-            <WindCompass direction={directionDeg} speed={speedMph} />
-          </div>
-        </div>
-
-        {/* Tap hint */}
-        <div className="flex items-center justify-end mt-1">
-          <ChevronRight className="w-4 h-4 text-white/30" />
         </div>
       </GlassWidget>
 
