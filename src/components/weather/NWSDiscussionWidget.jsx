@@ -529,12 +529,6 @@ export default function NWSDiscussionWidget({
         className="cursor-pointer"
         headerRight={
           <div className="flex items-center gap-1.5">
-            {hasFreshBulletin && (
-              <span className="text-[10px] bg-amber-500/20 text-amber-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full whitespace-nowrap" title="New NWS report available">
-                <Newspaper className="w-3 h-3" />
-                Report
-              </span>
-            )}
             <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors whitespace-nowrap">
               More
               <ChevronRight className="w-3 h-3" />
