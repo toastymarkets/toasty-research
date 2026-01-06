@@ -864,57 +864,66 @@ body {
 }
 
 /* ===== WIDGET EXPANSION STATES ===== */
+/*
+ * WIDGET SIZING RULES:
+ * 1. Map widget (satellite): ALWAYS 2x2 minimum - never shrink below 2 columns
+ * 2. Nearby widget: ALWAYS 2 columns minimum - never shrink below 2 columns
+ * 3. When expanded widget + map can't fit in 4 columns, use 5 columns
+ * 4. All widgets must remain visible - no widget should be pushed out
+ * 5. Only 1-column widgets can be adjacent to expanded widgets in same row
+ */
 
 /* Animation for expansion/collapse */
 .widget-expansion-transition {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Models widget expanded - takes 2x2 space */
+/* Models widget expanded - uses 5 columns to keep map 2x2 */
 .widget-grid-v2.models-expanded {
+  grid-template-columns: repeat(5, 1fr);
   grid-template-areas:
-    "models       models       brackets    map"
-    "models       models       brackets    map"
-    "discussion   discussion   alerts      smallstack"
-    "nearby       nearby       alerts      smallstack"
-    "pressure     visibility   forecast    rounding";
+    "models       models       brackets    map         map"
+    "models       models       brackets    map         map"
+    "discussion   nearby       nearby      alerts      smallstack"
+    "pressure     visibility   forecast    forecast    rounding";
 }
 
 .widget-grid-v2.models-expanded .widget-area-models-expanded {
   min-height: 380px;
 }
 
-/* Brackets widget expanded - takes 2x2 space */
+/* Brackets widget expanded - uses 5 columns to keep map 2x2 */
 .widget-grid-v2.brackets-expanded {
+  grid-template-columns: repeat(5, 1fr);
   grid-template-areas:
-    "models       brackets     brackets    map"
-    "discussion   brackets     brackets    map"
-    "nearby       nearby       alerts      smallstack"
-    "pressure     visibility   forecast    rounding";
+    "models       brackets     brackets    map         map"
+    "discussion   brackets     brackets    map         map"
+    "nearby       nearby       alerts      alerts      smallstack"
+    "pressure     visibility   forecast    forecast    rounding";
 }
 
 .widget-grid-v2.brackets-expanded .widget-area-brackets-expanded {
   min-height: 380px;
 }
 
-/* Both models and brackets expanded */
+/* Both models and brackets expanded - 6 columns */
 .widget-grid-v2.models-expanded.brackets-expanded {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   grid-template-areas:
-    "models       models       brackets    brackets    map"
-    "models       models       brackets    brackets    map"
-    "discussion   discussion   alerts      alerts      smallstack"
-    "nearby       nearby       forecast    forecast    rounding"
-    "pressure     visibility   forecast    forecast    rounding";
+    "models       models       brackets    brackets    map         map"
+    "models       models       brackets    brackets    map         map"
+    "discussion   discussion   nearby      nearby      alerts      smallstack"
+    "pressure     visibility   forecast    forecast    forecast    rounding";
 }
 
-/* Discussion widget expanded - takes 3 columns */
+/* Discussion widget expanded - uses 5 columns to keep map 2x2 */
 .widget-grid-v2.discussion-expanded {
+  grid-template-columns: repeat(5, 1fr);
   grid-template-areas:
-    "discussion   discussion   discussion   map"
-    "discussion   discussion   discussion   map"
-    "nearby       nearby       alerts       smallstack"
-    "pressure     visibility   forecast     rounding";
+    "discussion   discussion   discussion  map         map"
+    "discussion   discussion   discussion  map         map"
+    "nearby       nearby       alerts      alerts      smallstack"
+    "pressure     visibility   forecast    forecast    rounding";
 }
 
 /* Expanded discussion widget sizing */
@@ -922,7 +931,7 @@ body {
   min-height: 400px;
 }
 
-/* Rounding widget expanded - takes 2x2 space in bottom corner */
+/* Rounding widget expanded - 4 columns ok, keeps map 2x2 */
 .widget-grid-v2.rounding-expanded {
   grid-template-areas:
     "models       brackets     map         map"
@@ -936,14 +945,15 @@ body {
   min-height: 280px;
 }
 
-/* Resolution widget expanded - smallstack takes 2 columns, spans down */
+/* Resolution widget expanded - 5 columns, keep alerts visible */
 .widget-grid-v2.resolution-expanded {
+  grid-template-columns: repeat(5, 1fr);
   grid-template-areas:
-    "models       brackets     map         map"
-    "discussion   brackets     map         map"
-    "nearby       nearby       smallstack  smallstack"
-    "nearby       nearby       smallstack  smallstack"
-    "pressure     visibility   forecast    rounding";
+    "models       brackets     map         map         map"
+    "discussion   brackets     map         map         map"
+    "nearby       nearby       alerts      smallstack  smallstack"
+    "nearby       nearby       alerts      smallstack  smallstack"
+    "pressure     visibility   forecast    forecast    rounding";
 }
 
 .widget-grid-v2.resolution-expanded [style*="grid-area: smallstack"] {
@@ -952,23 +962,25 @@ body {
 
 /* Resolution + Rounding both expanded */
 .widget-grid-v2.resolution-expanded.rounding-expanded {
+  grid-template-columns: repeat(5, 1fr);
   grid-template-areas:
-    "models       brackets     map         map"
-    "discussion   brackets     map         map"
-    "nearby       nearby       smallstack  smallstack"
-    "nearby       nearby       smallstack  smallstack"
-    "pressure     visibility   rounding    rounding"
-    "forecast     forecast     rounding    rounding";
+    "models       brackets     map         map         map"
+    "discussion   brackets     map         map         map"
+    "nearby       nearby       alerts      smallstack  smallstack"
+    "nearby       nearby       alerts      smallstack  smallstack"
+    "pressure     visibility   rounding    rounding    rounding"
+    "forecast     forecast     rounding    rounding    rounding";
 }
 
-/* Wind widget expanded - shares smallstack with resolution, same layout */
+/* Wind widget expanded - 5 columns, keep alerts visible */
 .widget-grid-v2.wind-expanded {
+  grid-template-columns: repeat(5, 1fr);
   grid-template-areas:
-    "models       brackets     map         map"
-    "discussion   brackets     map         map"
-    "nearby       nearby       smallstack  smallstack"
-    "nearby       nearby       smallstack  smallstack"
-    "pressure     visibility   forecast    rounding";
+    "models       brackets     map         map         map"
+    "discussion   brackets     map         map         map"
+    "nearby       nearby       alerts      smallstack  smallstack"
+    "nearby       nearby       alerts      smallstack  smallstack"
+    "pressure     visibility   forecast    forecast    rounding";
 }
 
 .widget-grid-v2.wind-expanded [style*="grid-area: smallstack"] {
@@ -977,12 +989,13 @@ body {
 
 /* Wind + Resolution both expanded - same grid since both in smallstack */
 .widget-grid-v2.wind-expanded.resolution-expanded {
+  grid-template-columns: repeat(5, 1fr);
   grid-template-areas:
-    "models       brackets     map         map"
-    "discussion   brackets     map         map"
-    "nearby       nearby       smallstack  smallstack"
-    "nearby       nearby       smallstack  smallstack"
-    "pressure     visibility   forecast    rounding";
+    "models       brackets     map         map         map"
+    "discussion   brackets     map         map         map"
+    "nearby       nearby       alerts      smallstack  smallstack"
+    "nearby       nearby       alerts      smallstack  smallstack"
+    "pressure     visibility   forecast    forecast    rounding";
 }
 
 .widget-grid-v2.wind-expanded.resolution-expanded [style*="grid-area: smallstack"] {
@@ -991,7 +1004,7 @@ body {
 
 /* ===== PHASE 4 EXPANSION STATES ===== */
 
-/* Rain widget expanded (visibility area) - takes 2x2 */
+/* Rain widget expanded (visibility area) - 4 columns ok */
 .widget-grid-v2.rain-expanded {
   grid-template-areas:
     "models       brackets     map         map"
@@ -1005,7 +1018,7 @@ body {
   min-height: 320px;
 }
 
-/* Forecast widget expanded - takes 2x2 */
+/* Forecast widget expanded - 4 columns ok */
 .widget-grid-v2.forecast-expanded {
   grid-template-areas:
     "models       brackets     map         map"
@@ -1019,7 +1032,7 @@ body {
   min-height: 360px;
 }
 
-/* Alerts widget expanded - takes 2x2 */
+/* Alerts widget expanded - 4 columns ok */
 .widget-grid-v2.alerts-expanded {
   grid-template-areas:
     "models       brackets     map         map"
@@ -1033,7 +1046,7 @@ body {
   min-height: 320px;
 }
 
-/* Rain + Forecast both expanded */
+/* Rain + Forecast both expanded - 4 columns ok */
 .widget-grid-v2.rain-expanded.forecast-expanded {
   grid-template-areas:
     "models       brackets     map         map"
