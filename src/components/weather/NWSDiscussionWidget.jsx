@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight, ChevronDown, ChevronLeft, Plus, Copy, Check, ExternalLink, BookOpen, Maximize2 } from 'lucide-react';
+import { FileText, X, ChevronRight, ChevronDown, ChevronLeft, Plus, Copy, Check, ExternalLink, BookOpen, Maximize2, Newspaper, AlertCircle } from 'lucide-react';
+import { useNWSBulletins, formatBulletinTime } from '../../hooks/useNWSBulletins';
 import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 import { getGlossaryForOffice, termAppearsInText } from '../../data/cityGlossaries';
@@ -291,6 +292,7 @@ export default function NWSDiscussionWidget({
   lat,
   lon,
   citySlug,
+  forecastOffice,
   loading: externalLoading = false,
   isExpanded = false,
   onToggleExpand = null,
@@ -299,6 +301,12 @@ export default function NWSDiscussionWidget({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Fetch bulletins (PNS reports) for the forecast office
+  const { latestBulletin, hasFreshBulletin, loading: bulletinsLoading } = useNWSBulletins(
+    forecastOffice || discussion?.office,
+    true // Always fetch when office is available
+  );
 
   const fetchDiscussion = useCallback(async () => {
     if (!lat || !lon) return;
@@ -428,6 +436,8 @@ export default function NWSDiscussionWidget({
     return (
       <ExpandedDiscussionInline
         discussion={discussion}
+        bulletin={latestBulletin}
+        bulletinsLoading={bulletinsLoading}
         onCollapse={onToggleExpand}
       />
     );
@@ -444,6 +454,12 @@ export default function NWSDiscussionWidget({
         className="cursor-pointer"
         headerRight={
           <div className="flex items-center gap-1.5">
+            {hasFreshBulletin && (
+              <span className="text-[10px] bg-amber-500/20 text-amber-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full whitespace-nowrap" title="New NWS report available">
+                <Newspaper className="w-3 h-3" />
+                Report
+              </span>
+            )}
             <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors whitespace-nowrap">
               More
               <ChevronRight className="w-3 h-3" />
@@ -506,6 +522,7 @@ NWSDiscussionWidget.propTypes = {
   lat: PropTypes.number.isRequired,
   lon: PropTypes.number.isRequired,
   citySlug: PropTypes.string.isRequired,
+  forecastOffice: PropTypes.string,
   loading: PropTypes.bool,
   isExpanded: PropTypes.bool,
   onToggleExpand: PropTypes.func,
@@ -1209,7 +1226,8 @@ DiscussionModal.propTypes = {
  * ExpandedDiscussionInline - Full forecast discussion rendered inline (not as modal)
  * Used when the widget is expanded in the grid
  */
-function ExpandedDiscussionInline({ discussion, onCollapse }) {
+function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCollapse }) {
+  const [activeTab, setActiveTab] = useState('discussion'); // 'discussion' | 'reports'
   const [activeSection, setActiveSection] = useState('synopsis');
   const [selectionPopup, setSelectionPopup] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -1297,17 +1315,32 @@ function ExpandedDiscussionInline({ discussion, onCollapse }) {
       <div className="px-4 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-white/50" />
+            {activeTab === 'discussion' ? (
+              <FileText className="w-4 h-4 text-white/50" />
+            ) : (
+              <Newspaper className="w-4 h-4 text-white/50" />
+            )}
             <div>
-              <h2 className="text-sm font-semibold text-white">Forecast Discussion</h2>
+              <h2 className="text-sm font-semibold text-white">
+                {activeTab === 'discussion' ? 'Forecast Discussion' : 'NWS Reports'}
+              </h2>
               <p className="text-[10px] text-white/50">
-                NWS {discussion.office} • {formatTime(discussion.issuanceTime)}
+                {activeTab === 'discussion' ? (
+                  <>NWS {discussion.office} • {formatTime(discussion.issuanceTime)}</>
+                ) : bulletin ? (
+                  <>NWS {discussion.office} • {formatBulletinTime(bulletin.issuanceTime)}</>
+                ) : (
+                  <>NWS {discussion.office}</>
+                )}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
             <a
-              href={`https://forecast.weather.gov/product.php?site=${discussion.office}&issuedby=${discussion.office}&product=AFD`}
+              href={activeTab === 'discussion'
+                ? `https://forecast.weather.gov/product.php?site=${discussion.office}&issuedby=${discussion.office}&product=AFD`
+                : `https://forecast.weather.gov/product.php?site=${discussion.office}&issuedby=${discussion.office}&product=PNS`
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -1315,17 +1348,19 @@ function ExpandedDiscussionInline({ discussion, onCollapse }) {
             >
               <ExternalLink className="w-3.5 h-3.5 text-white/70" />
             </a>
-            <button
-              onClick={handleCopyAll}
-              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              title="Copy section"
-            >
-              {copied ? (
-                <Check className="w-3.5 h-3.5 text-green-400" />
-              ) : (
-                <Copy className="w-3.5 h-3.5 text-white/70" />
-              )}
-            </button>
+            {activeTab === 'discussion' && (
+              <button
+                onClick={handleCopyAll}
+                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                title="Copy section"
+              >
+                {copied ? (
+                  <Check className="w-3.5 h-3.5 text-green-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5 text-white/70" />
+                )}
+              </button>
+            )}
             {onCollapse && (
               <button
                 onClick={onCollapse}
@@ -1338,71 +1373,119 @@ function ExpandedDiscussionInline({ discussion, onCollapse }) {
           </div>
         </div>
 
-        {/* Section tabs */}
-        <div className="flex gap-1 mt-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`
-                px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all
-                ${activeSection === section.id
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }
-              `}
-            >
-              {section.label}
-            </button>
-          ))}
+        {/* Top-level tabs: Discussion | Reports */}
+        <div className="flex items-center gap-2 mt-3 mb-2">
+          <button
+            onClick={() => setActiveTab('discussion')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'discussion'
+                ? 'bg-white/15 text-white'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Discussion
+          </button>
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'reports'
+                ? 'bg-white/15 text-white'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+            }`}
+          >
+            <Newspaper className="w-3.5 h-3.5" />
+            Reports
+            {bulletin && (
+              <span className="ml-1 w-1.5 h-1.5 rounded-full bg-blue-400" title="New report available" />
+            )}
+          </button>
         </div>
+
+        {/* Section tabs (only for Discussion tab) */}
+        {activeTab === 'discussion' && (
+          <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`
+                  px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all
+                  ${activeSection === section.id
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }
+                `}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Content */}
       <div
         ref={contentRef}
         className="relative flex-1 overflow-y-auto p-4"
-        onMouseUp={handleMouseUp}
+        onMouseUp={activeTab === 'discussion' ? handleMouseUp : undefined}
       >
-        {/* Selection popup */}
-        {selectionPopup && (
-          <button
-            onClick={handleAddSelectionToNotes}
-            className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
-            style={{
-              left: `${selectionPopup.x}px`,
-              top: `${selectionPopup.y}px`,
-              transform: 'translate(-50%, -100%)',
-            }}
-          >
-            <Plus className="w-3 h-3" />
-            Add to notes
-          </button>
+        {/* Discussion content */}
+        {activeTab === 'discussion' && (
+          <>
+            {/* Selection popup */}
+            {selectionPopup && (
+              <button
+                onClick={handleAddSelectionToNotes}
+                className="absolute z-50 flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition-colors"
+                style={{
+                  left: `${selectionPopup.x}px`,
+                  top: `${selectionPopup.y}px`,
+                  transform: 'translate(-50%, -100%)',
+                }}
+              >
+                <Plus className="w-3 h-3" />
+                Add to notes
+              </button>
+            )}
+
+            {sections.map((section) => (
+              <div
+                key={section.id}
+                className={activeSection === section.id ? 'block' : 'hidden'}
+              >
+                {section.isGlossary ? (
+                  <GlossaryContent
+                    office={discussion.office}
+                    fullText={fullDiscussionText}
+                  />
+                ) : (
+                  <div className="text-sm text-white/70 leading-relaxed">
+                    {parseAndHighlight(section.content, discussion.office)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </>
         )}
 
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            className={activeSection === section.id ? 'block' : 'hidden'}
-          >
-            {section.isGlossary ? (
-              <GlossaryContent
-                office={discussion.office}
-                fullText={fullDiscussionText}
-              />
-            ) : (
-              <div className="text-sm text-white/70 leading-relaxed">
-                {parseAndHighlight(section.content, discussion.office)}
-              </div>
-            )}
-          </div>
-        ))}
+        {/* Reports/Bulletins content */}
+        {activeTab === 'reports' && (
+          <BulletinContent
+            bulletin={bulletin}
+            loading={bulletinsLoading}
+            office={discussion.office}
+          />
+        )}
       </div>
 
       {/* Footer */}
       <div className="px-4 py-2 bg-white/5 border-t border-white/10 flex-shrink-0">
         <p className="text-[9px] text-white/40 text-center">
-          Click highlighted terms or select text to add to notes
+          {activeTab === 'discussion'
+            ? 'Click highlighted terms or select text to add to notes'
+            : 'Public Information Statements contain record weather data and climate summaries'
+          }
         </p>
       </div>
     </div>
@@ -1421,5 +1504,90 @@ ExpandedDiscussionInline.propTypes = {
     marine: PropTypes.string,
     fullText: PropTypes.string,
   }).isRequired,
+  bulletin: PropTypes.shape({
+    id: PropTypes.string,
+    issuanceTime: PropTypes.string,
+    headlines: PropTypes.arrayOf(PropTypes.string),
+    body: PropTypes.string,
+    office: PropTypes.string,
+    timestamp: PropTypes.string,
+  }),
+  bulletinsLoading: PropTypes.bool,
   onCollapse: PropTypes.func,
+};
+
+/**
+ * BulletinContent - Displays NWS Public Information Statement content
+ */
+function BulletinContent({ bulletin, loading, office }) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!bulletin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-32 text-center">
+        <Newspaper className="w-8 h-8 text-white/20 mb-2" />
+        <p className="text-sm text-white/50">No recent reports available</p>
+        <p className="text-xs text-white/30 mt-1">
+          Public Information Statements are issued for notable weather events
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Headlines */}
+      {bulletin.headlines && bulletin.headlines.length > 0 && (
+        <div className="space-y-2">
+          {bulletin.headlines.map((headline, idx) => (
+            <div
+              key={idx}
+              className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg"
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-300 font-medium leading-snug">
+                  {headline}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Body text - scrollable with max height */}
+      {bulletin.body && (
+        <div className="max-h-[400px] overflow-y-auto pr-2">
+          <div className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
+            {parseAndHighlight(bulletin.body, office)}
+          </div>
+        </div>
+      )}
+
+      {/* Timestamp */}
+      {bulletin.timestamp && (
+        <div className="pt-2 border-t border-white/10">
+          <p className="text-[10px] text-white/40">
+            Issued: {bulletin.timestamp}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+BulletinContent.propTypes = {
+  bulletin: PropTypes.shape({
+    headlines: PropTypes.arrayOf(PropTypes.string),
+    body: PropTypes.string,
+    timestamp: PropTypes.string,
+  }),
+  loading: PropTypes.bool,
+  office: PropTypes.string,
 };
