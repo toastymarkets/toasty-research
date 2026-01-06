@@ -3,14 +3,18 @@ import PropTypes from 'prop-types';
 /**
  * WidgetGridV2 - Apple Weather inspired grid layout with explicit areas
  * Uses CSS Grid with named template areas for precise widget placement
- * Supports widget expansion via expandedWidget prop
+ * Supports multiple simultaneous widget expansions via expandedWidgets object
  */
-export default function WidgetGridV2({ children, className = '', expandedWidget = null }) {
-  // Build class name with expansion modifier
+export default function WidgetGridV2({ children, className = '', expandedWidgets = {} }) {
+  // Build class name with expansion modifiers for each expanded widget
+  const expansionClasses = Object.entries(expandedWidgets)
+    .filter(([, isExpanded]) => isExpanded)
+    .map(([widgetId]) => `${widgetId}-expanded`);
+
   const gridClassName = [
     'widget-grid-v2',
     'grid gap-2 w-full max-w-full overflow-hidden',
-    expandedWidget === 'discussion' && 'discussion-expanded',
+    ...expansionClasses,
     className,
   ].filter(Boolean).join(' ');
 
@@ -24,7 +28,7 @@ export default function WidgetGridV2({ children, className = '', expandedWidget 
 WidgetGridV2.propTypes = {
   children: PropTypes.node,
   className: PropTypes.string,
-  expandedWidget: PropTypes.string,
+  expandedWidgets: PropTypes.object,
 };
 
 /**
@@ -46,11 +50,16 @@ const GRID_AREAS = {
 
 /**
  * WidgetGridV2.Area - Places widget in a named grid area
+ * Supports expansion via isExpanded prop with size control
+ * When expanded, the widget keeps its grid area but spans more cells via CSS
  */
-function WidgetGridArea({ area, children, className = '' }) {
+function WidgetGridArea({ area, children, className = '', isExpanded = false, expansionSize = 'medium' }) {
+  // Build expansion-specific class name for CSS targeting
+  const expansionClass = isExpanded ? `widget-area-${area}-expanded` : '';
+
   return (
     <div
-      className={`min-w-0 h-full ${className}`}
+      className={`min-w-0 h-full widget-expansion-transition ${expansionClass} ${className}`}
       style={{ gridArea: area }}
     >
       {children}
@@ -62,6 +71,8 @@ WidgetGridArea.propTypes = {
   area: PropTypes.oneOf(Object.values(GRID_AREAS)).isRequired,
   children: PropTypes.node,
   className: PropTypes.string,
+  isExpanded: PropTypes.bool,
+  expansionSize: PropTypes.oneOf(['medium', 'large']),
 };
 
 WidgetGridV2.Area = WidgetGridArea;

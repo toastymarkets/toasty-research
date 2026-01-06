@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check, BookOpen, AlertTriangle } from 'lucide-react';
+import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check, BookOpen, AlertTriangle, Maximize2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -54,12 +54,15 @@ function insertSingleModelToNotes(model, dayData, dateLabel) {
 
 /**
  * ModelsWidget - Shows multi-model forecast comparison
- * Compact view with detail modal on click
+ * Compact view with inline expansion on desktop, modal on mobile
  */
-export default function ModelsWidget({ citySlug, loading: externalLoading = false }) {
+export default function ModelsWidget({ citySlug, loading: externalLoading = false, isExpanded = false, onToggleExpand }) {
   const { forecasts, loading, error, refetch } = useMultiModelForecast(citySlug);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hoveredModel, setHoveredModel] = useState(null);
+
+  // Simple mobile detection
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   if (loading || externalLoading) {
     return (
@@ -99,18 +102,44 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
     }
   };
 
+  // Handle widget click - expand inline on desktop, modal on mobile
+  const handleWidgetClick = () => {
+    if (isMobile) {
+      setIsModalOpen(true);
+    } else if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setIsModalOpen(true); // Fallback if no toggle provided
+    }
+  };
+
+  // Render inline expanded view on desktop
+  if (isExpanded && !isMobile) {
+    return (
+      <ExpandedModelsInline
+        forecasts={forecasts}
+        onCollapse={onToggleExpand}
+      />
+    );
+  }
+
   return (
     <>
       <GlassWidget
         title="MODELS"
         icon={Activity}
         size="small"
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleWidgetClick}
         className="cursor-pointer"
         headerRight={
-          <span className="text-xs text-white/50 tabular-nums">
-            {consensus.min}°-{consensus.max}°
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-white/50 tabular-nums">
+              {consensus.min}°-{consensus.max}°
+            </span>
+            {onToggleExpand && (
+              <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+            )}
+          </div>
         }
       >
         <div className="flex flex-col h-full justify-between">
@@ -156,22 +185,19 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
           </div>
 
           {/* Agreement indicator with confidence badge */}
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/40">
-                ±{Math.round(consensus.spread / 2)}°
-              </span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded ${
-                consensus.spread <= 3
-                  ? 'bg-green-500/20 text-green-400'
-                  : consensus.spread <= 6
-                    ? 'bg-yellow-500/20 text-yellow-400'
-                    : 'bg-red-500/20 text-red-400'
-              }`}>
-                {consensus.spread <= 3 ? 'High' : consensus.spread <= 6 ? 'Med' : 'Low'}
-              </span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5 text-white/30" />
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] text-white/40">
+              ±{Math.round(consensus.spread / 2)}°
+            </span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+              consensus.spread <= 3
+                ? 'bg-green-500/20 text-green-400'
+                : consensus.spread <= 6
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-red-500/20 text-red-400'
+            }`}>
+              {consensus.spread <= 3 ? 'High' : consensus.spread <= 6 ? 'Med' : 'Low'}
+            </span>
           </div>
         </div>
       </GlassWidget>
@@ -190,6 +216,264 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
 ModelsWidget.propTypes = {
   citySlug: PropTypes.string.isRequired,
   loading: PropTypes.bool,
+  isExpanded: PropTypes.bool,
+  onToggleExpand: PropTypes.func,
+};
+
+/**
+ * ExpandedModelsInline - Inline expanded view for desktop
+ */
+function ExpandedModelsInline({ forecasts, onCollapse }) {
+  const [selectedDay, setSelectedDay] = useState(0);
+  const [addedDay, setAddedDay] = useState(null);
+  const [activeTab, setActiveTab] = useState('forecast');
+  const { models, consensus, dates, city } = forecasts;
+
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    return dates.slice(0, 7).map((date, idx) => {
+      const dataPoint = {
+        day: idx === 0 ? 'Today' : idx === 1 ? 'Tmw' : new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+        dayIndex: idx,
+      };
+      models.forEach(model => {
+        dataPoint[model.name] = model.daily[idx]?.high;
+      });
+      return dataPoint;
+    });
+  }, [dates, models]);
+
+  const formatDate = (dateStr, index) => {
+    if (index === 0) return 'Today';
+    if (index === 1) return 'Tmw';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+
+  const getDayConsensus = (dayIndex) => {
+    const highs = models.map(m => m.daily[dayIndex]?.high).filter(h => h != null);
+    const lows = models.map(m => m.daily[dayIndex]?.low).filter(l => l != null);
+    return {
+      highMin: Math.min(...highs),
+      highMax: Math.max(...highs),
+      highAvg: Math.round(highs.reduce((a, b) => a + b, 0) / highs.length),
+      lowMin: Math.min(...lows),
+      lowMax: Math.max(...lows),
+      lowAvg: Math.round(lows.reduce((a, b) => a + b, 0) / lows.length),
+      spread: Math.max(...highs) - Math.min(...highs),
+    };
+  };
+
+  const dayConsensus = getDayConsensus(selectedDay);
+
+  const handleAddToNotes = () => {
+    const dateLabel = formatDate(dates[selectedDay], selectedDay);
+    insertModelsToNotes({
+      dayConsensus,
+      models,
+      selectedDay,
+      dateLabel,
+    });
+    setAddedDay(selectedDay);
+    setTimeout(() => setAddedDay(null), 1500);
+  };
+
+  const wasAdded = addedDay === selectedDay;
+
+  return (
+    <div className="glass-widget h-full flex flex-col">
+      {/* Header */}
+      <div className="px-3 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-white/60" />
+            <span className="text-sm font-semibold text-white">Model Comparison</span>
+            <span className="text-xs text-white/40">{city}</span>
+          </div>
+          <button
+            onClick={onCollapse}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            title="Collapse"
+          >
+            <ChevronRight className="w-4 h-4 rotate-180" />
+          </button>
+        </div>
+
+        {/* Tab bar + Day selector row */}
+        <div className="flex items-center gap-3 mt-2">
+          {/* Tabs */}
+          <div className="flex gap-0.5 bg-white/10 rounded-lg p-0.5">
+            <button
+              onClick={() => setActiveTab('forecast')}
+              className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                activeTab === 'forecast' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Forecast
+            </button>
+            <button
+              onClick={() => setActiveTab('learn')}
+              className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                activeTab === 'learn' ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Learn
+            </button>
+          </div>
+
+          {/* Day selector - only on forecast tab */}
+          {activeTab === 'forecast' && (
+            <div className="flex gap-1 overflow-x-auto">
+              {dates.slice(0, 7).map((date, idx) => (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDay(idx)}
+                  className={`px-2 py-1 rounded text-[10px] font-medium whitespace-nowrap transition-all ${
+                    selectedDay === idx
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white/5 text-white/50 hover:bg-white/10'
+                  }`}
+                >
+                  {formatDate(date, idx)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Content area */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'forecast' ? (
+          <div className="h-full flex flex-col">
+            {/* Top section: Consensus + Chart side by side */}
+            <div className="flex gap-3 p-3 border-b border-white/10">
+              {/* Consensus */}
+              <div className="flex-shrink-0 w-36">
+                <p className="text-[10px] text-white/40 uppercase tracking-wide mb-1">Consensus</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3 text-orange-400" />
+                    <span className="text-lg font-medium text-white">{dayConsensus.highAvg}°</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <TrendingDown className="w-3 h-3 text-blue-400" />
+                    <span className="text-sm text-white/60">{dayConsensus.lowAvg}°</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    dayConsensus.spread <= 3 ? 'bg-green-500/20 text-green-400' :
+                    dayConsensus.spread <= 6 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    ±{Math.round(dayConsensus.spread / 2)}°
+                  </span>
+                  <button
+                    onClick={handleAddToNotes}
+                    className={`p-1 rounded transition-all ${
+                      wasAdded ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-white/10 text-white/40'
+                    }`}
+                    title="Add to notes"
+                  >
+                    {wasAdded ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Chart */}
+              <div className="flex-1 h-28">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="day" tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }} tickLine={false} axisLine={false} />
+                    <YAxis domain={['dataMin - 3', 'dataMax + 3']} tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }} tickLine={false} axisLine={false} width={25} tickFormatter={(v) => `${v}°`} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', fontSize: '10px' }}
+                      formatter={(value, name) => [`${value}°`, name]}
+                    />
+                    {models.map((model) => (
+                      <Line key={model.id} type="monotone" dataKey={model.name} stroke={model.color} strokeWidth={1.5} dot={{ r: 2, fill: model.color }} />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Model grid - scrollable */}
+            <div className="flex-1 overflow-y-auto p-3">
+              <div className="grid grid-cols-2 gap-2">
+                {models.map((model) => {
+                  const dayData = model.daily[selectedDay];
+                  if (!dayData) return null;
+                  const diffFromAvg = dayData.high - dayConsensus.highAvg;
+                  return (
+                    <div key={model.id} className="bg-white/5 rounded-lg p-2 hover:bg-white/10 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: model.color }} />
+                          <span className="text-xs font-medium text-white">{model.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-medium text-white">{dayData.high}°</span>
+                          {diffFromAvg !== 0 && (
+                            <span className={`text-[10px] ${diffFromAvg > 0 ? 'text-orange-400' : 'text-blue-400'}`}>
+                              {diffFromAvg > 0 ? '+' : ''}{diffFromAvg}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-white/40 mt-0.5">{model.description}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Learn tab */
+          <div className="h-full overflow-y-auto p-3 space-y-3">
+            <p className="text-xs text-white/60 leading-relaxed">
+              Weather models are computer simulations predicting atmospheric conditions. Different models vary in accuracy based on weather patterns and timeframe.
+            </p>
+
+            {/* Model cards in compact 2-column grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {MODELS.map((model) => (
+                <div key={model.id} className="bg-white/5 rounded-lg p-2 border border-white/10">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: model.color }} />
+                    <span className="text-xs font-medium text-white">{model.name}</span>
+                    <span className="text-[9px] text-white/40">{model.provider}</span>
+                  </div>
+                  <div className="text-[10px] text-white/50 mt-1 line-clamp-2">{model.bestFor}</div>
+                  {model.knownBias && (
+                    <div className="flex items-start gap-1 mt-1">
+                      <AlertTriangle className="w-2.5 h-2.5 text-amber-400 flex-shrink-0" />
+                      <span className="text-[9px] text-amber-400/80 line-clamp-2">{model.knownBias}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Spread guide */}
+            <div className="bg-white/5 rounded-lg p-2 text-[10px]">
+              <p className="text-white/50 mb-1">Model Spread Guide:</p>
+              <div className="flex gap-3">
+                <span><span className="text-green-400">±1-3°</span> High conf.</span>
+                <span><span className="text-yellow-400">±4-6°</span> Medium</span>
+                <span><span className="text-red-400">±7°+</span> Low conf.</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ExpandedModelsInline.propTypes = {
+  forecasts: PropTypes.object.isRequired,
+  onCollapse: PropTypes.func.isRequired,
 };
 
 /**

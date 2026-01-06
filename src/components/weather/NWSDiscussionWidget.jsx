@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight, ChevronDown, ChevronLeft, Plus, Copy, Check, ExternalLink, BookOpen } from 'lucide-react';
+import { FileText, X, ChevronRight, ChevronDown, ChevronLeft, Plus, Copy, Check, ExternalLink, BookOpen, Maximize2 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 import { getGlossaryForOffice, termAppearsInText } from '../../data/cityGlossaries';
@@ -443,10 +443,15 @@ export default function NWSDiscussionWidget({
         onClick={handleClick}
         className="cursor-pointer"
         headerRight={
-          <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors whitespace-nowrap">
-            More
-            <ChevronRight className="w-3 h-3" />
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] bg-blue-500/20 text-blue-400 font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors whitespace-nowrap">
+              More
+              <ChevronRight className="w-3 h-3" />
+            </span>
+            {onToggleExpand && (
+              <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+            )}
+          </div>
         }
       >
         <div className="flex flex-col h-full justify-between gap-2 overflow-hidden">

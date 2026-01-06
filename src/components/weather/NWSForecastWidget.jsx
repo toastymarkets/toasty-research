@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Cloud, X, Sun, CloudRain, CloudSnow, Wind, ChevronRight, Plus, Check } from 'lucide-react';
+import { Cloud, X, Sun, CloudRain, CloudSnow, Wind, ChevronRight, Plus, Check, Maximize2 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
 import { insertForecastToNotes } from '../../utils/noteInsertionEvents';
@@ -15,11 +15,16 @@ export default function NWSForecastWidget({
   lon,
   timezone = 'America/New_York',
   loading: externalLoading = false,
+  isExpanded,
+  onToggleExpand,
 }) {
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Mobile detection for dual behavior
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   // Fetch NWS forecast
   const fetchForecast = useCallback(async () => {
@@ -118,6 +123,29 @@ export default function NWSForecastWidget({
     return Cloud;
   };
 
+  // Handle widget click - dual behavior
+  const handleWidgetClick = () => {
+    if (isMobile) {
+      setIsModalOpen(true);
+    } else if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  // Render expanded inline view on desktop
+  if (isExpanded && !isMobile && forecast) {
+    return (
+      <ExpandedForecastInline
+        forecast={forecast}
+        timezone={timezone}
+        getWeatherIcon={getWeatherIcon}
+        onCollapse={onToggleExpand}
+      />
+    );
+  }
+
   if (loading || externalLoading) {
     return (
       <GlassWidget title="FORECAST" icon={Cloud} size="small">
@@ -150,8 +178,11 @@ export default function NWSForecastWidget({
         title="FORECAST"
         icon={Cloud}
         size="small"
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleWidgetClick}
         className="cursor-pointer"
+        headerRight={onToggleExpand && (
+          <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+        )}
       >
         <div className="flex items-center justify-between h-full">
           {/* Current period */}
@@ -193,6 +224,125 @@ NWSForecastWidget.propTypes = {
   lon: PropTypes.number.isRequired,
   timezone: PropTypes.string,
   loading: PropTypes.bool,
+  isExpanded: PropTypes.bool,
+  onToggleExpand: PropTypes.func,
+};
+
+/**
+ * ExpandedForecastInline - Inline expanded view showing 7-day forecast
+ */
+function ExpandedForecastInline({ forecast, timezone, getWeatherIcon, onCollapse }) {
+  const [addedPeriod, setAddedPeriod] = useState(null);
+
+  // Get background color based on temperature
+  const getTempBg = (temp) => {
+    if (temp >= 90) return 'bg-orange-500/20';
+    if (temp >= 80) return 'bg-yellow-500/20';
+    if (temp >= 70) return 'bg-green-500/20';
+    if (temp >= 60) return 'bg-cyan-500/20';
+    if (temp >= 50) return 'bg-blue-500/20';
+    if (temp >= 40) return 'bg-indigo-500/20';
+    return 'bg-purple-500/20';
+  };
+
+  // Handle adding forecast to notes
+  const handleAddToNotes = (period, idx) => {
+    const locationLabel = forecast.city && forecast.state
+      ? `${forecast.city}, ${forecast.state}`
+      : forecast.gridId || 'Local Area';
+    insertForecastToNotes(period, {
+      source: 'NWS',
+      gridId: forecast.gridId,
+      location: locationLabel,
+    });
+    setAddedPeriod(idx);
+    setTimeout(() => setAddedPeriod(null), 1500);
+  };
+
+  return (
+    <div className="glass-widget h-full flex flex-col">
+      {/* Header with collapse button */}
+      <div className="flex items-center justify-between p-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <Cloud className="w-4 h-4 text-white/70" />
+          <span className="text-sm font-semibold text-white">7-Day Forecast</span>
+          <span className="text-xs text-white/40">NWS</span>
+        </div>
+        <button
+          onClick={onCollapse}
+          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          title="Collapse"
+        >
+          <ChevronRight className="w-4 h-4 text-white/60 rotate-180" />
+        </button>
+      </div>
+
+      {/* Forecast periods - scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        {forecast.periods.slice(0, 10).map((period, idx) => {
+          const Icon = getWeatherIcon(period.shortForecast, period.isDaytime);
+          const wasAdded = addedPeriod === idx;
+
+          return (
+            <div
+              key={idx}
+              className={`px-3 py-2 border-b border-white/5 ${getTempBg(period.temperature)} hover:bg-white/5 transition-colors`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Icon className="w-4 h-4 text-white/70 flex-shrink-0" />
+                  <span className="text-xs font-medium text-white truncate">{period.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-light text-white">
+                    {period.temperature}°
+                  </span>
+                  <button
+                    onClick={() => handleAddToNotes(period, idx)}
+                    className={`p-1 rounded transition-all ${
+                      wasAdded
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'hover:bg-white/10 text-white/40 hover:text-white/70'
+                    }`}
+                    title="Add to notes"
+                  >
+                    {wasAdded ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <Plus className="w-3 h-3" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <p className="text-[10px] text-white/60 mt-0.5 line-clamp-1">{period.shortForecast}</p>
+              {period.windSpeed && (
+                <p className="text-[9px] text-white/40 mt-0.5">
+                  Wind: {period.windDirection} {period.windSpeed}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div className="px-3 py-2 border-t border-white/10 text-[10px] text-white/40">
+        Data from National Weather Service
+      </div>
+    </div>
+  );
+}
+
+ExpandedForecastInline.propTypes = {
+  forecast: PropTypes.shape({
+    periods: PropTypes.array.isRequired,
+    gridId: PropTypes.string,
+    city: PropTypes.string,
+    state: PropTypes.string,
+  }).isRequired,
+  timezone: PropTypes.string,
+  getWeatherIcon: PropTypes.func.isRequired,
+  onCollapse: PropTypes.func.isRequired,
 };
 
 /**
