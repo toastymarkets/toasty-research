@@ -421,23 +421,27 @@ export const WindWidget = memo(function WindWidget({
               <ASCIIWindAnimation direction={directionDeg} speed={speedMph} />
             </div>
 
-            {/* Bottom: Speed and direction info - 40% */}
-            <div className="flex-[2] flex flex-col justify-center">
-              <div className="flex items-center justify-between">
+            {/* Bottom: Speed and direction boxes - 40% */}
+            <div className="flex-[2] flex gap-2">
+              {/* Speed box */}
+              <div className="flex-1 bg-white/5 rounded-lg px-2 py-1.5 flex flex-col justify-center">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-light text-white">{speedMph}</span>
-                  <span className="text-[10px] text-white/60">mph</span>
+                  <span className="text-xl font-light text-white tabular-nums">{speedMph}</span>
+                  <span className="text-[10px] text-white/50">mph</span>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-medium text-white">{directionCardinal}</span>
-                  <span className="text-[10px] text-white/50 ml-1">{Math.round(directionDeg)}°</span>
-                </div>
+                {gustsMph ? (
+                  <div className="text-[10px] text-white/40">
+                    Gusts {gustsMph}
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-white/40">Wind</div>
+                )}
               </div>
-              {gustsMph && (
-                <div className="text-[10px] text-white/50">
-                  Gusts {gustsMph} mph
-                </div>
-              )}
+              {/* Direction box */}
+              <div className="flex-1 bg-white/5 rounded-lg px-2 py-1.5 flex flex-col justify-center items-end">
+                <span className="text-xl font-light text-white">{directionCardinal}</span>
+                <span className="text-[10px] text-white/40 tabular-nums">{Math.round(directionDeg)}°</span>
+              </div>
             </div>
           </div>
         </GlassWidget>
