@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { CloudRain, Snowflake, RefreshCw, ChevronRight, Droplets } from 'lucide-react';
+import { CloudRain, Snowflake, RefreshCw, ChevronRight, Droplets, Maximize2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -552,13 +552,21 @@ export default function RainWidget({ citySlug, cityName, isExpanded, onToggleExp
             </div>
             <span className="text-[10px] text-white/40">{monthName}</span>
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3 h-3 text-white/50 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 text-white/50 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+            {onToggleExpand && (
+              <Maximize2
+                className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors cursor-pointer"
+                onClick={onToggleExpand}
+              />
+            )}
+          </div>
         </div>
 
         {/* Content */}

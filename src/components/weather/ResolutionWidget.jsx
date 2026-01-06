@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, ChevronRight, Clock, Calendar, ExternalLink, Timer, Thermometer, Radio, Info } from 'lucide-react';
+import { FileText, ChevronRight, Clock, Calendar, ExternalLink, Timer, Thermometer, Radio, Info, Maximize2 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import ResolutionModal from './ResolutionModal';
 import { useCLIReport } from '../../hooks/useCLIReport';
@@ -176,6 +176,9 @@ export function ResolutionWidget({
         size="small"
         className="cursor-pointer"
         onClick={handleWidgetClick}
+        headerRight={onToggleExpand && (
+          <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+        )}
       >
         <div className="flex flex-col h-full">
           {/* Side-by-side CLI and DSM */}

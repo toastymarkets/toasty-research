@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check, BookOpen, AlertTriangle } from 'lucide-react';
+import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check, BookOpen, AlertTriangle, Maximize2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -132,9 +132,14 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
         onClick={handleWidgetClick}
         className="cursor-pointer"
         headerRight={
-          <span className="text-xs text-white/50 tabular-nums">
-            {consensus.min}°-{consensus.max}°
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-white/50 tabular-nums">
+              {consensus.min}°-{consensus.max}°
+            </span>
+            {onToggleExpand && (
+              <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+            )}
+          </div>
         }
       >
         <div className="flex flex-col h-full justify-between">
@@ -180,22 +185,19 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
           </div>
 
           {/* Agreement indicator with confidence badge */}
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/40">
-                ±{Math.round(consensus.spread / 2)}°
-              </span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded ${
-                consensus.spread <= 3
-                  ? 'bg-green-500/20 text-green-400'
-                  : consensus.spread <= 6
-                    ? 'bg-yellow-500/20 text-yellow-400'
-                    : 'bg-red-500/20 text-red-400'
-              }`}>
-                {consensus.spread <= 3 ? 'High' : consensus.spread <= 6 ? 'Med' : 'Low'}
-              </span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5 text-white/30" />
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] text-white/40">
+              ±{Math.round(consensus.spread / 2)}°
+            </span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+              consensus.spread <= 3
+                ? 'bg-green-500/20 text-green-400'
+                : consensus.spread <= 6
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-red-500/20 text-red-400'
+            }`}>
+              {consensus.spread <= 3 ? 'High' : consensus.spread <= 6 ? 'Med' : 'Low'}
+            </span>
           </div>
         </div>
       </GlassWidget>

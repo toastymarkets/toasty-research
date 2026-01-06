@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingUp, ExternalLink, ChevronRight, Plus } from 'lucide-react';
+import { TrendingUp, ExternalLink, ChevronRight, Plus, Maximize2 } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import { useDataChip } from '../../context/DataChipContext';
 import GlassWidget from './GlassWidget';
@@ -212,6 +212,9 @@ export default function MarketBrackets({
       size="large"
       className="h-full cursor-pointer"
       onClick={handleWidgetClick}
+      headerRight={onToggleExpand && (
+        <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+      )}
     >
 
       {/* Day Toggle */}

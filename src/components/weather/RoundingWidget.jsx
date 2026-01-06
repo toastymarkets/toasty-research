@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
-import { Calculator, ChevronUp, ChevronDown, ChevronRight, Info, Bot } from 'lucide-react';
+import { Calculator, ChevronUp, ChevronDown, ChevronRight, Info, Bot, Maximize2 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import SelectableData from '../widgets/SelectableData';
 import { findRange, findCelsiusRange, getPrintedRange, findASOSRange, findMETARRange } from '../../utils/roundingCalculator';
@@ -113,6 +113,9 @@ export default function RoundingWidget({
         size="small"
         className="cursor-pointer"
         onClick={handleWidgetClick}
+        headerRight={onToggleExpand && (
+          <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+        )}
       >
         <div className="flex flex-col items-center justify-center flex-1 w-full">
           {/* Celsius stepper */}

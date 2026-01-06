@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Cloud, X, Sun, CloudRain, CloudSnow, Wind, ChevronRight, Plus, Check } from 'lucide-react';
+import { Cloud, X, Sun, CloudRain, CloudSnow, Wind, ChevronRight, Plus, Check, Maximize2 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
 import { insertForecastToNotes } from '../../utils/noteInsertionEvents';
@@ -180,6 +180,9 @@ export default function NWSForecastWidget({
         size="small"
         onClick={handleWidgetClick}
         className="cursor-pointer"
+        headerRight={onToggleExpand && (
+          <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+        )}
       >
         <div className="flex items-center justify-between h-full">
           {/* Current period */}

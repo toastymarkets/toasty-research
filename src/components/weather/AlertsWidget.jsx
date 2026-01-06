@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { AlertTriangle, ChevronRight, Newspaper } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Newspaper, Maximize2 } from 'lucide-react';
 import { useNWSAlerts, getAlertColor, getAlertIcon } from '../../hooks/useNWSAlerts';
 import { useWeatherNews, formatNewsTime } from '../../hooks/useWeatherNews';
 import GlassWidget from './GlassWidget';
@@ -98,6 +98,9 @@ export default function AlertsWidget({ lat, lon, cityName, isExpanded, onToggleE
           size="large"
           className="cursor-pointer"
           onClick={handleWidgetClick}
+          headerRight={onToggleExpand && (
+            <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+          )}
         >
           {/* No alerts badge */}
           <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
@@ -175,6 +178,9 @@ export default function AlertsWidget({ lat, lon, cityName, isExpanded, onToggleE
         size="large"
         className="cursor-pointer"
         onClick={handleWidgetClick}
+        headerRight={onToggleExpand && (
+          <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+        )}
       >
         <div className="flex-1 overflow-y-auto space-y-2">
           {alerts.slice(0, 3).map((alert) => {

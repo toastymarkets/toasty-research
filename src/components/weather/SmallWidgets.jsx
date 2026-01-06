@@ -13,6 +13,7 @@ import {
   ChevronRight,
   CloudRain,
   Snowflake,
+  Maximize2,
 } from 'lucide-react';
 import GlassWidget from './GlassWidget';
 import { useMonthlyPrecipitation } from '../../hooks/useMonthlyPrecipitation';
@@ -446,6 +447,9 @@ export const WindWidget = memo(function WindWidget({
           size="small"
           className="cursor-pointer"
           onClick={handleWidgetClick}
+          headerRight={onToggleExpand && (
+            <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+          )}
         >
           <div className="flex flex-col flex-1 gap-1">
             {/* Top: ASCII Animation - 60% of widget */}
