@@ -422,24 +422,24 @@ export const WindWidget = memo(function WindWidget({
             </div>
 
             {/* Bottom: Speed and direction boxes - 40% */}
-            <div className="flex-[2] flex gap-2">
+            <div className="flex-[2] flex gap-1.5">
               {/* Speed box */}
-              <div className="flex-1 bg-white/5 rounded-lg px-2 py-1.5 flex flex-col justify-center items-center">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-light text-white tabular-nums">{speedMph}</span>
-                  <span className="text-[10px] text-white/50">mph</span>
+              <div className="flex-1 bg-white/5 rounded-md px-1.5 py-1 flex flex-col justify-center items-center">
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-sm font-medium text-white tabular-nums">{speedMph}</span>
+                  <span className="text-[9px] text-white/50">mph</span>
                 </div>
-                <div className="text-[10px] text-white/40">
+                <div className="text-[9px] text-white/40">
                   {gustsMph ? `Gusts ${gustsMph}` : 'Speed'}
                 </div>
               </div>
               {/* Direction box */}
-              <div className="flex-1 bg-white/5 rounded-lg px-2 py-1.5 flex flex-col justify-center items-center">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-light text-white">{directionCardinal}</span>
-                  <span className="text-[10px] text-white/50 tabular-nums">{Math.round(directionDeg)}°</span>
+              <div className="flex-1 bg-white/5 rounded-md px-1.5 py-1 flex flex-col justify-center items-center">
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-sm font-medium text-white">{directionCardinal}</span>
+                  <span className="text-[9px] text-white/50 tabular-nums">{Math.round(directionDeg)}°</span>
                 </div>
-                <div className="text-[10px] text-white/40">Direction</div>
+                <div className="text-[9px] text-white/40">Direction</div>
               </div>
             </div>
           </div>
