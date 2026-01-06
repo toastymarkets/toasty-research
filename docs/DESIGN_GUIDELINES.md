@@ -324,6 +324,114 @@ const weatherBg = getWeatherBackground(weather?.condition, timezone);
 
 ---
 
+## Widget Grid System
+
+The dashboard uses a CSS Grid layout with named template areas. Widgets have defined sizes and flexibility rules that determine how they behave during expansion and rearrangement.
+
+### Grid Structure
+
+```
+Desktop (4 columns):
+┌─────────┬─────────┬─────────┬─────────┐
+│ models  │brackets │   map   │   map   │
+├─────────┼─────────┤         │         │
+│discuss  │brackets │         │         │
+├─────────┴─────────┼─────────┼─────────┤
+│      nearby       │ alerts  │smallstk │
+├─────────┬─────────┼─────────┼─────────┤
+│pressure │visibility│forecast│rounding │
+└─────────┴─────────┴─────────┴─────────┘
+```
+
+### Widget Size Categories
+
+| Size | Grid Span | Min Height | Example Widgets |
+|------|-----------|------------|-----------------|
+| **XS** | 1×1 | 80px | Wind, Humidity (when compressed) |
+| **S** | 1×1 | 120px | Rounding, Reports, Rain Odds, Wind, Humidity |
+| **M** | 2×1 or 1×2 | 160px | Models (compact), Brackets (compact), Discussion (compact) |
+| **L** | 2×2 | 320px | Satellite/Map, Models (expanded), Brackets (expanded) |
+| **XL** | 3×2 or 3×3 | 400px | Discussion (expanded), Map (full expanded) |
+
+### Widget Flexibility Tiers
+
+Widgets have different flexibility levels that determine how they respond to expansion events:
+
+| Tier | Behavior | Widgets |
+|------|----------|---------|
+| **Fixed** | Never moves, never shrinks. Anchored position. | Observations (always top) |
+| **Rigid** | Can move rows but maintains size. Position preference. | Satellite/Map, Nearby Stations |
+| **Semi-flex** | Can expand/collapse. Maintains minimum readable size. | Models, Brackets, Discussion, Forecast |
+| **Flexible** | Can shrink to XS, can stack, fills gaps when needed. | Wind, Humidity, Reports, Rounding, Rain Odds, Alerts |
+
+### Position Priority (Top to Bottom)
+
+```
+Priority 1: Observations (fixed, full width header area)
+Priority 2: Models, Brackets, Satellite/Map (primary content row)
+Priority 3: Discussion, Nearby Stations, Alerts (secondary content)
+Priority 4: Flexible widgets - Wind, Humidity, Reports, etc.
+Priority 5: Forecast, Rounding (bottom row)
+```
+
+### Expansion Displacement Rules
+
+When widgets expand, other widgets are displaced based on flexibility:
+
+1. **Flexible widgets** get displaced first (move down, shrink, or stack)
+2. **Rigid widgets** move to next row but keep their size
+3. **Fixed widgets** never move
+
+**Example - Both Models + Brackets Expanded:**
+```
+Before:                          After (5 columns):
+┌────────┬────────┬────────┐    ┌────────┬────────┬────────┬────────┬────────┐
+│ models │brackets│  map   │    │  models (2×2)   │ brackets (2×2)  │  map   │
+├────────┼────────┤        │ →  │                 │                 │        │
+│discuss │brackets│        │    ├────────┬────────┼────────┬────────┤        │
+├────────┴────────┼────────┤    │ discuss (2×1)   │ alerts (2×1)    │smallstk│
+│     nearby      │ alerts │    ├────────┬────────┼────────┬────────┼────────┤
+└────────┴────────┴────────┘    │ nearby (2×1)    │forecast(2×1)    │rounding│
+                                └────────┴────────┴────────┴────────┴────────┘
+```
+
+### Minimum Content Requirements
+
+Each widget has minimum content that must remain visible even when compressed:
+
+| Widget | Minimum Content (XS/S) |
+|--------|------------------------|
+| Wind | Speed + direction indicator |
+| Humidity | Percentage + icon |
+| Reports | CLI value + next update time |
+| Rounding | Current °C and primary °F values |
+| Rain Odds | Leading bracket + probability |
+| Alerts | Alert count or "No Alerts" badge |
+
+### CSS Implementation
+
+```css
+/* Base grid */
+.widget-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-flow: dense; /* Fill gaps automatically */
+  gap: 8px;
+}
+
+/* Expansion classes modify grid-template-areas */
+.widget-grid-v2.models-expanded { ... }
+.widget-grid-v2.brackets-expanded { ... }
+.widget-grid-v2.models-expanded.brackets-expanded { ... }
+
+/* Widget area always maintains position */
+[style*="grid-area: models"] {
+  /* Always keeps grid-area, expansion handled by CSS class on parent */
+}
+```
+
+---
+
 ## Responsive Design
 
 ### Breakpoints

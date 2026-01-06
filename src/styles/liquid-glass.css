@@ -865,6 +865,49 @@ body {
 
 /* ===== WIDGET EXPANSION STATES ===== */
 
+/* Animation for expansion/collapse */
+.widget-expansion-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Models widget expanded - takes 2x2 space */
+.widget-grid-v2.models-expanded {
+  grid-template-areas:
+    "models       models       brackets    map"
+    "models       models       brackets    map"
+    "discussion   discussion   alerts      smallstack"
+    "nearby       nearby       alerts      smallstack"
+    "pressure     visibility   forecast    rounding";
+}
+
+.widget-grid-v2.models-expanded .widget-area-models-expanded {
+  min-height: 380px;
+}
+
+/* Brackets widget expanded - takes 2x2 space */
+.widget-grid-v2.brackets-expanded {
+  grid-template-areas:
+    "models       brackets     brackets    map"
+    "discussion   brackets     brackets    map"
+    "nearby       nearby       alerts      smallstack"
+    "pressure     visibility   forecast    rounding";
+}
+
+.widget-grid-v2.brackets-expanded .widget-area-brackets-expanded {
+  min-height: 380px;
+}
+
+/* Both models and brackets expanded */
+.widget-grid-v2.models-expanded.brackets-expanded {
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-areas:
+    "models       models       brackets    brackets    map"
+    "models       models       brackets    brackets    map"
+    "discussion   discussion   alerts      alerts      smallstack"
+    "nearby       nearby       forecast    forecast    rounding"
+    "pressure     visibility   forecast    forecast    rounding";
+}
+
 /* Discussion widget expanded - takes 3 columns */
 .widget-grid-v2.discussion-expanded {
   grid-template-areas:
@@ -877,6 +920,138 @@ body {
 /* Expanded discussion widget sizing */
 .widget-grid-v2.discussion-expanded [style*="grid-area: discussion"] {
   min-height: 400px;
+}
+
+/* Rounding widget expanded - takes 2x2 space in bottom corner */
+.widget-grid-v2.rounding-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       alerts      smallstack"
+    "pressure     visibility   rounding    rounding"
+    "forecast     forecast     rounding    rounding";
+}
+
+.widget-grid-v2.rounding-expanded .widget-area-rounding-expanded {
+  min-height: 280px;
+}
+
+/* Resolution widget expanded - smallstack takes 2 columns, spans down */
+.widget-grid-v2.resolution-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       smallstack  smallstack"
+    "nearby       nearby       smallstack  smallstack"
+    "pressure     visibility   forecast    rounding";
+}
+
+.widget-grid-v2.resolution-expanded [style*="grid-area: smallstack"] {
+  min-height: 360px;
+}
+
+/* Resolution + Rounding both expanded */
+.widget-grid-v2.resolution-expanded.rounding-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       smallstack  smallstack"
+    "nearby       nearby       smallstack  smallstack"
+    "pressure     visibility   rounding    rounding"
+    "forecast     forecast     rounding    rounding";
+}
+
+/* Wind widget expanded - shares smallstack with resolution, same layout */
+.widget-grid-v2.wind-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       smallstack  smallstack"
+    "nearby       nearby       smallstack  smallstack"
+    "pressure     visibility   forecast    rounding";
+}
+
+.widget-grid-v2.wind-expanded [style*="grid-area: smallstack"] {
+  min-height: 360px;
+}
+
+/* Wind + Resolution both expanded - same grid since both in smallstack */
+.widget-grid-v2.wind-expanded.resolution-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       smallstack  smallstack"
+    "nearby       nearby       smallstack  smallstack"
+    "pressure     visibility   forecast    rounding";
+}
+
+.widget-grid-v2.wind-expanded.resolution-expanded [style*="grid-area: smallstack"] {
+  min-height: 450px;
+}
+
+/* ===== PHASE 4 EXPANSION STATES ===== */
+
+/* Rain widget expanded (visibility area) - takes 2x2 */
+.widget-grid-v2.rain-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       alerts      smallstack"
+    "pressure     visibility   visibility  rounding"
+    "forecast     visibility   visibility  rounding";
+}
+
+.widget-grid-v2.rain-expanded [style*="grid-area: visibility"] {
+  min-height: 320px;
+}
+
+/* Forecast widget expanded - takes 2x2 */
+.widget-grid-v2.forecast-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       alerts      smallstack"
+    "pressure     visibility   forecast    forecast"
+    "pressure     visibility   forecast    forecast";
+}
+
+.widget-grid-v2.forecast-expanded [style*="grid-area: forecast"] {
+  min-height: 360px;
+}
+
+/* Alerts widget expanded - takes 2x2 */
+.widget-grid-v2.alerts-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       alerts      alerts"
+    "nearby       nearby       alerts      alerts"
+    "pressure     visibility   forecast    rounding";
+}
+
+.widget-grid-v2.alerts-expanded [style*="grid-area: alerts"] {
+  min-height: 320px;
+}
+
+/* Rain + Forecast both expanded */
+.widget-grid-v2.rain-expanded.forecast-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       alerts      smallstack"
+    "visibility   visibility   forecast    forecast"
+    "visibility   visibility   forecast    forecast";
+}
+
+/* Alerts + Forecast both expanded */
+.widget-grid-v2.alerts-expanded.forecast-expanded {
+  grid-template-areas:
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       alerts      alerts"
+    "nearby       nearby       alerts      alerts"
+    "pressure     visibility   forecast    forecast"
+    "pressure     visibility   forecast    forecast";
 }
 
 /* Hidden widget state - for widgets displaced by expansion */

@@ -1,4 +1,4 @@
-import { useState, memo, lazy, Suspense, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, memo, lazy, Suspense, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
   Sun,
@@ -385,14 +385,46 @@ export const WindWidget = memo(function WindWidget({
   timezone = 'America/New_York',
   cityName,
   compact = false, // Compact mode for 1x1 grid cell
+  isExpanded = false,
+  onToggleExpand,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Simple mobile detection
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   // Convert m/s to mph if needed
   const speedMph = typeof speed === 'object' ? Math.round(speed.value * 2.237) : Math.round(speed);
   const gustsMph = gusts ? (typeof gusts === 'object' ? Math.round(gusts.value * 2.237) : Math.round(gusts)) : null;
   const directionDeg = typeof direction === 'object' ? direction.value : direction;
   const directionCardinal = getWindDirection(directionDeg);
+
+  // Handle widget click - desktop uses inline expansion, mobile uses modal
+  const handleWidgetClick = () => {
+    if (isMobile) {
+      setIsModalOpen(true);
+    } else if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  // Render expanded inline view on desktop
+  if (isExpanded && !isMobile) {
+    return (
+      <ExpandedWindInline
+        speedMph={speedMph}
+        directionDeg={directionDeg}
+        directionCardinal={directionCardinal}
+        gustsMph={gustsMph}
+        observations={observations}
+        timezone={timezone}
+        cityName={cityName}
+        onCollapse={onToggleExpand}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -413,7 +445,7 @@ export const WindWidget = memo(function WindWidget({
           icon={Wind}
           size="small"
           className="cursor-pointer"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleWidgetClick}
         >
           <div className="flex flex-col flex-1 gap-1">
             {/* Top: ASCII Animation - 60% of widget */}
@@ -472,7 +504,7 @@ export const WindWidget = memo(function WindWidget({
         icon={Wind}
         size="medium"
         className="cursor-pointer"
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleWidgetClick}
       >
         <div className="flex flex-col flex-1 gap-3">
           {/* Top: ASCII Animation - larger in default mode */}
@@ -527,6 +559,176 @@ WindWidget.propTypes = {
   observations: PropTypes.array,
   timezone: PropTypes.string,
   cityName: PropTypes.string,
+  compact: PropTypes.bool,
+  isExpanded: PropTypes.bool,
+  onToggleExpand: PropTypes.func,
+};
+
+/**
+ * ExpandedWindInline - Inline expanded view for desktop
+ * Shows wind animation, current conditions, and recent observations
+ */
+function ExpandedWindInline({
+  speedMph,
+  directionDeg,
+  directionCardinal,
+  gustsMph,
+  observations,
+  timezone,
+  cityName,
+  onCollapse,
+}) {
+  // Process recent wind observations
+  const recentWindObs = useMemo(() => {
+    if (!observations || observations.length === 0) return [];
+
+    const now = new Date();
+    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+
+    return observations
+      .filter(obs => {
+        const obsTime = obs.timestamp instanceof Date ? obs.timestamp : new Date(obs.timestamp);
+        return obsTime >= sixHoursAgo && obs.windSpeed !== null;
+      })
+      .slice(-8)
+      .reverse()
+      .map(obs => {
+        const timestamp = obs.timestamp instanceof Date ? obs.timestamp : new Date(obs.timestamp);
+        return {
+          time: timestamp.toLocaleTimeString('en-US', {
+            timeZone: timezone,
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          }),
+          speed: Math.round(obs.windSpeed || 0),
+          direction: getWindDirection(obs.windDirection),
+        };
+      });
+  }, [observations, timezone]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    if (!observations || observations.length === 0) return { min: 0, max: 0, avg: 0 };
+
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayObs = observations.filter(obs => {
+      const obsTime = obs.timestamp instanceof Date ? obs.timestamp : new Date(obs.timestamp);
+      return obsTime >= todayStart && obs.windSpeed !== null;
+    });
+
+    if (todayObs.length === 0) return { min: 0, max: 0, avg: 0 };
+
+    const speeds = todayObs.map(o => o.windSpeed || 0);
+    return {
+      min: Math.round(Math.min(...speeds)),
+      max: Math.round(Math.max(...speeds)),
+      avg: Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length),
+    };
+  }, [observations]);
+
+  return (
+    <div className="glass-widget h-full flex flex-col">
+      {/* Header with collapse button */}
+      <div className="flex items-center justify-between p-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <Wind className="w-4 h-4 text-white/70" />
+          <span className="text-sm font-semibold text-white">Wind</span>
+          {cityName && <span className="text-xs text-white/50">{cityName}</span>}
+        </div>
+        <button
+          onClick={onCollapse}
+          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          title="Collapse"
+        >
+          <ChevronRight className="w-4 h-4 text-white/70 rotate-180" />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-3 glass-scroll">
+        <div className="flex gap-3">
+          {/* Left: Animation + Current */}
+          <div className="flex-1 space-y-2">
+            {/* ASCII Animation */}
+            <div className="h-[80px] bg-black/20 rounded-lg overflow-hidden">
+              <ASCIIWindAnimation direction={directionDeg} speed={speedMph} />
+            </div>
+
+            {/* Current Conditions */}
+            <div className="bg-white/5 rounded-lg p-2">
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-2xl font-light text-white">{speedMph}</span>
+                <span className="text-sm text-white/60">mph</span>
+                <span className="text-sm text-white/50">{directionCardinal}</span>
+              </div>
+              {gustsMph && (
+                <div className="text-xs text-white/50">Gusts: {gustsMph} mph</div>
+              )}
+            </div>
+
+            {/* Today's Stats */}
+            <div className="grid grid-cols-3 gap-1.5">
+              <div className="bg-white/5 rounded-lg p-1.5 text-center">
+                <div className="text-[10px] text-white/40">Min</div>
+                <div className="text-sm font-medium text-white">{stats.min}</div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-1.5 text-center">
+                <div className="text-[10px] text-white/40">Avg</div>
+                <div className="text-sm font-medium text-white">{stats.avg}</div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-1.5 text-center">
+                <div className="text-[10px] text-white/40">Max</div>
+                <div className="text-sm font-medium text-white">{stats.max}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Recent Observations */}
+          <div className="flex-1">
+            <div className="text-[10px] text-white/50 uppercase mb-1.5">Recent</div>
+            <div className="space-y-1">
+              {recentWindObs.length > 0 ? (
+                recentWindObs.map((obs, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between text-[11px] px-1.5 py-1 rounded ${idx === 0 ? 'bg-white/10' : 'bg-white/5'}`}
+                  >
+                    <span className="text-white/60">{obs.time}</span>
+                    <span className="text-white font-medium">{obs.speed} mph</span>
+                    <span className="text-white/50">{obs.direction}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-white/40 text-center py-4">No recent data</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="px-3 py-2 bg-white/5 border-t border-white/10">
+        <p className="text-[9px] text-white/40 text-center">
+          Wind from {directionCardinal} ({Math.round(directionDeg)}°)
+        </p>
+      </div>
+    </div>
+  );
+}
+
+ExpandedWindInline.propTypes = {
+  speedMph: PropTypes.number.isRequired,
+  directionDeg: PropTypes.number,
+  directionCardinal: PropTypes.string,
+  gustsMph: PropTypes.number,
+  observations: PropTypes.array,
+  timezone: PropTypes.string,
+  cityName: PropTypes.string,
+  onCollapse: PropTypes.func.isRequired,
 };
 
 // ============ HUMIDITY WIDGET ============

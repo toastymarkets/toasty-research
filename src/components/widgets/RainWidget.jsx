@@ -387,8 +387,11 @@ function useCurrentSnow(citySlug) {
  * Shows this season vs last season with normal reference line
  * Includes Rain/Snow tabs
  */
-export default function RainWidget({ citySlug, cityName }) {
+export default function RainWidget({ citySlug, cityName, isExpanded, onToggleExpand }) {
   const [showModal, setShowModal] = useState(false);
+
+  // Mobile detection for dual behavior
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('rain'); // 'rain' or 'snow'
 
@@ -472,6 +475,31 @@ export default function RainWidget({ citySlug, cityName }) {
     : (snowMtdLoading || snowLastYearLoading);
 
   const mtdError = activeTab === 'rain' ? rainMtdError : snowMtdError;
+
+  // Handle widget click - dual behavior
+  const handleWidgetClick = () => {
+    if (isMobile) {
+      setShowModal(true);
+    } else if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  // Render expanded inline view on desktop
+  if (isExpanded && !isMobile) {
+    return (
+      <ExpandedRainInline
+        citySlug={citySlug}
+        cityName={cityName}
+        monthlyNormals={monthlyNormals}
+        annualNormal={annualNormal}
+        stationName={normalsStation}
+        onCollapse={onToggleExpand}
+      />
+    );
+  }
 
   // Custom label renderer for bars - bold for current year (index 1)
   const renderCustomLabel = (props) => {
@@ -624,22 +652,16 @@ export default function RainWidget({ citySlug, cityName }) {
         </div>
 
         {/* Footer */}
-        {activeTab === 'rain' ? (
-          <button
-            onClick={() => setShowModal(true)}
-            className="px-3 py-1.5 border-t border-white/10 flex items-center justify-between hover:bg-white/5 transition-colors"
-          >
-            <div className="flex items-center gap-1 text-[10px] text-white/40">
-              <Droplets className="w-2.5 h-2.5" />
-              <span>Monthly normals</span>
-            </div>
-            <ChevronRight className="w-3 h-3 text-white/30" />
-          </button>
-        ) : (
-          <div className="px-3 py-1.5 border-t border-white/10 text-[10px] text-white/30 text-center">
-            Source: IEM Climate Data
+        <button
+          onClick={handleWidgetClick}
+          className="px-3 py-1.5 border-t border-white/10 flex items-center justify-between hover:bg-white/5 transition-colors w-full"
+        >
+          <div className="flex items-center gap-1 text-[10px] text-white/40">
+            <Droplets className="w-2.5 h-2.5" />
+            <span>Monthly normals</span>
           </div>
-        )}
+          <ChevronRight className="w-3 h-3 text-white/30" />
+        </button>
       </div>
 
       {/* History Modal */}
@@ -658,4 +680,149 @@ export default function RainWidget({ citySlug, cityName }) {
 RainWidget.propTypes = {
   citySlug: PropTypes.string.isRequired,
   cityName: PropTypes.string.isRequired,
+  isExpanded: PropTypes.bool,
+  onToggleExpand: PropTypes.func,
+};
+
+/**
+ * ExpandedRainInline - Inline expanded view showing monthly normals
+ */
+function ExpandedRainInline({ citySlug, cityName, monthlyNormals, annualNormal, stationName, onCollapse }) {
+  const [activeTab, setActiveTab] = useState('normals'); // 'normals' or 'seasonal'
+
+  // Month names for chart
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Prepare chart data from monthly normals
+  const chartData = useMemo(() => {
+    if (!monthlyNormals || monthlyNormals.length === 0) return [];
+    return monthlyNormals.map((value, idx) => ({
+      month: monthNames[idx],
+      value: value || 0,
+      fill: idx === new Date().getMonth() ? '#22D3EE' : '#64748B', // Highlight current month
+    }));
+  }, [monthlyNormals]);
+
+  // Calculate seasonal totals
+  const seasonalData = useMemo(() => {
+    if (!monthlyNormals || monthlyNormals.length === 0) return [];
+    // Ensure all values are numbers
+    const getNum = (idx) => parseFloat(monthlyNormals[idx]) || 0;
+    return [
+      { name: 'Winter', months: 'Dec-Feb', value: getNum(11) + getNum(0) + getNum(1) },
+      { name: 'Spring', months: 'Mar-May', value: getNum(2) + getNum(3) + getNum(4) },
+      { name: 'Summer', months: 'Jun-Aug', value: getNum(5) + getNum(6) + getNum(7) },
+      { name: 'Fall', months: 'Sep-Nov', value: getNum(8) + getNum(9) + getNum(10) },
+    ];
+  }, [monthlyNormals]);
+
+  return (
+    <div className="glass-widget h-full flex flex-col">
+      {/* Header with collapse button */}
+      <div className="flex items-center justify-between p-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <CloudRain className="w-4 h-4 text-cyan-400" />
+          <span className="text-sm font-semibold text-white">Precipitation Normals</span>
+          <span className="text-xs text-white/40">{cityName}</span>
+        </div>
+        <button
+          onClick={onCollapse}
+          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          title="Collapse"
+        >
+          <ChevronRight className="w-4 h-4 text-white/60 rotate-180" />
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 px-3 py-2 border-b border-white/10">
+        <button
+          onClick={() => setActiveTab('normals')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            activeTab === 'normals'
+              ? 'bg-white/15 text-white'
+              : 'text-white/50 hover:text-white/70'
+          }`}
+        >
+          Monthly Normals
+        </button>
+        <button
+          onClick={() => setActiveTab('seasonal')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            activeTab === 'seasonal'
+              ? 'bg-white/15 text-white'
+              : 'text-white/50 hover:text-white/70'
+          }`}
+        >
+          Seasonal Totals
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 p-3 overflow-auto">
+        {activeTab === 'normals' ? (
+          <div className="h-full flex flex-col">
+            {/* Monthly chart */}
+            <div className="flex-1 min-h-[140px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 15, right: 5, left: 5, bottom: 5 }}>
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.5)' }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                  />
+                  <YAxis hide />
+                  <Bar dataKey="value" radius={[2, 2, 0, 0]} maxBarSize={24}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} fillOpacity={0.8} />
+                    ))}
+                    <LabelList
+                      dataKey="value"
+                      position="top"
+                      formatter={(val) => val > 0 ? `${val.toFixed(1)}"` : ''}
+                      style={{ fontSize: 8, fill: 'rgba(255,255,255,0.6)' }}
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Annual total */}
+            <div className="pt-2 border-t border-white/10 mt-2 flex items-center justify-between">
+              <span className="text-xs text-white/50">Annual Normal</span>
+              <span className="text-sm font-semibold text-white">{annualNormal?.toFixed(1) || '--'}"</span>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {seasonalData.map((season) => (
+              <div key={season.name} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                <div>
+                  <span className="text-sm font-medium text-white">{season.name}</span>
+                  <span className="text-xs text-white/40 ml-2">({season.months})</span>
+                </div>
+                <span className="text-sm font-semibold text-cyan-400">{season.value.toFixed(1)}"</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-3 py-2 border-t border-white/10 text-[10px] text-white/40">
+        {stationName ? `Station: ${stationName}` : 'NOAA 1991-2020 Climate Normals'}
+      </div>
+    </div>
+  );
+}
+
+ExpandedRainInline.propTypes = {
+  citySlug: PropTypes.string.isRequired,
+  cityName: PropTypes.string.isRequired,
+  monthlyNormals: PropTypes.array,
+  annualNormal: PropTypes.number,
+  stationName: PropTypes.string,
+  onCollapse: PropTypes.func.isRequired,
 };

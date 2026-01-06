@@ -26,19 +26,25 @@ const getKalshiUrl = (citySlug, cityName) => {
 /**
  * MarketBrackets - Kalshi temperature market widget
  * Displays real-time market brackets with prices and changes
+ * Supports inline expansion on desktop, modal on mobile
  * @param {string} variant - 'horizontal' (wide) or 'vertical' (tall/narrow)
  */
 export default function MarketBrackets({
   citySlug,
   cityName,
   loading: externalLoading = false,
-  variant = 'horizontal'
+  variant = 'horizontal',
+  isExpanded = false,
+  onToggleExpand
 }) {
   const isVertical = variant === 'vertical';
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { brackets, closeTime, loading, error, seriesTicker, refetch } = useKalshiMarkets(citySlug, dayOffset);
   const { insertDataChip, isAvailable: canInsertChip } = useDataChip();
+
+  // Simple mobile detection
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   const dayLabel = dayOffset === 0 ? 'today' : 'tomorrow';
   const hasSeries = CITY_SERIES[citySlug];
@@ -168,6 +174,36 @@ export default function MarketBrackets({
     ? 'MARKET BRACKETS'
     : `Highest temperature in ${cityName} ${dayLabel}?`;
 
+  // Handle widget click - expand inline on desktop, modal on mobile
+  const handleWidgetClick = () => {
+    if (isMobile) {
+      setIsModalOpen(true);
+    } else if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setIsModalOpen(true); // Fallback if no toggle provided
+    }
+  };
+
+  // Render inline expanded view on desktop
+  if (isExpanded && !isMobile && brackets.length > 0) {
+    return (
+      <ExpandedBracketsInline
+        brackets={brackets}
+        cityName={cityName}
+        seriesTicker={seriesTicker}
+        closeTime={closeTime}
+        dayOffset={dayOffset}
+        onDayChange={setDayOffset}
+        onCollapse={onToggleExpand}
+        canInsertChip={canInsertChip}
+        insertDataChip={insertDataChip}
+        condenseLabel={condenseLabel}
+        getKalshiUrl={() => getKalshiUrl(citySlug, cityName)}
+      />
+    );
+  }
+
   return (
     <>
     <GlassWidget
@@ -175,7 +211,7 @@ export default function MarketBrackets({
       icon={TrendingUp}
       size="large"
       className="h-full cursor-pointer"
-      onClick={() => setIsModalOpen(true)}
+      onClick={handleWidgetClick}
     >
 
       {/* Day Toggle */}
@@ -302,4 +338,232 @@ MarketBrackets.propTypes = {
   cityName: PropTypes.string.isRequired,
   loading: PropTypes.bool,
   variant: PropTypes.oneOf(['horizontal', 'vertical']),
+  isExpanded: PropTypes.bool,
+  onToggleExpand: PropTypes.func,
+};
+
+/**
+ * ExpandedBracketsInline - Inline expanded view for desktop
+ */
+function ExpandedBracketsInline({
+  brackets,
+  cityName,
+  seriesTicker,
+  closeTime,
+  dayOffset,
+  onDayChange,
+  onCollapse,
+  canInsertChip,
+  insertDataChip,
+  condenseLabel,
+  getKalshiUrl,
+}) {
+  // Timer for market close
+  const [timeRemaining, setTimeRemaining] = useState(null);
+
+  useEffect(() => {
+    if (!closeTime) {
+      setTimeRemaining(null);
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = new Date();
+      const diff = closeTime.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeRemaining('Closed');
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      setTimeRemaining(`${hours}h ${minutes}m`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 60000);
+    return () => clearInterval(interval);
+  }, [closeTime]);
+
+  // Extract temperature from label for sorting
+  const getTempValue = (label) => {
+    const match = label.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  // Sort brackets by temperature
+  const sortedBrackets = [...brackets].sort((a, b) => getTempValue(a.label) - getTempValue(b.label));
+
+  // Find the leading bracket
+  const leadingBracket = brackets.reduce((max, b) => b.yesPrice > (max?.yesPrice || 0) ? b : max, null);
+
+  // Get color based on probability
+  const getProbColor = (prob) => {
+    if (prob >= 80) return '#60A5FA';
+    if (prob >= 50) return '#3B82F6';
+    if (prob >= 20) return '#2563EB';
+    return '#1D4ED8';
+  };
+
+  // Handle inserting bracket data as a chip into notes
+  const handleBracketInsert = (bracket, e) => {
+    e.stopPropagation();
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    insertDataChip({
+      value: condenseLabel(bracket.label),
+      secondary: `${bracket.yesPrice}%`,
+      label: 'Market Odds',
+      source: `Kalshi ${seriesTicker}`,
+      timestamp,
+      type: 'market',
+    });
+  };
+
+  const dayLabel = dayOffset === 0 ? 'Today' : 'Tomorrow';
+
+  return (
+    <div className="glass-widget h-full flex flex-col">
+      {/* Header */}
+      <div className="px-3 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-white/60" />
+            <span className="text-sm font-semibold text-white">Market Brackets</span>
+            <span className="text-xs text-white/40">{cityName}</span>
+          </div>
+          <button
+            onClick={onCollapse}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            title="Collapse"
+          >
+            <ChevronRight className="w-4 h-4 rotate-180" />
+          </button>
+        </div>
+
+        {/* Day toggle + Timer row */}
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex gap-0.5 bg-white/10 rounded-lg p-0.5">
+            <button
+              onClick={() => onDayChange(0)}
+              className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                dayOffset === 0 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => onDayChange(1)}
+              className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                dayOffset === 1 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Tomorrow
+            </button>
+          </div>
+          {timeRemaining && timeRemaining !== 'Closed' && (
+            <span className="text-[10px] text-white/40">Closes {timeRemaining}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Content: Two-column layout - brackets list + stats */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Brackets list - scrollable */}
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="space-y-1">
+            {sortedBrackets.map((bracket, i) => {
+              const isLeader = bracket.ticker === leadingBracket?.ticker;
+              const probColor = getProbColor(bracket.yesPrice);
+
+              return (
+                <div
+                  key={bracket.ticker || i}
+                  className={`group relative flex items-center justify-between py-2 px-2 rounded-lg transition-all ${
+                    isLeader ? 'bg-white/10' : 'hover:bg-white/5'
+                  }`}
+                >
+                  {/* Probability bar background */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 rounded-lg opacity-30"
+                    style={{ width: `${bracket.yesPrice}%`, backgroundColor: probColor }}
+                  />
+
+                  {/* Quick Add Button */}
+                  {canInsertChip && (
+                    <button
+                      onClick={(e) => handleBracketInsert(bracket, e)}
+                      className="relative opacity-0 group-hover:opacity-100 mr-2
+                                 w-5 h-5 rounded-full bg-white/25 border border-white/20
+                                 flex items-center justify-center transition-all z-10
+                                 hover:scale-110 hover:bg-white/35 flex-shrink-0"
+                      title="Add to notes"
+                    >
+                      <Plus size={12} strokeWidth={3} className="text-white/90" />
+                    </button>
+                  )}
+
+                  <span className={`relative text-sm font-medium flex-1 ${isLeader ? 'text-white' : 'text-white/70'}`}>
+                    {condenseLabel(bracket.label)}
+                  </span>
+
+                  <span className="relative text-sm font-bold tabular-nums text-white">
+                    {bracket.yesPrice}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Stats sidebar */}
+        <div className="w-36 flex-shrink-0 border-l border-white/10 p-3 flex flex-col">
+          <p className="text-[10px] text-white/40 uppercase tracking-wide mb-2">Leading</p>
+          {leadingBracket && (
+            <div className="bg-white/10 rounded-lg p-2 mb-3">
+              <div className="text-lg font-bold text-white">{condenseLabel(leadingBracket.label)}</div>
+              <div className="text-xl font-bold text-blue-400">{leadingBracket.yesPrice}%</div>
+            </div>
+          )}
+
+          <p className="text-[10px] text-white/40 uppercase tracking-wide mb-2">Brackets</p>
+          <div className="text-sm text-white/60">
+            {sortedBrackets.length} ranges
+          </div>
+
+          <div className="mt-auto pt-3">
+            <a
+              href={getKalshiUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+            >
+              Open in Kalshi
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ExpandedBracketsInline.propTypes = {
+  brackets: PropTypes.array.isRequired,
+  cityName: PropTypes.string.isRequired,
+  seriesTicker: PropTypes.string,
+  closeTime: PropTypes.instanceOf(Date),
+  dayOffset: PropTypes.number.isRequired,
+  onDayChange: PropTypes.func.isRequired,
+  onCollapse: PropTypes.func.isRequired,
+  canInsertChip: PropTypes.bool,
+  insertDataChip: PropTypes.func,
+  condenseLabel: PropTypes.func.isRequired,
+  getKalshiUrl: PropTypes.func.isRequired,
 };
