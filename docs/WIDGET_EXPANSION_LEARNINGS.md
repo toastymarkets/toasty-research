@@ -382,6 +382,28 @@ if (isMobile) {
 
 ---
 
+## Accessibility
+
+### Current Implementation
+- All collapse buttons have `title="Collapse"` for tooltip/basic screen reader support
+- Buttons are native `<button>` elements, so keyboard-focusable by default
+- Tab navigation works within expanded widgets
+
+### Future Improvements
+Consider adding for enhanced accessibility:
+1. `aria-expanded` attribute on widget containers/buttons to indicate expansion state
+2. `aria-label` on collapse buttons for clearer screen reader announcements
+3. `role="region"` with `aria-labelledby` on expanded content areas
+4. Focus management: move focus to expanded content when opening, return to trigger when closing
+5. `aria-live` regions to announce expansion/collapse state changes
+
+### Keyboard Navigation
+- Tab: Navigate between interactive elements
+- Enter/Space: Activate buttons (expand/collapse, tabs)
+- Escape: Could be added to collapse expanded widgets
+
+---
+
 ## Gotchas & Things to Watch
 
 1. **Always keep gridArea** - Never remove it when expanded, or widget flows to bottom
