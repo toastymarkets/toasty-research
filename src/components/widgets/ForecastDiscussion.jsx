@@ -11,7 +11,8 @@ const WEATHER_KEYWORDS = {
     'warm air advection', 'cold air advection', 'warming trend', 'cooling trend',
     'above normal', 'below normal', 'near normal', 'record high', 'record low',
     'freeze', 'frost', 'heat wave', 'cold snap', 'thermal trough',
-    'warmer', 'cooler', 'warm', 'cold',
+    'warmer', 'cooler', 'warm', 'cold', 'dew point', 'dewpoint',
+    'inversion', 'temperature inversion',
   ],
   // Pressure/fronts
   synoptic: [
@@ -19,39 +20,46 @@ const WEATHER_KEYWORDS = {
     'frontal boundary', 'frontal passage',
     'low pressure', 'high pressure', 'trough', 'troughing', 'ridge', 'upper level',
     'surface low', 'surface high', 'shortwave', 'short wave', 'longwave',
-    'cutoff low', 'closed low', 'blocking pattern', 'zonal flow',
+    'cutoff low', 'closed low', 'upper low', 'blocking pattern', 'zonal flow',
     'return flow', 'upper level disturbance', 'Pacific front',
+    'jet stream', 'polar vortex', 'pressure gradient', 'isobar',
+    'positively tilted', 'negatively tilted', 'weak flow', 'nnw flow', 'nw flow',
+    'ne flow', 'sw flow', 'se flow', 'westerly flow', 'easterly flow',
   ],
   // Precipitation
   precipitation: [
     'rain chances', 'rain', 'snow', 'sleet', 'freezing rain', 'wintry mix', 'thunderstorm',
-    'shower', 'drizzle', 'downpour', 'heavy rain', 'light rain',
+    'shower', 'showers', 'light shower', 'light showers', 'drizzle', 'downpour', 'heavy rain', 'light rain',
     'accumulation', 'precip', 'precipitation', 'moisture',
     'convection', 'instability', 'cape', 'lifted index',
-    'dry', 'low clouds',
+    'dry', 'low clouds', 'fog', 'dense fog', 'mist', 'virga',
+    'stratus', 'cumulus', 'cirrus', 'cloud cover', 'overcast',
+    'partly cloudy', 'partly to mostly cloudy', 'mostly cloudy', 'sunny skies', 'clear skies',
   ],
   // Wind
   wind: [
-    'wind advisory', 'high wind', 'gust', 'gusty', 'gusty winds', 'gusty southerly winds',
+    'wind advisory', 'high wind', 'gust', 'gusts', 'gusty', 'gusty winds', 'gusty southerly winds',
     'gusty south winds', 'breezy', 'windy',
     'santa ana', 'chinook', 'offshore flow', 'onshore flow',
-    'wind shift', 'veering', 'backing',
+    'wind shift', 'veering', 'backing', 'jet', 'low level jet',
   ],
   // Confidence/uncertainty
   confidence: [
-    'uncertainty', 'confidence', 'likely', 'unlikely', 'possible',
-    'expected', 'forecast', 'outlook', 'trend', 'timing',
+    'uncertainty', 'confidence', 'unlikely',
+    'forecast', 'outlook', 'trend', 'timing',
     'models agree', 'model spread', 'ensemble', 'ensemble solutions', 'deterministic',
+    'guidance', 'model guidance', 'solution', 'model solution',
   ],
   // Hazards - fire, severe weather, dangerous conditions
   hazards: [
     'fire weather', 'fire concerns', 'fuel moisture', 'red flag warning',
     'wind chill', 'heat index', 'severe', 'tornado', 'hail',
     'flash flood', 'flood', 'ice storm', 'blizzard',
+    'advisory', 'warning', 'watch', 'freezing fog',
   ],
   // Aviation terms
   aviation: [
-    'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling',
+    'VFR', 'MVFR', 'IFR', 'LIFR', 'ceiling', 'visibility', 'VSBY',
   ],
   // Locations - city-specific geographic references
   locations: [
@@ -63,10 +71,10 @@ const WEATHER_KEYWORDS = {
     'lake michigan', 'lakefront', 'lake effect', 'lake enhanced',
     'wisconsin', 'indiana', 'i-88', 'i-90',
     // LA/LOX area
-    'point conception', 'santa barbara', 'ventura', 'los angeles county',
-    'los angeles basin', 'san fernando valley', 'antelope valley',
+    'point conception', 'pt conception', 'santa barbara', 'sba', 'ventura', 'los angeles county',
+    'la county', 'los angeles basin', 'san fernando valley', 'antelope valley',
     'catalina', 'channel islands', 'san gabriel', 'central coast',
-    'orange county', 'san diego', 'inland empire', 'high desert',
+    'orange county', 'san diego', 'inland empire', 'high desert', 'slo', 'san luis obispo',
     // Denver/BOU area
     'front range', 'palmer divide', 'i-25', 'i-70', 'boulder',
     'fort collins', 'denver metro', 'continental divide',
