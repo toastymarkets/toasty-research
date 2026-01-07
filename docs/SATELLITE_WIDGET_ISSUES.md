@@ -1,20 +1,40 @@
 # Satellite Widget - Issues & Research
 
-**Component**: `src/components/widgets/SatelliteWidget.jsx`
-**Status**: Not Integrated
+**Component**: `src/components/weather/WeatherMap.jsx` (integrated)
+**Status**: ✅ Integrated & Enhanced
 **Last Updated**: 2026-01-06
 
 ---
+
+## Current State (2026-01-06)
+
+The satellite functionality is now **fully integrated** in `WeatherMap.jsx` (not the orphaned `SatelliteWidget.jsx`).
+
+### ✅ Resolved Issues
+1. **Animation Direction**: WeatherMap uses custom frame-by-frame animation with `generateFrameUrl()` that plays in **correct chronological order** (oldest → newest). NOT the pre-generated GIFs mentioned below.
+2. **Regional Sector Support**: WeatherMap supports Local, East US, and Pacific sectors with automatic GOES-18/19 selection based on coordinates.
+3. **Inline Expansion**: Added 2026-01-06 - map expands from 2x2 to 3x3 grid area for detailed viewing.
+
+### Remaining from Original List
+- ❌ SatelliteWidget.jsx still not registered (orphaned component)
+- ✅ WeatherMap has proper sizing (2x2 default, 3x3 expanded)
+- ⚠️ Missing external GOES website link (nice-to-have)
+
+---
+
+## Historical Issues (Reference Only)
+
+The issues below were documented for the **orphaned** `SatelliteWidget.jsx`. Many don't apply to `WeatherMap.jsx`:
 
 ## Executive Summary
 
 The SatelliteWidget is a standalone component that displays NOAA GOES satellite imagery with multiple products (Air Mass, GeoColor, Water Vapor, Infrared). While the core functionality is implemented, the widget has several critical issues preventing production deployment:
 
 1. Not registered in the widget system
-2. GIF animations play in reverse chronological order
-3. No size constraints causing layout squishing
+2. ~~GIF animations play in reverse chronological order~~ **RESOLVED** - WeatherMap uses custom animation
+3. ~~No size constraints causing layout squishing~~ **RESOLVED** - WeatherMap has proper grid sizing
 4. Missing external link to GOES website
-5. No regional sector support (CONUS only)
+5. ~~No regional sector support (CONUS only)~~ **RESOLVED** - WeatherMap supports multiple sectors
 6. No error handling for failed image loads
 
 ---

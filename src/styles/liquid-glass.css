@@ -1011,6 +1011,46 @@ body {
   min-height: 450px;
 }
 
+/* Map widget expanded - 5 columns, map grows to 3x3 */
+.widget-grid-v2.map-expanded {
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-areas:
+    "models       brackets     map         map         map"
+    "discussion   brackets     map         map         map"
+    "nearby       nearby       map         map         map"
+    "pressure     visibility   forecast    forecast    rounding";
+}
+
+.widget-grid-v2.map-expanded [style*="grid-area: map"] {
+  min-height: 450px;
+}
+
+/* Hide alerts and smallstack when map expanded (map takes their space) */
+.widget-grid-v2.map-expanded [style*="grid-area: alerts"],
+.widget-grid-v2.map-expanded [style*="grid-area: smallstack"] {
+  display: none;
+}
+
+/* Map + Brackets both expanded - 6 columns */
+.widget-grid-v2.map-expanded.brackets-expanded {
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-areas:
+    "models       brackets     brackets    map         map         map"
+    "discussion   brackets     brackets    map         map         map"
+    "nearby       nearby       nearby      map         map         map"
+    "pressure     visibility   visibility  forecast    forecast    rounding";
+}
+
+/* Map + Models both expanded - 6 columns */
+.widget-grid-v2.map-expanded.models-expanded {
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-areas:
+    "models       models       brackets    map         map         map"
+    "models       models       brackets    map         map         map"
+    "discussion   nearby       nearby      map         map         map"
+    "pressure     visibility   visibility  forecast    forecast    rounding";
+}
+
 /* ===== PHASE 4 EXPANSION STATES ===== */
 
 /* Rain widget expanded (visibility area) - 4 columns ok */

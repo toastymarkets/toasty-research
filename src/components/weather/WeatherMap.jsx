@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Map, Maximize2, Cloud, Satellite } from 'lucide-react';
+import { Map, Maximize2, Cloud, Satellite, ChevronLeft, ChevronRight } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import GlassWidget from './GlassWidget';
 import MapWidgetPopup from './MapWidgetPopup';
@@ -22,6 +22,8 @@ export default function WeatherMap({
   className = '',
   cityName = '',
   currentTemp = null,
+  isExpanded = false,
+  onToggleExpand = null,
 }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -301,7 +303,7 @@ export default function WeatherMap({
             <div
               ref={mapRef}
               className="absolute inset-0 bg-gray-900 cursor-pointer"
-              onClick={() => setIsPopupOpen(true)}
+              onClick={() => onToggleExpand ? onToggleExpand() : setIsPopupOpen(true)}
             />
           )}
 
@@ -309,7 +311,7 @@ export default function WeatherMap({
           {activeTab === 'satellite' && (
             <div
               className="absolute inset-0 bg-black cursor-pointer overflow-hidden"
-              onClick={() => setIsPopupOpen(true)}
+              onClick={() => onToggleExpand ? onToggleExpand() : setIsPopupOpen(true)}
             >
               {satelliteImage ? (
                 <img
@@ -325,14 +327,30 @@ export default function WeatherMap({
             </div>
           )}
 
-          {/* Expand button */}
-          <button
-            onClick={() => setIsPopupOpen(true)}
-            className="absolute top-3 right-3 z-[1000] p-2 rounded-full bg-black/40 backdrop-blur-sm text-white/70 hover:bg-black/50 hover:text-white transition-all"
-            title="Expand map"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
+          {/* Expand buttons */}
+          <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5">
+            {/* Inline expand/collapse */}
+            {onToggleExpand && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleExpand();
+                }}
+                className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white/70 hover:bg-black/50 hover:text-white transition-all"
+                title={isExpanded ? "Collapse" : "Expand inline"}
+              >
+                {isExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              </button>
+            )}
+            {/* Full screen popup */}
+            <button
+              onClick={() => setIsPopupOpen(true)}
+              className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white/70 hover:bg-black/50 hover:text-white transition-all"
+              title="Full screen"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          </div>
 
           {/* Legend */}
           <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm">
@@ -376,4 +394,6 @@ WeatherMap.propTypes = {
   className: PropTypes.string,
   cityName: PropTypes.string,
   currentTemp: PropTypes.number,
+  isExpanded: PropTypes.bool,
+  onToggleExpand: PropTypes.func,
 };

@@ -291,14 +291,16 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* Weather Map (2x2) */}
-          <WidgetGridV2.Area area="map">
+          {/* Weather Map (2x2, expands to 3x3) */}
+          <WidgetGridV2.Area area="map" isExpanded={expandedWidgets.map}>
             <WeatherMap
               lat={city.lat}
               lon={city.lon}
               zoom={8}
               cityName={city.name}
               currentTemp={currentTempF}
+              isExpanded={expandedWidgets.map}
+              onToggleExpand={() => toggleExpansion('map')}
             />
           </WidgetGridV2.Area>
 
