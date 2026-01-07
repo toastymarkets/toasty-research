@@ -308,7 +308,10 @@ function CityDashboardContent({ city, citySlug }) {
               lat={city.lat}
               lon={city.lon}
               citySlug={citySlug}
+              cityName={city.name}
               forecastOffice={city.forecastOffice}
+              weather={weather}
+              markets={marketData}
               isExpanded={expandedWidgets.discussion}
               onToggleExpand={() => toggleExpansion('discussion')}
             />
