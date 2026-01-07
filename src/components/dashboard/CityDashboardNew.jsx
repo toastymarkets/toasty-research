@@ -167,7 +167,7 @@ function CityDashboardContent({ city, citySlug }) {
 
   const isLoading = weatherLoading && forecastLoading;
   const notepadStorageKey = `toasty_research_notes_v1_city_${citySlug}`;
-  const { isCollapsed: notesSidebarCollapsed } = useNotesSidebar();
+  const { isCollapsed: notesSidebarCollapsed, toggleMobile } = useNotesSidebar();
   const heroRef = useRef(null);
 
   // Widget expansion state (multi-expansion support)
@@ -212,25 +212,23 @@ function CityDashboardContent({ city, citySlug }) {
       </div>
 
 
-      {/* Notes Sidebar - Desktop */}
-      <div className="hidden lg:block">
-        <NotesSidebar
-          storageKey={notepadStorageKey}
-          cityName={city.name}
-          city={city}
-          weather={weather}
-          markets={marketData}
-          observations={observations}
-        />
-      </div>
+      {/* Notes Sidebar - renders desktop sidebar on lg+ and mobile drawer on smaller screens */}
+      <NotesSidebar
+        storageKey={notepadStorageKey}
+        cityName={city.name}
+        city={city}
+        weather={weather}
+        markets={marketData}
+        observations={observations}
+      />
 
       {/* Mobile Notes Button */}
-      <Link
-        to="/research"
-        className="md:hidden fixed bottom-6 right-6 z-50 glass-button-primary p-3 rounded-full shadow-lg"
+      <button
+        onClick={toggleMobile}
+        className="lg:hidden fixed bottom-6 right-6 z-50 glass-button-primary p-3 rounded-full shadow-lg"
       >
         <FileText className="w-5 h-5" />
-      </Link>
+      </button>
 
       {/* Hero Section - compact */}
       <div ref={heroRef} className="w-full relative pt-4 md:pt-12">

@@ -7,6 +7,9 @@ export function NotesSidebarProvider({ children }) {
   const [viewMode, setViewMode] = useState('sidebar');
   const [selectedNoteKey, setSelectedNoteKey] = useState(null);
 
+  // Mobile drawer state (separate from desktop)
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
   // Derived state for backward compatibility
   const isCollapsed = viewMode === 'collapsed';
   const isDashboard = viewMode === 'dashboard';
@@ -28,6 +31,11 @@ export function NotesSidebarProvider({ children }) {
   const selectNote = useCallback((key) => setSelectedNoteKey(key), []);
   const clearSelection = useCallback(() => setSelectedNoteKey(null), []);
 
+  // Mobile drawer controls
+  const openMobile = useCallback(() => setIsMobileOpen(true), []);
+  const closeMobile = useCallback(() => setIsMobileOpen(false), []);
+  const toggleMobile = useCallback(() => setIsMobileOpen(prev => !prev), []);
+
   return (
     <NotesSidebarContext.Provider value={{
       viewMode,
@@ -42,6 +50,11 @@ export function NotesSidebarProvider({ children }) {
       closeDashboard,
       selectNote,
       clearSelection,
+      // Mobile
+      isMobileOpen,
+      openMobile,
+      closeMobile,
+      toggleMobile,
     }}>
       {children}
     </NotesSidebarContext.Provider>
