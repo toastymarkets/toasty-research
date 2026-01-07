@@ -1224,13 +1224,13 @@ function DiscussionModal({ discussion, onClose }) {
   const hasGlossary = !!getGlossaryForOffice(discussion.office);
 
   const sections = [
-    { id: 'synopsis', label: 'Synopsis', content: discussion.synopsis },
-    { id: 'nearTerm', label: 'Near Term', content: discussion.nearTerm },
-    { id: 'shortTerm', label: 'Short Term', content: discussion.shortTerm },
-    { id: 'longTerm', label: 'Long Term', content: discussion.longTerm },
-    { id: 'aviation', label: 'Aviation', content: discussion.aviation },
+    { id: 'synopsis', label: 'Syn', content: discussion.synopsis },
+    { id: 'nearTerm', label: 'Near', content: discussion.nearTerm },
+    { id: 'shortTerm', label: 'Short', content: discussion.shortTerm },
+    { id: 'longTerm', label: 'Long', content: discussion.longTerm },
+    { id: 'aviation', label: 'Avn', content: discussion.aviation },
     { id: 'marine', label: 'Marine', content: discussion.marine },
-    ...(hasGlossary ? [{ id: 'glossary', label: 'Glossary', isGlossary: true }] : []),
+    ...(hasGlossary ? [{ id: 'glossary', label: 'Gloss', isGlossary: true }] : []),
   ].filter(s => s.content || s.isGlossary);
 
   // Handle text selection
@@ -1466,14 +1466,14 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
   const hasGlossary = !!getGlossaryForOffice(discussion.office);
 
   const sections = [
-    { id: 'summary', label: 'Summary', isSummary: true, icon: Sparkles },
-    { id: 'synopsis', label: 'Synopsis', content: discussion.synopsis },
-    { id: 'nearTerm', label: 'Near Term', content: discussion.nearTerm },
-    { id: 'shortTerm', label: 'Short Term', content: discussion.shortTerm },
-    { id: 'longTerm', label: 'Long Term', content: discussion.longTerm },
-    { id: 'aviation', label: 'Aviation', content: discussion.aviation },
+    { id: 'summary', label: 'AI', isSummary: true, icon: Sparkles },
+    { id: 'synopsis', label: 'Syn', content: discussion.synopsis },
+    { id: 'nearTerm', label: 'Near', content: discussion.nearTerm },
+    { id: 'shortTerm', label: 'Short', content: discussion.shortTerm },
+    { id: 'longTerm', label: 'Long', content: discussion.longTerm },
+    { id: 'aviation', label: 'Avn', content: discussion.aviation },
     { id: 'marine', label: 'Marine', content: discussion.marine },
-    ...(hasGlossary ? [{ id: 'glossary', label: 'Glossary', isGlossary: true }] : []),
+    ...(hasGlossary ? [{ id: 'glossary', label: 'Gloss', isGlossary: true }] : []),
   ].filter(s => s.content || s.isGlossary || s.isSummary);
 
   // Handle text selection
