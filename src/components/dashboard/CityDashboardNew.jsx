@@ -297,8 +297,6 @@ function CityDashboardContent({ city, citySlug }) {
               lat={city.lat}
               lon={city.lon}
               zoom={8}
-              cityName={city.name}
-              currentTemp={currentTempF}
               isExpanded={expandedWidgets.map}
               onToggleExpand={() => toggleExpansion('map')}
             />

@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Map, Maximize2, Cloud, Satellite, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Map, Cloud, Satellite, ChevronLeft, ChevronRight } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import GlassWidget from './GlassWidget';
-import MapWidgetPopup from './MapWidgetPopup';
 import {
   getGOESConfig,
   getAvailableSectors,
@@ -20,15 +19,12 @@ export default function WeatherMap({
   zoom = 8,
   loading = false,
   className = '',
-  cityName = '',
-  currentTemp = null,
   isExpanded = false,
   onToggleExpand = null,
 }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const [L, setL] = useState(null);
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('satellite');
 
   // Satellite state - use refs for animation to avoid re-renders
@@ -233,7 +229,6 @@ export default function WeatherMap({
   ];
 
   return (
-    <>
       <GlassWidget
         title={activeTab === 'satellite' ? 'SATELLITE' : 'PRECIPITATION'}
         icon={Map}
@@ -304,16 +299,16 @@ export default function WeatherMap({
           {activeTab === 'precipitation' && (
             <div
               ref={mapRef}
-              className="absolute inset-0 bg-gray-900 cursor-pointer"
-              onClick={() => onToggleExpand ? onToggleExpand() : setIsPopupOpen(true)}
+              className={`absolute inset-0 bg-gray-900 ${onToggleExpand ? 'cursor-pointer' : ''}`}
+              onClick={onToggleExpand}
             />
           )}
 
           {/* Satellite View */}
           {activeTab === 'satellite' && (
             <div
-              className="absolute inset-0 bg-black cursor-pointer overflow-hidden"
-              onClick={() => onToggleExpand ? onToggleExpand() : setIsPopupOpen(true)}
+              className={`absolute inset-0 bg-black overflow-hidden ${onToggleExpand ? 'cursor-pointer' : ''}`}
+              onClick={onToggleExpand}
             >
               {satelliteImage ? (
                 <img
@@ -329,30 +324,21 @@ export default function WeatherMap({
             </div>
           )}
 
-          {/* Expand buttons */}
-          <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5">
-            {/* Inline expand/collapse */}
-            {onToggleExpand && (
+          {/* Expand button */}
+          {onToggleExpand && (
+            <div className="absolute top-3 right-3 z-[1000]">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleExpand();
                 }}
                 className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white/70 hover:bg-black/50 hover:text-white transition-all"
-                title={isExpanded ? "Collapse" : "Expand inline"}
+                title={isExpanded ? "Collapse" : "Expand"}
               >
                 {isExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
               </button>
-            )}
-            {/* Full screen popup */}
-            <button
-              onClick={() => setIsPopupOpen(true)}
-              className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white/70 hover:bg-black/50 hover:text-white transition-all"
-              title="Full screen"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-          </div>
+            </div>
+          )}
 
           {/* Legend */}
           <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm">
@@ -369,22 +355,6 @@ export default function WeatherMap({
           </div>
         </div>
       </GlassWidget>
-
-      {/* Map Popup Modal */}
-      <MapWidgetPopup
-        isOpen={isPopupOpen}
-        onClose={() => setIsPopupOpen(false)}
-        lat={lat}
-        lon={lon}
-        cityName={cityName}
-        currentTemp={currentTemp}
-        initialLayer={activeTab}
-        initialBand={satelliteBand}
-        initialSector={satelliteSector}
-        onBandChange={setSatelliteBand}
-        onSectorChange={setSatelliteSector}
-      />
-    </>
   );
 }
 
@@ -394,8 +364,6 @@ WeatherMap.propTypes = {
   zoom: PropTypes.number,
   loading: PropTypes.bool,
   className: PropTypes.string,
-  cityName: PropTypes.string,
-  currentTemp: PropTypes.number,
   isExpanded: PropTypes.bool,
   onToggleExpand: PropTypes.func,
 };
