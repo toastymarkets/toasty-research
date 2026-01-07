@@ -1,10 +1,22 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingUp, ExternalLink, ChevronRight, Plus, Maximize2 } from 'lucide-react';
+import { TrendingUp, ExternalLink, ChevronRight, Plus, Maximize2, ChevronDown } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import { useDataChip } from '../../context/DataChipContext';
+import { useKalshiCandlesticks } from '../../hooks/useKalshiCandlesticks';
+import { useKalshiMultiBracketHistory } from '../../hooks/useKalshiMultiBracketHistory';
 import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
+import MultiBracketChart from './MultiBracketChart';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ReferenceLine,
+} from 'recharts';
 
 // Lazy load the heavy modal component
 const MarketBracketsModal = lazy(() => import('./MarketBracketsModal'));
@@ -364,6 +376,18 @@ function ExpandedBracketsInline({
   // Timer for market close
   const [timeRemaining, setTimeRemaining] = useState(null);
 
+  // Individual bracket expansion state
+  const [expandedBracket, setExpandedBracket] = useState(null);
+
+  // Multi-bracket chart state and data
+  const [chartPeriod, setChartPeriod] = useState('1d');
+  const {
+    data: chartData,
+    legendData,
+    bracketColors,
+    loading: chartLoading,
+  } = useKalshiMultiBracketHistory(seriesTicker, brackets, chartPeriod, 6, true);
+
   useEffect(() => {
     if (!closeTime) {
       setTimeRemaining(null);
@@ -476,86 +500,254 @@ function ExpandedBracketsInline({
         </div>
       </div>
 
-      {/* Content: Two-column layout - brackets list + stats */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Brackets list - scrollable */}
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="space-y-1">
+      {/* Multi-bracket overview chart */}
+      <div className="px-3 py-2 border-b border-white/10 flex-shrink-0">
+        <MultiBracketChart
+          data={chartData}
+          legendData={legendData}
+          bracketColors={bracketColors}
+          period={chartPeriod}
+          onPeriodChange={setChartPeriod}
+          loading={chartLoading}
+          cityName={cityName}
+        />
+      </div>
+
+      {/* Brackets list - full width, scrollable */}
+      <div className="flex-1 overflow-y-auto p-3">
+          <div className="space-y-2">
             {sortedBrackets.map((bracket, i) => {
               const isLeader = bracket.ticker === leadingBracket?.ticker;
               const probColor = getProbColor(bracket.yesPrice);
+              const isExpanded = expandedBracket === bracket.ticker;
 
               return (
-                <div
+                <BracketRowWithChart
                   key={bracket.ticker || i}
-                  className={`group relative flex items-center justify-between py-2 px-2 rounded-lg transition-all ${
-                    isLeader ? 'bg-white/10' : 'hover:bg-white/5'
-                  }`}
-                >
-                  {/* Probability bar background */}
-                  <div
-                    className="absolute left-0 top-0 bottom-0 rounded-lg opacity-30"
-                    style={{ width: `${bracket.yesPrice}%`, backgroundColor: probColor }}
-                  />
-
-                  {/* Quick Add Button */}
-                  {canInsertChip && (
-                    <button
-                      onClick={(e) => handleBracketInsert(bracket, e)}
-                      className="relative opacity-0 group-hover:opacity-100 mr-2
-                                 w-5 h-5 rounded-full bg-white/25 border border-white/20
-                                 flex items-center justify-center transition-all z-10
-                                 hover:scale-110 hover:bg-white/35 flex-shrink-0"
-                      title="Add to notes"
-                    >
-                      <Plus size={12} strokeWidth={3} className="text-white/90" />
-                    </button>
-                  )}
-
-                  <span className={`relative text-sm font-medium flex-1 ${isLeader ? 'text-white' : 'text-white/70'}`}>
-                    {condenseLabel(bracket.label)}
-                  </span>
-
-                  <span className="relative text-sm font-bold tabular-nums text-white">
-                    {bracket.yesPrice}%
-                  </span>
-                </div>
+                  bracket={bracket}
+                  seriesTicker={seriesTicker}
+                  isLeader={isLeader}
+                  probColor={probColor}
+                  isExpanded={isExpanded}
+                  onToggle={() => setExpandedBracket(isExpanded ? null : bracket.ticker)}
+                  canInsertChip={canInsertChip}
+                  insertDataChip={insertDataChip}
+                  condenseLabel={condenseLabel}
+                  handleBracketInsert={handleBracketInsert}
+                />
               );
             })}
           </div>
         </div>
+      </div>
+  );
+}
 
-        {/* Stats sidebar */}
-        <div className="w-36 flex-shrink-0 border-l border-white/10 p-3 flex flex-col">
-          <p className="text-[10px] text-white/40 uppercase tracking-wide mb-2">Leading</p>
-          {leadingBracket && (
-            <div className="bg-white/10 rounded-lg p-2 mb-3">
-              <div className="text-lg font-bold text-white">{condenseLabel(leadingBracket.label)}</div>
-              <div className="text-xl font-bold text-blue-400">{leadingBracket.yesPrice}%</div>
+/**
+ * BracketRowWithChart - Individual bracket row with expandable price chart
+ */
+function BracketRowWithChart({
+  bracket,
+  seriesTicker,
+  isLeader,
+  probColor,
+  isExpanded,
+  onToggle,
+  canInsertChip,
+  handleBracketInsert,
+  condenseLabel,
+}) {
+  const [period, setPeriod] = useState('1h');
+
+  // Fetch candlesticks when expanded
+  const { candles, loading: candlesLoading } = useKalshiCandlesticks(
+    seriesTicker,
+    bracket.ticker,
+    period,
+    isExpanded
+  );
+
+  // Prepare chart data
+  const chartData = candles
+    .filter(c => c && typeof c.timestamp === 'number' && c.timestamp > 0)
+    .map((c) => {
+      const price = typeof c.yesPrice === 'number' ? c.yesPrice :
+                    typeof c.close === 'number' ? c.close : 0;
+      const timeObj = c.time instanceof Date ? c.time : new Date(c.timestamp * 1000);
+
+      return {
+        time: c.timestamp,
+        timeLabel: timeObj.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }),
+        price: price,
+      };
+    })
+    .filter(d => d.price > 0);
+
+  // Calculate price range
+  const prices = chartData.map((d) => d.price).filter((p) => typeof p === 'number' && p > 0);
+  const minPrice = prices.length > 0 ? Math.max(0, Math.min(...prices) - 5) : 0;
+  const maxPrice = prices.length > 0 ? Math.min(100, Math.max(...prices) + 5) : 100;
+
+  // Custom tooltip
+  const CustomTooltip = ({ active, payload }) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const data = payload[0]?.payload;
+    if (!data) return null;
+
+    return (
+      <div className="bg-black/80 backdrop-blur-sm px-2 py-1.5 rounded-lg text-xs border border-white/10">
+        <div className="text-white/60 mb-0.5">{data.timeLabel}</div>
+        <div className="text-white font-medium">{data.price}¢</div>
+      </div>
+    );
+  };
+
+  return (
+    <div className={`border border-white/5 rounded-lg ${isExpanded ? 'bg-white/5' : ''}`}>
+      {/* Main Row - Clickable */}
+      <button
+        onClick={onToggle}
+        className={`group relative w-full flex items-center justify-between py-2 px-2 rounded-lg transition-all ${
+          isLeader ? 'bg-white/10' : 'hover:bg-white/5'
+        }`}
+      >
+        {/* Probability bar background */}
+        <div
+          className="absolute left-0 top-0 bottom-0 rounded-lg opacity-30"
+          style={{ width: `${bracket.yesPrice}%`, backgroundColor: probColor }}
+        />
+
+        {/* Chevron */}
+        <ChevronDown
+          className={`relative w-4 h-4 text-white/40 transition-transform flex-shrink-0 mr-2 ${
+            isExpanded ? '' : '-rotate-90'
+          }`}
+        />
+
+        {/* Quick Add Button */}
+        {canInsertChip && (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleBracketInsert(bracket, e); }}
+            className="relative opacity-0 group-hover:opacity-100 mr-2
+                       w-5 h-5 rounded-full bg-white/25 border border-white/20
+                       flex items-center justify-center transition-all z-10
+                       hover:scale-110 hover:bg-white/35 flex-shrink-0"
+            title="Add to notes"
+          >
+            <Plus size={12} strokeWidth={3} className="text-white/90" />
+          </button>
+        )}
+
+        <span className={`relative text-sm font-medium flex-1 ${isLeader ? 'text-white' : 'text-white/70'}`}>
+          {condenseLabel(bracket.label)}
+        </span>
+
+        <span className="relative text-sm font-bold tabular-nums text-white">
+          {bracket.yesPrice}%
+        </span>
+      </button>
+
+      {/* Expanded Content - Chart */}
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-2 border-t border-white/5">
+          {/* Period Toggle */}
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs text-white/50">Price History</span>
+            <div className="flex bg-white/10 rounded-lg p-0.5">
+              {['1h', '6h', '12h'].map((p) => (
+                <button
+                  key={p}
+                  onClick={(e) => { e.stopPropagation(); setPeriod(p); }}
+                  className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
+                    period === p
+                      ? 'bg-white/20 text-white'
+                      : 'text-white/50 hover:text-white/70'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
-          )}
-
-          <p className="text-[10px] text-white/40 uppercase tracking-wide mb-2">Brackets</p>
-          <div className="text-sm text-white/60">
-            {sortedBrackets.length} ranges
           </div>
 
-          <div className="mt-auto pt-3">
-            <a
-              href={getKalshiUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[10px] text-white/40 hover:text-white/60 transition-colors"
-            >
-              Open in Kalshi
-              <ExternalLink className="w-2.5 h-2.5" />
-            </a>
+          {/* Chart */}
+          <div className="h-[150px]">
+            {candlesLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+              </div>
+            ) : chartData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-white/40 text-xs">
+                No price history available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <XAxis
+                    dataKey="time"
+                    type="number"
+                    domain={['dataMin', 'dataMax']}
+                    tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(ts) => {
+                      const date = new Date(ts * 1000);
+                      return date.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                      });
+                    }}
+                    interval="preserveStartEnd"
+                    minTickGap={50}
+                  />
+                  <YAxis
+                    domain={[minPrice, maxPrice]}
+                    tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={30}
+                    tickFormatter={(v) => `${v}¢`}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <ReferenceLine
+                    y={bracket.yesPrice}
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeDasharray="3 3"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="price"
+                    stroke="rgba(255, 255, 255, 0.8)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#fff', stroke: 'rgba(255,255,255,0.4)', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
+BracketRowWithChart.propTypes = {
+  bracket: PropTypes.object.isRequired,
+  seriesTicker: PropTypes.string.isRequired,
+  isLeader: PropTypes.bool,
+  probColor: PropTypes.string.isRequired,
+  isExpanded: PropTypes.bool.isRequired,
+  onToggle: PropTypes.func.isRequired,
+  canInsertChip: PropTypes.bool,
+  handleBracketInsert: PropTypes.func.isRequired,
+  condenseLabel: PropTypes.func.isRequired,
+};
 
 ExpandedBracketsInline.propTypes = {
   brackets: PropTypes.array.isRequired,
