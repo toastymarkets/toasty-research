@@ -4,8 +4,10 @@ import { TrendingUp, ExternalLink, ChevronRight, Plus, Maximize2, ChevronDown } 
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import { useDataChip } from '../../context/DataChipContext';
 import { useKalshiCandlesticks } from '../../hooks/useKalshiCandlesticks';
+import { useKalshiMultiBracketHistory } from '../../hooks/useKalshiMultiBracketHistory';
 import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
+import MultiBracketChart from './MultiBracketChart';
 import {
   ResponsiveContainer,
   LineChart,
@@ -377,6 +379,15 @@ function ExpandedBracketsInline({
   // Individual bracket expansion state
   const [expandedBracket, setExpandedBracket] = useState(null);
 
+  // Multi-bracket chart state and data
+  const [chartPeriod, setChartPeriod] = useState('1d');
+  const {
+    data: chartData,
+    legendData,
+    bracketColors,
+    loading: chartLoading,
+  } = useKalshiMultiBracketHistory(seriesTicker, brackets, chartPeriod, 6, true);
+
   useEffect(() => {
     if (!closeTime) {
       setTimeRemaining(null);
@@ -487,6 +498,19 @@ function ExpandedBracketsInline({
             <span className="text-[10px] text-white/40">Closes {timeRemaining}</span>
           )}
         </div>
+      </div>
+
+      {/* Multi-bracket overview chart */}
+      <div className="px-3 py-2 border-b border-white/10 flex-shrink-0">
+        <MultiBracketChart
+          data={chartData}
+          legendData={legendData}
+          bracketColors={bracketColors}
+          period={chartPeriod}
+          onPeriodChange={setChartPeriod}
+          loading={chartLoading}
+          cityName={cityName}
+        />
       </div>
 
       {/* Brackets list - full width, scrollable */}
