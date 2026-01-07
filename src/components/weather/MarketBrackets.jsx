@@ -3,8 +3,10 @@ import PropTypes from 'prop-types';
 import { TrendingUp, ExternalLink, ChevronRight, Plus, Maximize2 } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import { useDataChip } from '../../context/DataChipContext';
+import { useKalshiMultiBracketHistory } from '../../hooks/useKalshiMultiBracketHistory';
 import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
+import MultiBracketChart from './MultiBracketChart';
 
 // Lazy load the heavy modal component
 const MarketBracketsModal = lazy(() => import('./MarketBracketsModal'));
@@ -364,6 +366,17 @@ function ExpandedBracketsInline({
   // Timer for market close
   const [timeRemaining, setTimeRemaining] = useState(null);
 
+  // Chart period state
+  const [chartPeriod, setChartPeriod] = useState('1d');
+
+  // Fetch multi-bracket price history for the chart
+  const {
+    data: chartData,
+    legendData,
+    bracketColors,
+    loading: chartLoading,
+  } = useKalshiMultiBracketHistory(seriesTicker, brackets, chartPeriod, 4, true);
+
   useEffect(() => {
     if (!closeTime) {
       setTimeRemaining(null);
@@ -474,6 +487,19 @@ function ExpandedBracketsInline({
             <span className="text-[10px] text-white/40">Closes {timeRemaining}</span>
           )}
         </div>
+      </div>
+
+      {/* Multi-Bracket Price Chart */}
+      <div className="px-3 py-2 border-b border-white/10 flex-shrink-0">
+        <MultiBracketChart
+          data={chartData}
+          legendData={legendData}
+          bracketColors={bracketColors}
+          period={chartPeriod}
+          onPeriodChange={setChartPeriod}
+          loading={chartLoading}
+          cityName={cityName}
+        />
       </div>
 
       {/* Content: Two-column layout - brackets list + stats */}
