@@ -376,7 +376,10 @@ function ResearchLog() {
  * Apple Weather style panel
  */
 export default function NotesSidebar({ storageKey, cityName, city, weather, markets, observations }) {
-  const { isCollapsed, isDashboard, toggle, expand, collapse, openDashboard, closeDashboard, selectedNoteKey, selectNote } = useNotesSidebar();
+  const {
+    isCollapsed, isDashboard, toggle, expand, collapse, openDashboard, closeDashboard,
+    selectedNoteKey, selectNote, isMobileOpen, closeMobile
+  } = useNotesSidebar();
   const [activeView, setActiveView] = useState('notes'); // 'notes' | 'log'
 
   // Dashboard state
@@ -491,10 +494,11 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
 
   return (
     <>
-      {/* Toggle button - always visible */}
+      {/* Toggle button - desktop only */}
       <button
         onClick={handleToggleClick}
         className={`
+          hidden lg:block
           fixed top-5 z-[85]
           p-2 rounded-lg
           bg-black/30 backdrop-blur-xl border border-white/10
@@ -512,9 +516,10 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
         )}
       </button>
 
-      {/* Sidebar panel - Apple Weather style */}
+      {/* Sidebar panel - desktop only, Apple Weather style */}
       <aside
         className={`
+          hidden lg:block
           fixed right-3 top-3 bottom-3 z-30
           bg-black/30 backdrop-blur-2xl
           border border-white/10 rounded-2xl overflow-hidden
@@ -626,6 +631,57 @@ export default function NotesSidebar({ storageKey, cityName, city, weather, mark
           </CopilotProvider>
         </NotepadProvider>
       </aside>
+
+      {/* Mobile Notes Drawer - Bottom sheet that takes 50% of screen */}
+      <div
+        className={`
+          lg:hidden fixed inset-x-0 bottom-0 z-[100]
+          transition-transform duration-300 ease-out
+          ${isMobileOpen ? 'translate-y-0' : 'translate-y-full'}
+        `}
+        style={{ height: '50vh' }}
+      >
+        {/* Backdrop */}
+        {isMobileOpen && (
+          <div
+            className="fixed inset-0 bg-black/40 -z-10"
+            onClick={closeMobile}
+          />
+        )}
+
+        {/* Drawer panel */}
+        <div className="h-full bg-black/80 backdrop-blur-2xl border-t border-white/10 rounded-t-2xl flex flex-col">
+          {/* Drag handle / header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-white/50" />
+              <span className="text-[15px] font-semibold text-white">Research Notes</span>
+              {cityName && (
+                <span className="text-[11px] text-white/40">• {cityName}</span>
+              )}
+            </div>
+            <button
+              onClick={closeMobile}
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            >
+              <ChevronDown className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Notes content */}
+          <NotepadProvider storageKey={storageKey}>
+            <CopilotProvider>
+              <CopilotDataContext.Provider value={copilotContext}>
+                <div className="flex-1 overflow-hidden min-h-0">
+                  <div className="h-full overflow-y-auto notepad-compact">
+                    <NotepadContent />
+                  </div>
+                </div>
+              </CopilotDataContext.Provider>
+            </CopilotProvider>
+          </NotepadProvider>
+        </div>
+      </div>
     </>
   );
 }
