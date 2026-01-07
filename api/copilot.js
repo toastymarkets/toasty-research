@@ -6,6 +6,7 @@
  */
 
 import { buildSystemPrompt } from '../prompts/copilot-system.js';
+import { buildSummaryPrompt } from '../prompts/summary-system.js';
 
 export const config = {
   runtime: 'edge',
@@ -51,14 +52,21 @@ export default async function handler(req) {
       });
     }
 
+    // Check if this is a summary request
+    const isSummaryMode = context?.mode === 'summary';
+
     // Get the latest user message for RAG retrieval
     const lastUserMessage = messages
       .filter(m => m.role === 'user')
       .pop()?.content || '';
 
-    const systemPrompt = buildSystemPrompt(context, lastUserMessage);
+    // Use appropriate prompt builder based on mode
+    const systemPrompt = isSummaryMode
+      ? buildSummaryPrompt(context)
+      : buildSystemPrompt(context, lastUserMessage);
 
     // Call Claude API with streaming
+    // Summary mode uses fewer tokens since output is constrained
     const response = await fetch(ANTHROPIC_API_URL, {
       method: 'POST',
       headers: {
@@ -68,7 +76,7 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         model: 'claude-3-5-haiku-20241022',
-        max_tokens: 300,
+        max_tokens: isSummaryMode ? 400 : 300,
         system: systemPrompt,
         messages: messages.map(m => ({
           role: m.role,

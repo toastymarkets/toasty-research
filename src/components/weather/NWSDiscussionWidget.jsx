@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { FileText, X, ChevronRight, ChevronDown, ChevronLeft, Plus, Copy, Check, ExternalLink, BookOpen, Maximize2, Newspaper, AlertCircle } from 'lucide-react';
+import { FileText, X, ChevronRight, ChevronDown, ChevronLeft, Plus, Copy, Check, ExternalLink, BookOpen, Maximize2, Newspaper, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
 import { useNWSBulletins, formatBulletinTime } from '../../hooks/useNWSBulletins';
+import { useToastySummary } from '../../hooks/useToastySummary';
 import GlassWidget from './GlassWidget';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 import { getGlossaryForOffice, termAppearsInText } from '../../data/cityGlossaries';
@@ -381,7 +382,10 @@ export default function NWSDiscussionWidget({
   lat,
   lon,
   citySlug,
+  cityName,
   forecastOffice,
+  weather = null,
+  markets = null,
   loading: externalLoading = false,
   isExpanded = false,
   onToggleExpand = null,
@@ -528,6 +532,10 @@ export default function NWSDiscussionWidget({
         bulletin={latestBulletin}
         bulletinsLoading={bulletinsLoading}
         onCollapse={onToggleExpand}
+        citySlug={citySlug}
+        cityName={cityName}
+        weather={weather}
+        markets={markets}
       />
     );
   }
@@ -1014,6 +1022,106 @@ const GLOSSARY_CATEGORY_COLORS = {
   technical: 'bg-purple-500/30 text-purple-300 border-purple-500/30',
 };
 
+/**
+ * ToastySummaryContent - AI-generated forecast summary for traders
+ */
+function ToastySummaryContent({ summary, loading, error, onRefresh }) {
+  if (loading && !summary) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 gap-3">
+        <div className="relative">
+          <Sparkles className="w-6 h-6 text-purple-400 animate-pulse" />
+        </div>
+        <p className="text-white/50 text-sm">Generating summary...</p>
+      </div>
+    );
+  }
+
+  if (error && !summary) {
+    const isDevError = error.includes('vercel dev');
+    return (
+      <div className="flex flex-col items-center justify-center py-8 gap-3">
+        <AlertCircle className="w-6 h-6 text-amber-400" />
+        <p className="text-white/60 text-sm text-center max-w-xs">{error}</p>
+        {isDevError ? (
+          <p className="text-white/40 text-xs text-center">
+            Use the Synopsis tab for raw NWS content
+          </p>
+        ) : (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Try again
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header with refresh button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-purple-400" />
+          <span className="text-xs font-medium text-purple-300">AI Summary</span>
+        </div>
+        <button
+          onClick={onRefresh}
+          disabled={loading}
+          className={`flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-white/10 hover:bg-white/20 text-white/70 rounded-lg transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Summary content with markdown-like rendering */}
+      <div className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
+        {summary ? (
+          summary.split('\n').map((line, i) => {
+            // Bold headers (lines starting with **)
+            if (line.startsWith('**') && line.includes('**')) {
+              const content = line.replace(/\*\*/g, '');
+              return (
+                <div key={i} className="font-semibold text-white mt-3 first:mt-0">
+                  {content}
+                </div>
+              );
+            }
+            // Bullet points
+            if (line.startsWith('•') || line.startsWith('-')) {
+              return (
+                <div key={i} className="flex gap-2 ml-2">
+                  <span className="text-purple-400">•</span>
+                  <span>{line.replace(/^[•-]\s*/, '')}</span>
+                </div>
+              );
+            }
+            // Regular lines
+            if (line.trim()) {
+              return <div key={i}>{line}</div>;
+            }
+            // Empty lines
+            return <div key={i} className="h-2" />;
+          })
+        ) : (
+          <p className="text-white/40 italic">No summary available</p>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="pt-3 border-t border-white/10">
+        <p className="text-[10px] text-white/40">
+          Generated by AI from NWS forecast discussion. Verify key data points.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const GLOSSARY_CATEGORY_LABELS = {
   locations: 'Locations',
   phenomena: 'Weather Phenomena',
@@ -1116,13 +1224,13 @@ function DiscussionModal({ discussion, onClose }) {
   const hasGlossary = !!getGlossaryForOffice(discussion.office);
 
   const sections = [
-    { id: 'synopsis', label: 'Synopsis', content: discussion.synopsis },
-    { id: 'nearTerm', label: 'Near Term', content: discussion.nearTerm },
-    { id: 'shortTerm', label: 'Short Term', content: discussion.shortTerm },
-    { id: 'longTerm', label: 'Long Term', content: discussion.longTerm },
-    { id: 'aviation', label: 'Aviation', content: discussion.aviation },
+    { id: 'synopsis', label: 'Syn', content: discussion.synopsis },
+    { id: 'nearTerm', label: 'Near', content: discussion.nearTerm },
+    { id: 'shortTerm', label: 'Short', content: discussion.shortTerm },
+    { id: 'longTerm', label: 'Long', content: discussion.longTerm },
+    { id: 'aviation', label: 'Avn', content: discussion.aviation },
     { id: 'marine', label: 'Marine', content: discussion.marine },
-    ...(hasGlossary ? [{ id: 'glossary', label: 'Glossary', isGlossary: true }] : []),
+    ...(hasGlossary ? [{ id: 'glossary', label: 'Gloss', isGlossary: true }] : []),
   ].filter(s => s.content || s.isGlossary);
 
   // Handle text selection
@@ -1328,9 +1436,18 @@ DiscussionModal.propTypes = {
  * ExpandedDiscussionInline - Full forecast discussion rendered inline (not as modal)
  * Used when the widget is expanded in the grid
  */
-function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCollapse }) {
+function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCollapse, citySlug, cityName, weather, markets }) {
   const [activeTab, setActiveTab] = useState('discussion'); // 'discussion' | 'reports'
-  const [activeSection, setActiveSection] = useState('synopsis');
+  const [activeSection, setActiveSection] = useState('summary'); // Default to summary
+
+  // Fetch Toasty Summary
+  const { summary, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useToastySummary({
+    citySlug,
+    cityName,
+    discussion,
+    weather,
+    markets,
+  });
   const [selectionPopup, setSelectionPopup] = useState(null);
   const [copied, setCopied] = useState(false);
   const contentRef = useRef(null);
@@ -1349,14 +1466,15 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
   const hasGlossary = !!getGlossaryForOffice(discussion.office);
 
   const sections = [
-    { id: 'synopsis', label: 'Synopsis', content: discussion.synopsis },
-    { id: 'nearTerm', label: 'Near Term', content: discussion.nearTerm },
-    { id: 'shortTerm', label: 'Short Term', content: discussion.shortTerm },
-    { id: 'longTerm', label: 'Long Term', content: discussion.longTerm },
-    { id: 'aviation', label: 'Aviation', content: discussion.aviation },
+    { id: 'summary', label: 'AI', isSummary: true, icon: Sparkles },
+    { id: 'synopsis', label: 'Syn', content: discussion.synopsis },
+    { id: 'nearTerm', label: 'Near', content: discussion.nearTerm },
+    { id: 'shortTerm', label: 'Short', content: discussion.shortTerm },
+    { id: 'longTerm', label: 'Long', content: discussion.longTerm },
+    { id: 'aviation', label: 'Avn', content: discussion.aviation },
     { id: 'marine', label: 'Marine', content: discussion.marine },
-    ...(hasGlossary ? [{ id: 'glossary', label: 'Glossary', isGlossary: true }] : []),
-  ].filter(s => s.content || s.isGlossary);
+    ...(hasGlossary ? [{ id: 'glossary', label: 'Gloss', isGlossary: true }] : []),
+  ].filter(s => s.content || s.isGlossary || s.isSummary);
 
   // Handle text selection
   const handleMouseUp = useCallback(() => {
@@ -1394,6 +1512,14 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
 
   // Handle copy all
   const handleCopyAll = async () => {
+    if (activeSection === 'summary') {
+      if (summary) {
+        await navigator.clipboard.writeText(summary);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+      return;
+    }
     const activeContent = sections.find(s => s.id === activeSection)?.content;
     if (activeContent) {
       await navigator.clipboard.writeText(activeContent);
@@ -1517,13 +1643,15 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={`
-                  px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all
+                  px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all flex items-center gap-1
                   ${activeSection === section.id
                     ? 'bg-white/20 text-white'
                     : 'bg-white/5 text-white/60 hover:bg-white/10'
                   }
+                  ${section.isSummary ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-400/30' : ''}
                 `}
               >
+                {section.icon && <section.icon className="w-3 h-3" />}
                 {section.label}
               </button>
             ))}
@@ -1561,7 +1689,14 @@ function ExpandedDiscussionInline({ discussion, bulletin, bulletinsLoading, onCo
                 key={section.id}
                 className={activeSection === section.id ? 'block' : 'hidden'}
               >
-                {section.isGlossary ? (
+                {section.isSummary ? (
+                  <ToastySummaryContent
+                    summary={summary}
+                    loading={summaryLoading}
+                    error={summaryError}
+                    onRefresh={refreshSummary}
+                  />
+                ) : section.isGlossary ? (
                   <GlossaryContent
                     office={discussion.office}
                     fullText={fullDiscussionText}
