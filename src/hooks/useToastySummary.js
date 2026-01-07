@@ -137,7 +137,12 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
                 throw new Error(data.message);
               }
             } catch (e) {
-              // Ignore parse errors for incomplete chunks
+              // Re-throw API errors, only ignore parse errors for incomplete chunks
+              if (e instanceof SyntaxError) {
+                // JSON parse error from incomplete chunk - ignore
+                continue;
+              }
+              throw e; // Re-throw actual errors from the API
             }
           }
         }
