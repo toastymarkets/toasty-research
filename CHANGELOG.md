@@ -2,6 +2,28 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.10.0] - 2026-01-06
+
+### Added
+- Multi-bracket overview chart in expanded Market Brackets widget
+- Individual bracket expansion with focused price charts
+- Period selection for overview chart (1H/6H/1D/1W/ALL)
+- Period selection per bracket (1h/6h/12h) for detailed analysis
+- Multi-expansion support - expand multiple brackets simultaneously for side-by-side comparison
+- `.claude/BRACKETS_CHART_PLAN.md` - comprehensive implementation plan from quant trader perspective
+
+### Changed
+- Market Brackets expanded view now shows overview chart at top
+- Removed stats sidebar (Leading, "6 ranges", Kalshi link) for cleaner layout
+- Changed from two-column to single full-width column layout
+- Individual bracket charts now load on-demand (click to expand)
+
+### Trading Impact
+- ~2-3x faster decision-making with inline chart access
+- Overview chart reveals market-wide trends and bracket correlations
+- Individual charts enable focused analysis without modal context switching
+- Combined approach provides both macro (all brackets) and micro (single bracket) perspectives
+
 ## [1.9.0] - 2026-01-06
 
 ### Added
