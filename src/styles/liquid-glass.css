@@ -785,7 +785,7 @@ body {
 
 /* 2x2 large widgets */
 .widget-grid-v2 [style*="grid-area: map"] {
-  min-height: 268px;
+  min-height: 188px;
 }
 
 .widget-grid-v2 [style*="grid-area: nearby"] {
@@ -831,7 +831,7 @@ body {
 
   .widget-grid-v2 [style*="grid-area: map"],
   .widget-grid-v2 [style*="grid-area: nearby"] {
-    min-height: 180px;
+    min-height: 126px;
   }
 
   .widget-grid-v2 [style*="grid-area: smallstack"] {
@@ -1023,7 +1023,7 @@ body {
 }
 
 .widget-grid-v2.map-expanded [style*="grid-area: map"] {
-  min-height: 400px;
+  min-height: 280px;
 }
 
 /* Hide alerts and smallstack when map expanded (map takes their row) */
