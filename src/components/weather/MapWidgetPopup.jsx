@@ -145,8 +145,10 @@ export default function MapWidgetPopup({
       const validUrls = results.filter(Boolean);
 
       if (validUrls.length > 0) {
-        framesRef.current = validUrls;
-        frameIndexRef.current = validUrls.length - 1;
+        // Reverse so index 0 = oldest, index N = newest
+        // Animation increments: oldest → newest (correct chronological order)
+        framesRef.current = validUrls.reverse();
+        frameIndexRef.current = 0;
       }
 
       loadingRef.current = false;

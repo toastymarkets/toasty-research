@@ -18,9 +18,11 @@ The satellite map widget currently only supports modal popup for expanded view. 
 
 ---
 
-## Solution: Inline Expansion
+## Solution: Inline Expansion (Vertical)
 
 Follow the established pattern from Discussion, Models, and Brackets widgets.
+
+**UPDATED 2026-01-06**: Changed from horizontal (3x3) to **vertical (2x3)** expansion to prevent squishing other widgets.
 
 ### Grid Layout Changes
 
@@ -32,19 +34,24 @@ nearby       nearby       alerts      smallstack
 pressure     visibility   forecast    rounding
 ```
 
-**Expanded Layout (5-column)** - Map expands to 3x3:
+**Expanded Layout (4-column)** - Map expands vertically to 2x3:
 ```
-models       brackets     map         map         map
-discussion   brackets     map         map         map
-nearby       nearby       map         map         map
-pressure     visibility   forecast    forecast    rounding
+models       brackets     map         map
+discussion   brackets     map         map
+nearby       nearby       map         map
+pressure     visibility   forecast    rounding
 ```
 
 **Key Changes**:
-- Map grows from 2x2 to 3x3 (expands down into `alerts` and `smallstack` area)
-- `alerts` merges with `nearby` on row 3
-- `smallstack` moves to row 4 with `rounding`
-- Min-height increases from 268px to 450px when expanded
+- Map grows from 2x2 to **2x3** (same width, more height)
+- **Columns stay at 4** (no squishing of brackets or models!)
+- `alerts` and `smallstack` are hidden (their row is taken by map row 3)
+- Min-height increases from 268px to 400px when expanded
+
+**Why vertical instead of horizontal?**
+- Original 3x3 expansion created 5 columns, squishing brackets from 202px to 160px (21% smaller)
+- Vertical expansion keeps the 4-column layout, preserving all widget widths
+- Brackets and other widgets remain fully visible and usable
 
 ---
 
@@ -52,24 +59,25 @@ pressure     visibility   forecast    forecast    rounding
 
 ### 1. CSS: Add `map-expanded` class to `liquid-glass.css`
 
-Location: After `.widget-grid-v2.brackets-expanded` (~line 830)
+Location: After `.widget-grid-v2.brackets-expanded` (~line 1014)
+
+**IMPLEMENTED (2026-01-06)** - Using vertical expansion:
 
 ```css
-/* Map widget expanded - 3x3 for larger satellite view */
+/* Map widget expanded - 4 columns, map grows vertically (2x3) */
 .widget-grid-v2.map-expanded {
-  grid-template-columns: repeat(5, 1fr);
   grid-template-areas:
-    "models       brackets     map         map         map"
-    "discussion   brackets     map         map         map"
-    "nearby       nearby       map         map         map"
-    "pressure     visibility   forecast    forecast    rounding";
+    "models       brackets     map         map"
+    "discussion   brackets     map         map"
+    "nearby       nearby       map         map"
+    "pressure     visibility   forecast    rounding";
 }
 
 .widget-grid-v2.map-expanded [style*="grid-area: map"] {
-  min-height: 450px;
+  min-height: 400px;
 }
 
-/* Hide alerts and smallstack when map expanded */
+/* Hide alerts and smallstack when map expanded (map takes their row) */
 .widget-grid-v2.map-expanded [style*="grid-area: alerts"],
 .widget-grid-v2.map-expanded [style*="grid-area: smallstack"] {
   display: none;
