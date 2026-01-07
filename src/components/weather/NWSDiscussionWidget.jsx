@@ -1038,17 +1038,24 @@ function ToastySummaryContent({ summary, loading, error, onRefresh }) {
   }
 
   if (error && !summary) {
+    const isDevError = error.includes('vercel dev');
     return (
       <div className="flex flex-col items-center justify-center py-8 gap-3">
-        <AlertCircle className="w-6 h-6 text-red-400" />
-        <p className="text-white/50 text-sm">{error}</p>
-        <button
-          onClick={onRefresh}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-        >
-          <RefreshCw className="w-3 h-3" />
-          Try again
-        </button>
+        <AlertCircle className="w-6 h-6 text-amber-400" />
+        <p className="text-white/60 text-sm text-center max-w-xs">{error}</p>
+        {isDevError ? (
+          <p className="text-white/40 text-xs text-center">
+            Use the Synopsis tab for raw NWS content
+          </p>
+        ) : (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Try again
+          </button>
+        )}
       </div>
     );
   }

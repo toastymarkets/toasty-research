@@ -66,6 +66,9 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
     setError(null);
 
     try {
+      // Check if we're in development without Vercel dev server
+      const isDev = import.meta.env.DEV;
+
       const response = await fetch('/api/copilot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,6 +106,11 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
       });
 
       if (!response.ok) {
+        // Check if we got HTML back (means API route doesn't exist)
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('text/html')) {
+          throw new Error('API not available. Run "vercel dev" for local development.');
+        }
         throw new Error('Failed to generate summary');
       }
 
@@ -141,7 +149,14 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
       }
     } catch (e) {
       console.error('Error fetching summary:', e);
-      setError(e.message || 'Failed to generate summary');
+      // Provide helpful error message
+      if (e.message?.includes('API not available')) {
+        setError('AI Summary requires "vercel dev" in local development');
+      } else if (e.message?.includes('Failed to fetch')) {
+        setError('AI Summary unavailable - check network connection');
+      } else {
+        setError(e.message || 'Failed to generate summary');
+      }
     } finally {
       setLoading(false);
     }
