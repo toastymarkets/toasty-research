@@ -892,28 +892,30 @@ body {
   min-height: 380px;
 }
 
-/* Brackets widget expanded - uses 5 columns to keep map 2x2 */
+/* Brackets widget expanded - map moves down, brackets takes top-right area */
 .widget-grid-v2.brackets-expanded {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   grid-template-areas:
-    "models       brackets     brackets    map         map"
-    "discussion   brackets     brackets    map         map"
-    "nearby       nearby       alerts      alerts      smallstack"
-    "pressure     visibility   forecast    forecast    rounding";
+    "models       brackets     brackets    brackets"
+    "discussion   brackets     brackets    brackets"
+    "nearby       nearby       map         map"
+    "alerts       smallstack   map         map"
+    "pressure     visibility   forecast    rounding";
 }
 
 .widget-grid-v2.brackets-expanded .widget-area-brackets-expanded {
   min-height: 380px;
 }
 
-/* Both models and brackets expanded - 6 columns */
+/* Both models and brackets expanded - map moves down, both expand in top area */
 .widget-grid-v2.models-expanded.brackets-expanded {
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   grid-template-areas:
-    "models       models       brackets    brackets    map         map"
-    "models       models       brackets    brackets    map         map"
-    "discussion   discussion   nearby      nearby      alerts      smallstack"
-    "pressure     visibility   forecast    forecast    forecast    rounding";
+    "models       models       brackets    brackets"
+    "models       models       brackets    brackets"
+    "discussion   nearby       map         map"
+    "alerts       smallstack   map         map"
+    "pressure     visibility   forecast    rounding";
 }
 
 /* Discussion widget expanded - uses 6 columns for wider discussion (4 cols) + map (2 cols) */
@@ -1030,14 +1032,21 @@ body {
   display: none;
 }
 
-/* Map + Brackets both expanded - 5 columns, brackets gets 2 cols */
+/* Map + Brackets both expanded - brackets on top, map below (both get full expansion) */
 .widget-grid-v2.map-expanded.brackets-expanded {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   grid-template-areas:
-    "models       brackets     brackets    map         map"
-    "discussion   brackets     brackets    map         map"
-    "nearby       nearby       nearby      map         map"
-    "pressure     visibility   forecast    forecast    rounding";
+    "models       brackets     brackets    brackets"
+    "discussion   brackets     brackets    brackets"
+    "nearby       nearby       map         map"
+    "alerts       smallstack   map         map"
+    "pressure     visibility   forecast    rounding";
+}
+
+/* Re-show alerts and smallstack for map+brackets expanded (they fit in the layout) */
+.widget-grid-v2.map-expanded.brackets-expanded [style*="grid-area: alerts"],
+.widget-grid-v2.map-expanded.brackets-expanded [style*="grid-area: smallstack"] {
+  display: block;
 }
 
 /* Map + Models both expanded - 5 columns */
