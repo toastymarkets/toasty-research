@@ -1,25 +1,25 @@
 import PropTypes from 'prop-types';
+import { useGridLayout } from '../../hooks/useGridLayout';
 
 /**
- * WidgetGridV2 - Apple Weather inspired grid layout with explicit areas
- * Uses CSS Grid with named template areas for precise widget placement
- * Supports multiple simultaneous widget expansions via expandedWidgets object
+ * WidgetGridV2 - Apple Weather inspired grid layout with dynamic placement
+ *
+ * Uses a JavaScript layout engine to compute grid positions dynamically,
+ * handling any combination of widget expansions automatically.
  */
 export default function WidgetGridV2({ children, className = '', expandedWidgets = {} }) {
-  // Build class name with expansion modifiers for each expanded widget
-  const expansionClasses = Object.entries(expandedWidgets)
-    .filter(([, isExpanded]) => isExpanded)
-    .map(([widgetId]) => `${widgetId}-expanded`);
+  // Compute dynamic grid layout based on expansion state
+  const { gridStyles, hiddenWidgets, isTransitioning } = useGridLayout(expandedWidgets);
 
   const gridClassName = [
     'widget-grid-v2',
-    'grid gap-2 w-full max-w-full overflow-hidden',
-    ...expansionClasses,
+    'w-full max-w-full overflow-hidden',
+    isTransitioning ? 'grid-transitioning' : '',
     className,
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={gridClassName}>
+    <div className={gridClassName} style={gridStyles}>
       {children}
     </div>
   );
@@ -41,7 +41,7 @@ const GRID_AREAS = {
   discussion: 'discussion',
   nearby: 'nearby',
   alerts: 'alerts',
-  smallstack: 'smallstack', // For stacked small widgets (wind + humidity)
+  smallstack: 'smallstack', // For stacked small widgets (wind + resolution)
   pressure: 'pressure',
   visibility: 'visibility',
   forecast: 'forecast',
@@ -50,16 +50,12 @@ const GRID_AREAS = {
 
 /**
  * WidgetGridV2.Area - Places widget in a named grid area
- * Supports expansion via isExpanded prop with size control
- * When expanded, the widget keeps its grid area but spans more cells via CSS
+ * The grid engine handles sizing; this just assigns the area name
  */
-function WidgetGridArea({ area, children, className = '', isExpanded = false, expansionSize = 'medium' }) {
-  // Build expansion-specific class name for CSS targeting
-  const expansionClass = isExpanded ? `widget-area-${area}-expanded` : '';
-
+function WidgetGridArea({ area, children, className = '', isExpanded = false }) {
   return (
     <div
-      className={`min-w-0 h-full widget-expansion-transition ${expansionClass} ${className}`}
+      className={`min-w-0 h-full widget-expansion-transition ${className}`}
       style={{ gridArea: area }}
     >
       {children}
@@ -72,7 +68,6 @@ WidgetGridArea.propTypes = {
   children: PropTypes.node,
   className: PropTypes.string,
   isExpanded: PropTypes.bool,
-  expansionSize: PropTypes.oneOf(['medium', 'large']),
 };
 
 WidgetGridV2.Area = WidgetGridArea;
@@ -80,7 +75,7 @@ WidgetGridV2.AREAS = GRID_AREAS;
 
 /**
  * WidgetGridV2.Stack - Stacks multiple widgets vertically in one grid cell
- * Useful for placing two widgets in one column
+ * Useful for placing two widgets in one column (e.g., wind + resolution)
  */
 function WidgetGridStack({ children, className = '' }) {
   return (
