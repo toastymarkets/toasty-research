@@ -10,10 +10,12 @@ export const SUMMARY_SYSTEM_PROMPT = `You are a meteorologist analyst generating
 ## Your Task
 Summarize the NWS Area Forecast Discussion into a concise, actionable brief for quantitative weather traders.
 
+**CRITICAL: You are forecasting TODAY's high temperature ONLY.** The market settles on TODAY's maximum temperature. Ignore forecasts for tomorrow, the weekend, next week, or any future days mentioned in the AFD.
+
 ## Output Format (STRICT)
 Use this EXACT format:
 
-**HIGH: XX°F** (vs normal) | Confidence: HIGH/MED/LOW
+**TODAY'S HIGH: XX°F** (±X vs normal) | Confidence: HIGH/MED/LOW
 
 **Key Factors:**
 • [synoptic pattern - fronts, pressure, etc.]
@@ -34,28 +36,31 @@ Use this EXACT format:
 4. Note wind, clouds, rain/snow explicitly
 5. Translate NWS jargon to plain language
 6. State confidence level based on model agreement
-7. Focus on factors affecting HIGH temperature settlement
+7. Focus on factors affecting TODAY's HIGH temperature settlement
+8. **CRITICAL: Only report TODAY's forecast. If the AFD mentions multiple days, extract ONLY the forecast for the current day. Ignore "tomorrow", "Saturday", "next week", etc.**
 
 ## Confidence Levels
 - HIGH: Models agree within 2°F, clear pattern
 - MED: 3-4°F spread or timing uncertainty
 - LOW: 5°F+ spread, complex pattern, low predictability
 
-## What to Extract from AFD
-1. Temperature forecast and trend
-2. Precipitation probability and timing
-3. Wind speed/direction and changes
-4. Cloud cover evolution
-5. Any fronts or pressure systems
-6. Model consensus or disagreement
-7. Timing-sensitive factors
+## What to Extract from AFD (FOR TODAY ONLY)
+1. TODAY's temperature forecast and expected high
+2. TODAY's precipitation probability and timing
+3. TODAY's wind speed/direction and changes
+4. TODAY's cloud cover evolution
+5. Any fronts or pressure systems affecting TODAY
+6. Model consensus/disagreement for TODAY's high
+7. Timing-sensitive factors for TODAY
 
 ## DO NOT Include
 - Aviation specifics (TAF, ceilings for flight)
 - Marine forecasts
 - Fire weather details (unless relevant to temp)
 - Lengthy explanations
-- Hedging language`;
+- Hedging language
+- **Forecasts for future days (tomorrow, weekend, next week, Monday, Tuesday, etc.)**
+- **Temperature values mentioned for days other than TODAY**`;
 
 /**
  * Build the summary prompt with AFD and context
@@ -66,6 +71,13 @@ export function buildSummaryPrompt(context) {
 
   parts.push('\n\n---\n## FORECAST DISCUSSION TO SUMMARIZE\n');
 
+  // Add explicit TODAY's date - CRITICAL for disambiguation
+  const today = new Date();
+  const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const fullDate = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  parts.push(`**⚠️ TODAY IS: ${fullDate}**`);
+  parts.push(`**You MUST forecast for ${dayOfWeek} (today) ONLY. Ignore all other days.**\n`);
+
   if (context?.city) {
     parts.push(`**City:** ${context.city.name}`);
     parts.push(`**NWS Office:** ${context.afd?.office || 'Unknown'}`);
@@ -75,7 +87,7 @@ export function buildSummaryPrompt(context) {
     const afd = context.afd;
 
     if (afd.issuanceTime) {
-      parts.push(`**Issued:** ${afd.issuanceTime}`);
+      parts.push(`**AFD Issued:** ${afd.issuanceTime}`);
     }
 
     parts.push('\n### AFD Sections:\n');
@@ -84,13 +96,13 @@ export function buildSummaryPrompt(context) {
       parts.push(`**SYNOPSIS:**\n${afd.synopsis}\n`);
     }
     if (afd.nearTerm) {
-      parts.push(`**NEAR TERM:**\n${afd.nearTerm}\n`);
+      parts.push(`**NEAR TERM (focus on TODAY - ${dayOfWeek}):**\n${afd.nearTerm}\n`);
     }
     if (afd.shortTerm) {
-      parts.push(`**SHORT TERM:**\n${afd.shortTerm}\n`);
+      parts.push(`**SHORT TERM (extract TODAY's info only):**\n${afd.shortTerm}\n`);
     }
     if (afd.longTerm) {
-      parts.push(`**LONG TERM:**\n${afd.longTerm}\n`);
+      parts.push(`**LONG TERM (⚠️ IGNORE - this is for future days, not today):**\n${afd.longTerm}\n`);
     }
   }
 
@@ -112,15 +124,29 @@ export function buildSummaryPrompt(context) {
     }
   }
 
+  // Add model forecast data - provides grounding for today's expected high
+  if (context?.models?.length > 0) {
+    const modelStr = context.models
+      .map(m => `${m.name}: ${m.high}°F`)
+      .join(', ');
+    const temps = context.models.map(m => m.high).filter(t => t != null);
+    const avgTemp = temps.length > 0 ? Math.round(temps.reduce((a, b) => a + b, 0) / temps.length) : null;
+    const spread = temps.length > 1 ? Math.max(...temps) - Math.min(...temps) : 0;
+
+    parts.push(`\n**Model Forecasts for TODAY's High:** ${modelStr}`);
+    if (avgTemp) parts.push(`**Model Average:** ${avgTemp}°F (spread: ±${Math.round(spread/2)}°F)`);
+    parts.push(`*Use these model forecasts to validate your temperature prediction.*`);
+  }
+
   if (context?.markets?.topBrackets?.length > 0) {
     const brackets = context.markets.topBrackets
       .map(b => `${b.label}: ${b.yesPrice}%`)
       .join(' | ');
-    parts.push(`\n**Market Brackets:** ${brackets}`);
+    parts.push(`\n**Market Brackets (for TODAY):** ${brackets}`);
   }
 
   parts.push('\n---');
-  parts.push('\nNow generate the Toasty Summary using the exact format specified above.');
+  parts.push(`\nNow generate the Toasty Summary for TODAY (${dayOfWeek}) using the exact format specified above. Remember: TODAY'S HIGH only.`);
 
   return parts.join('\n');
 }

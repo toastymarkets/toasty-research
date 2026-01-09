@@ -104,15 +104,6 @@ const WEATHER_KEYWORDS = {
   ],
 };
 
-// Temperature range patterns - matches "highs in the 70s", "lows in the upper 40s", etc.
-const TEMP_RANGE_PATTERN = /\b(highs?|lows?|temperatures?)\s+(in the\s+)?(lower\s+|mid\s+|upper\s+)?(\d{1,2}0s|\d{1,3}(\s*to\s*\d{1,3})?)\b/gi;
-
-// Rainfall amount patterns - matches "0.5-1\" rainfall", "1.5 inches", etc.
-const RAINFALL_PATTERN = /\b\d+\.?\d*\s*(-|to)\s*\d+\.?\d*\s*(inch(es)?|"|in)\s*(of\s+)?(rain(fall)?|precip(itation)?|liquid|snow|accumulation)?\b/gi;
-
-// Degree range patterns - matches "40-50 degrees", "40 to 50 degrees", etc.
-const DEGREE_RANGE_PATTERN = /\b\d{1,3}\s*(-|to)\s*\d{1,3}\s*degrees?\b/gi;
-
 // Flatten keywords with their categories for lookup
 const KEYWORD_MAP = new Map();
 Object.entries(WEATHER_KEYWORDS).forEach(([category, keywords]) => {
@@ -136,19 +127,18 @@ const CATEGORY_COLORS = {
   locations: 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50',
 };
 
-const formatRelativeTime = (isoString) => {
+function formatRelativeTime(isoString) {
   if (!isoString) return '';
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
-  if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-};
+
+  if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+}
 
 /**
  * Insert discussion text into notes via global event
@@ -187,34 +177,51 @@ function insertDiscussionToNotes(text, source = 'NWS Discussion') {
  * HighlightedKeyword - Clickable keyword with add-to-notes functionality
  */
 function HighlightedKeyword({ text, category, officeName }) {
-  const [showTooltip, setShowTooltip] = useState(false);
   const colorClass = CATEGORY_COLORS[category] || 'bg-white/20 text-white/80';
 
-  const handleAddToNotes = (e) => {
+  function handleClick(e) {
     e.stopPropagation();
     insertDiscussionToNotes(text, `NWS ${officeName}`);
-    setShowTooltip(false);
-  };
+  }
 
   return (
-    <span className="relative inline">
-      <button
-        onClick={handleAddToNotes}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        className={`${colorClass} px-1 py-0.5 rounded cursor-pointer transition-colors text-inherit font-inherit`}
-        title={`Add "${text}" to notes`}
-      >
-        {text}
-      </button>
-      {showTooltip && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[10px] bg-black/80 text-white rounded whitespace-nowrap z-50 pointer-events-none">
-          Click to add to notes
-        </span>
-      )}
-    </span>
+    <button
+      onClick={handleClick}
+      className={`${colorClass} px-1 py-0.5 rounded cursor-pointer transition-colors text-inherit font-inherit group relative`}
+      title={`Add "${text}" to notes`}
+    >
+      {text}
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[10px] bg-black/80 text-white rounded whitespace-nowrap z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+        Click to add to notes
+      </span>
+    </button>
   );
 }
+
+// Regex patterns for special weather data formats
+const TEMP_RANGE_RE = /^(highs?|lows?|temperatures?)\s+/i;
+const RAINFALL_RE = /\d+\.?\d*\s*(-|to)\s*\d+\.?\d*\s*(inch(es)?|"|in)/i;
+const DEGREE_RANGE_RE = /\d{1,3}\s*(-|to)\s*\d{1,3}\s*degrees?/i;
+
+/**
+ * Determine the category of a matched text segment
+ */
+function getCategoryForMatch(matchedText) {
+  if (TEMP_RANGE_RE.test(matchedText)) return 'tempRange';
+  if (RAINFALL_RE.test(matchedText)) return 'rainfallAmount';
+  if (DEGREE_RANGE_RE.test(matchedText)) return 'degreeRange';
+  return KEYWORD_MAP.get(matchedText.toLowerCase());
+}
+
+// Build combined regex pattern once (keywords sorted by length desc to match longer phrases first)
+const HIGHLIGHT_PATTERN = (() => {
+  const allKeywords = Array.from(KEYWORD_MAP.keys()).sort((a, b) => b.length - a.length);
+  const keywordPattern = `\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`;
+  const tempRangePattern = `\\b(highs?|lows?|temperatures?)\\s+(in the\\s+|of\\s+)?(lower\\s+|mid\\s+|upper\\s+)?(\\d{1,2}0s)(\\s+to\\s+(the\\s+)?(lower\\s+|mid\\s+|upper\\s+)?\\d{1,2}0s)?\\b`;
+  const rainfallPattern = `\\b\\d+\\.?\\d*\\s*(-|to)\\s*\\d+\\.?\\d*\\s*(inch(es)?|"|in)\\s*(of\\s+)?(rain(fall)?|precip(itation)?|liquid|snow|accumulation)?\\b`;
+  const degreePattern = `\\b\\d{1,3}\\s*(-|to)\\s*\\d{1,3}\\s*degrees?\\b`;
+  return new RegExp(`(${tempRangePattern})|(${rainfallPattern})|(${degreePattern})|(${keywordPattern})`, 'gi');
+})();
 
 /**
  * Parse text and highlight meteorological keywords, temperature ranges, rainfall amounts, and degree ranges
@@ -222,66 +229,47 @@ function HighlightedKeyword({ text, category, officeName }) {
 function parseAndHighlight(text, officeName) {
   if (!text) return null;
 
-  // Build regex pattern from all keywords (sorted by length desc to match longer phrases first)
-  const allKeywords = Array.from(KEYWORD_MAP.keys()).sort((a, b) => b.length - a.length);
-  const keywordPattern = `\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`;
-
-  // Temperature range pattern - matches various formats:
-  // "highs in the 70s", "lows in the upper 40s", "highs in the 70s to the lower 80s"
-  // "temperatures in the mid 60s", "highs of 75 to 80"
-  const tempRangePattern = `\\b(highs?|lows?|temperatures?)\\s+(in the\\s+|of\\s+)?(lower\\s+|mid\\s+|upper\\s+)?(\\d{1,2}0s)(\\s+to\\s+(the\\s+)?(lower\\s+|mid\\s+|upper\\s+)?\\d{1,2}0s)?\\b`;
-
-  // Rainfall amount pattern - matches "0.5-1\" rainfall", "1-2 inches of rain", etc.
-  const rainfallPattern = `\\b\\d+\\.?\\d*\\s*(-|to)\\s*\\d+\\.?\\d*\\s*(inch(es)?|"|in)\\s*(of\\s+)?(rain(fall)?|precip(itation)?|liquid|snow|accumulation)?\\b`;
-
-  // Degree range pattern - matches "40-50 degrees", "40 to 50 degrees", etc.
-  const degreePattern = `\\b\\d{1,3}\\s*(-|to)\\s*\\d{1,3}\\s*degrees?\\b`;
-
-  // Combined pattern - longer patterns first to avoid partial matches, then keywords
-  const combinedPattern = new RegExp(`(${tempRangePattern})|(${rainfallPattern})|(${degreePattern})|(${keywordPattern})`, 'gi');
-
   const parts = [];
   let lastIndex = 0;
-  let match;
 
-  while ((match = combinedPattern.exec(text)) !== null) {
-    // Add text before match
+  // Reset regex state for fresh matching
+  HIGHLIGHT_PATTERN.lastIndex = 0;
+
+  let match;
+  while ((match = HIGHLIGHT_PATTERN.exec(text)) !== null) {
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
 
     const matchedText = match[0];
-
-    // Determine category by testing which pattern matched
-    let category;
-    if (/^(highs?|lows?|temperatures?)\s+/i.test(matchedText)) {
-      category = 'tempRange';
-    } else if (/\d+\.?\d*\s*(-|to)\s*\d+\.?\d*\s*(inch(es)?|"|in)/i.test(matchedText)) {
-      category = 'rainfallAmount';
-    } else if (/\d{1,3}\s*(-|to)\s*\d{1,3}\s*degrees?/i.test(matchedText)) {
-      category = 'degreeRange';
-    } else {
-      category = KEYWORD_MAP.get(matchedText.toLowerCase());
-    }
-
     parts.push(
       <HighlightedKeyword
         key={`${match.index}-${matchedText}`}
         text={matchedText}
-        category={category}
+        category={getCategoryForMatch(matchedText)}
         officeName={officeName}
       />
     );
 
-    lastIndex = combinedPattern.lastIndex;
+    lastIndex = HIGHLIGHT_PATTERN.lastIndex;
   }
 
-  // Add remaining text
   if (lastIndex < text.length) {
     parts.push(text.slice(lastIndex));
   }
 
   return parts;
+}
+
+/**
+ * Clean NWS text by joining hard-wrapped lines while preserving paragraphs
+ */
+function cleanTextForCopy(text) {
+  if (!text) return '';
+  return text
+    .replace(/\n(?!\n)/g, ' ')
+    .replace(/  +/g, ' ')
+    .trim();
 }
 
 export default function ForecastDiscussion({ cityId }) {
@@ -290,83 +278,73 @@ export default function ForecastDiscussion({ cityId }) {
   const contentRef = useRef(null);
   const { discussion, loading, error } = useNWSForecastDiscussion(cityId);
 
-  // Clean NWS text by joining hard-wrapped lines while preserving paragraphs
-  const cleanTextForCopy = (text) => {
-    if (!text) return '';
-    return text
-      .replace(/\n(?!\n)/g, ' ')  // Single newline → space (join wrapped lines)
-      .replace(/  +/g, ' ')        // Collapse multiple spaces
-      .trim();
-  };
-
-  // Handle text selection for add-to-notes popup
   const handleMouseUp = useCallback(() => {
     const selection = window.getSelection();
-    if (selection && selection.toString().trim().length > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      const containerRect = contentRef.current?.getBoundingClientRect();
+    const selectedText = selection?.toString().trim();
 
-      if (containerRect) {
-        setSelectionPopup({
-          text: selection.toString().trim(),
-          x: rect.left + rect.width / 2 - containerRect.left,
-          y: rect.top - containerRect.top - 10,
-        });
-      }
-    } else {
+    if (!selectedText) {
       setSelectionPopup(null);
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const containerRect = contentRef.current?.getBoundingClientRect();
+
+    if (containerRect) {
+      setSelectionPopup({
+        text: selectedText,
+        x: rect.left + rect.width / 2 - containerRect.left,
+        y: rect.top - containerRect.top - 10,
+      });
     }
   }, []);
 
-  // Hide popup when clicking elsewhere
   useEffect(() => {
-    const handleClickOutside = () => {
+    function handleClickOutside() {
       setTimeout(() => {
         const selection = window.getSelection();
-        if (!selection || selection.toString().trim().length === 0) {
+        if (!selection?.toString().trim()) {
           setSelectionPopup(null);
         }
       }, 100);
-    };
+    }
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Handle adding selected text to notes
-  const handleAddSelectionToNotes = () => {
-    if (selectionPopup?.text) {
-      const cleanedText = cleanTextForCopy(selectionPopup.text);
-      insertDiscussionToNotes(cleanedText, `NWS ${discussion?.officeName || 'Discussion'}`);
-      setSelectionPopup(null);
-      window.getSelection()?.removeAllRanges();
-    }
-  };
+  function handleAddSelectionToNotes() {
+    if (!selectionPopup?.text) return;
 
-  // Handle copy button click
-  const handleCopy = async () => {
-    if (discussion?.parsed?.rawText) {
-      try {
-        const cleanedText = cleanTextForCopy(discussion.parsed.rawText);
-        await navigator.clipboard.writeText(cleanedText);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (err) {
-        console.error('Failed to copy text:', err);
-      }
-    }
-  };
+    insertDiscussionToNotes(
+      cleanTextForCopy(selectionPopup.text),
+      `NWS ${discussion?.officeName || 'Discussion'}`
+    );
+    setSelectionPopup(null);
+    window.getSelection()?.removeAllRanges();
+  }
 
-  // Intercept manual text selection copy (Ctrl/Cmd+C)
-  const handleTextCopy = (e) => {
-    const selection = window.getSelection();
-    if (selection && selection.toString()) {
+  async function handleCopy() {
+    const rawText = discussion?.parsed?.rawText;
+    if (!rawText) return;
+
+    try {
+      await navigator.clipboard.writeText(cleanTextForCopy(rawText));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+  }
+
+  function handleTextCopy(e) {
+    const selectedText = window.getSelection()?.toString();
+    if (selectedText) {
       e.preventDefault();
-      const cleanedText = cleanTextForCopy(selection.toString());
-      navigator.clipboard.writeText(cleanedText);
+      navigator.clipboard.writeText(cleanTextForCopy(selectedText));
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -401,17 +379,8 @@ export default function ForecastDiscussion({ cityId }) {
             className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1 transition-colors"
             title="Copy to clipboard"
           >
-            {copied ? (
-              <>
-                <Check className="w-3 h-3" />
-                <span>Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3 h-3" />
-                <span>Copy</span>
-              </>
-            )}
+            {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
           <div className="flex items-center gap-1 text-[10px] text-white/40">
             <Clock className="w-3 h-3" />

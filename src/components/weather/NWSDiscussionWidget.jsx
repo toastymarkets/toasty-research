@@ -7,6 +7,7 @@ import {
 
 import { useNWSBulletins, formatBulletinTime } from '../../hooks/useNWSBulletins.js';
 import { useToastySummary } from '../../hooks/useToastySummary.js';
+import { useMultiModelForecast } from '../../hooks/useMultiModelForecast.js';
 import GlassWidget from './GlassWidget.jsx';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents.js';
 import { getGlossaryForOffice, termAppearsInText } from '../../data/cityGlossaries.js';
@@ -604,12 +605,16 @@ function ExpandedDiscussionInline({
   const contentRef = useRef(null);
   const { selectionPopup, handleMouseUp, clearSelection } = useTextSelection(contentRef);
 
+  // Get model forecast data for AI summary grounding
+  const { forecasts: modelForecasts } = useMultiModelForecast(citySlug);
+
   const { summary, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useToastySummary({
     citySlug,
     cityName,
     discussion,
     weather,
     markets,
+    models: modelForecasts,
   });
 
   const fullDiscussionText = [
