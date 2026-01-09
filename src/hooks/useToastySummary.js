@@ -6,7 +6,7 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
  * Hook to fetch and cache Toasty Summary for a city's forecast discussion
  * Uses the copilot API in summary mode
  */
-export function useToastySummary({ citySlug, cityName, discussion, weather, markets }) {
+export function useToastySummary({ citySlug, cityName, discussion, weather, markets, models }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -101,6 +101,11 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
             markets: markets?.topBrackets ? {
               topBrackets: markets.topBrackets.slice(0, 3),
             } : null,
+            // Model forecast data for grounding temperature predictions
+            models: models?.length > 0 ? models.map(m => ({
+              name: m.name || m.model,
+              high: m.high ?? m.temperature,
+            })).filter(m => m.high != null) : null,
           },
         }),
       });
@@ -165,7 +170,7 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
     } finally {
       setLoading(false);
     }
-  }, [discussion, cityName, weather, markets, cacheSummary]);
+  }, [discussion, cityName, weather, markets, models, cacheSummary]);
 
   // On mount or discussion change, check cache first
   useEffect(() => {
