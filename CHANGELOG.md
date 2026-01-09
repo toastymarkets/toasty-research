@@ -2,6 +2,33 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.11.0] - 2026-01-09
+
+### Added
+- **AI Summary improvements for quant trading**:
+  - Temperature now reported as range (min-max) based on model ensemble spread
+  - Quantitative confidence levels: HIGH (≤2°F spread), MED (3-4°F), LOW (≥5°F)
+  - Model grounding data passed to AI for deterministic outputs
+  - Explicit TODAY date context to prevent day confusion
+
+- **Comprehensive meteorological pattern extraction**:
+  - Synoptic patterns: ridges, troughs, frontal passages
+  - Advection: CAA, WAA, cold air damming, arctic outbreaks
+  - Regional winds: Santa Ana, Chinook, Diablo, sea/lake breeze
+  - Boundary layer: inversions, marine layer, mixing height
+  - Moisture patterns: atmospheric rivers, fog burn-off
+  - Coastal/lake effects: convergence zones, urban heat island
+
+### Changed
+- AI summary now extracts facts only - no inferences or interpretations
+- ForecastDiscussion widget simplified (~7% code reduction)
+- Screenshot references reorganized into cleaner folder structure
+
+### Trading Impact
+- Deterministic AI outputs enable consistent trading decisions
+- Temperature ranges match model ensemble spread for proper uncertainty
+- All key meteorological drivers now extracted regardless of region
+
 ## [1.10.0] - 2026-01-06
 
 ### Added
