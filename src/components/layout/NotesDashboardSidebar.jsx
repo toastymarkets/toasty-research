@@ -1,4 +1,5 @@
 import { Search, ChevronDown, MapPin, Calendar, Archive, FileText } from 'lucide-react';
+import { formatTimeAgo } from '../../utils/timeFormatters.js';
 
 const FILTER_OPTIONS = [
   { value: 'all', label: 'All Notes' },
@@ -12,23 +13,6 @@ const SORT_OPTIONS = [
   { value: 'topic', label: 'Topic' },
   { value: 'location', label: 'Location' },
 ];
-
-function formatTimeAgo(dateStr) {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now - date;
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
 
 export default function NotesDashboardSidebar({
   notes,

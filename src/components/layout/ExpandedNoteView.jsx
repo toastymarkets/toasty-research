@@ -1,10 +1,28 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPin, Calendar, Cloud, Archive, FileText, Check, Loader2, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Minus } from 'lucide-react';
+import {
+  MapPin,
+  Calendar,
+  Cloud,
+  Archive,
+  FileText,
+  Check,
+  Loader2,
+  Bold,
+  Italic,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Minus,
+} from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
-import { DataChipNode } from '../notepad/extensions/DataChipNode';
+import { DataChipNode } from '../notepad/extensions/DataChipNode.js';
+import { formatSaveTime } from '../../utils/timeFormatters.js';
 
 /**
  * EditorToolbar - Formatting toolbar for the note editor
@@ -266,16 +284,6 @@ export default function ExpandedNoteView({ note, storageKey }) {
       snow: 'bg-cyan-500/20 text-cyan-300',
     };
     return colors[type?.toLowerCase()] || 'bg-white/10 text-white/70';
-  };
-
-  // Format save time for display
-  const formatSaveTime = (date) => {
-    if (!date) return null;
-    const now = new Date();
-    const diff = now - date;
-    if (diff < 60000) return 'Saved';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
 
   return (
