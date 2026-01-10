@@ -202,12 +202,14 @@ export default function MarketBrackets({
   // Find the leading bracket (highest probability)
   const leadingBracket = brackets.reduce((max, b) => b.yesPrice > (max?.yesPrice || 0) ? b : max, null);
 
-  // Get color based on probability - dark navy blue gradient
-  const getProbColor = (prob) => {
-    if (prob >= 80) return '#60A5FA'; // Brightest navy - very likely
-    if (prob >= 50) return '#3B82F6'; // Medium navy - likely
-    if (prob >= 20) return '#2563EB'; // Dark navy - possible
-    return '#1D4ED8'; // Deepest navy - unlikely
+  // Get color based on temperature (cold to hot gradient)
+  const getTemperatureColor = (label) => {
+    const temp = parseInt(label.match(/\d+/)?.[0] || 60);
+    if (temp <= 40) return '#3B82F6'; // blue - cold
+    if (temp <= 55) return '#06B6D4'; // cyan - cool
+    if (temp <= 70) return '#10B981'; // green - mild
+    if (temp <= 85) return '#F59E0B'; // amber - warm
+    return '#EF4444'; // red - hot
   };
 
   // Title changes based on variant
@@ -248,183 +250,162 @@ export default function MarketBrackets({
   return (
     <>
     <GlassWidget
-      title={widgetTitle}
+      title="MARKET BRACKETS"
       icon={TrendingUp}
       size="large"
       tier="primary"
-      className="h-full cursor-pointer"
+      className="h-full cursor-pointer flex flex-col"
       onClick={handleWidgetClick}
-      headerRight={onToggleExpand && (
-        <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
-      )}
+      headerRight={
+        <div className="flex items-center gap-2">
+          {/* Day Toggle in header */}
+          <div className="inline-flex bg-white/10 rounded-md p-0.5">
+            <button
+              onClick={(e) => { e.stopPropagation(); setDayOffset(0); }}
+              className={`px-2 py-0.5 text-[9px] font-medium rounded transition-all ${
+                dayOffset === 0 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Tdy
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setDayOffset(1); }}
+              className={`px-2 py-0.5 text-[9px] font-medium rounded transition-all ${
+                dayOffset === 1 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Tmw
+            </button>
+          </div>
+          {onToggleExpand && (
+            <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
+          )}
+        </div>
+      }
     >
-
-      {/* Header Row: Day Toggle + Leading Bracket Highlight */}
-      <div className="flex items-center justify-between pb-2">
-        <div className="inline-flex bg-white/10 rounded-lg p-0.5">
-          <button
-            onClick={(e) => { e.stopPropagation(); setDayOffset(0); }}
-            className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
-              dayOffset === 0 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
-            }`}
-          >
-            Tdy
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); setDayOffset(1); }}
-            className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
-              dayOffset === 1 ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/70'
-            }`}
-          >
-            Tmw
-          </button>
-        </div>
-
-        {/* Leading bracket highlight */}
-        {leadingBracket && leadingBracket.yesPrice >= 50 && (
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-500/20 border border-blue-400/30">
-            <span className="text-[10px] font-semibold text-blue-300">
-              {condenseLabel(leadingBracket.label)}
-            </span>
-            <span className="text-[11px] font-bold text-white tabular-nums">
-              {leadingBracket.yesPrice}%
-            </span>
+      {/* Hero: Leading Bracket */}
+      {leadingBracket && (
+        <div className="bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-transparent
+                        rounded-xl p-3 mb-3 border border-blue-400/20 flex-shrink-0">
+          <div className="flex items-baseline justify-between">
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-bold text-white">
+                {condenseLabel(leadingBracket.label)}
+              </span>
+              <span className="text-2xl font-black text-white tabular-nums">
+                {leadingBracket.yesPrice}%
+              </span>
+            </div>
+            {priceChanges[leadingBracket.ticker] !== undefined && priceChanges[leadingBracket.ticker] !== 0 && (
+              <span className={`text-xs font-semibold flex items-center gap-0.5 ${
+                priceChanges[leadingBracket.ticker] > 0 ? 'text-emerald-400' : 'text-red-400'
+              }`}>
+                {priceChanges[leadingBracket.ticker] > 0 ? (
+                  <TrendingUp className="w-3 h-3" />
+                ) : (
+                  <TrendingDown className="w-3 h-3" />
+                )}
+                {Math.abs(priceChanges[leadingBracket.ticker]).toFixed(0)}
+              </span>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Multi-bracket Price Chart */}
-      {!chartLoading && chartData.length > 0 && legendData.length > 0 && (
-        <div className="mb-3 rounded-lg bg-white/5 overflow-hidden">
-          {/* Chart */}
-          <div className="h-[90px] px-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 8, right: 4, left: 4, bottom: 4 }}>
-                <defs>
-                  {legendData.map(({ label, color }) => (
-                    <linearGradient key={label} id={`gradient-${label.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-                      <stop offset="100%" stopColor={color} stopOpacity={0} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                {legendData.map(({ label, color }) => (
-                  <Area
-                    key={label}
-                    type="monotone"
-                    dataKey={label}
-                    stroke={color}
-                    strokeWidth={1.5}
-                    fill={`url(#gradient-${label.replace(/[^a-zA-Z0-9]/g, '')})`}
-                    dot={false}
-                  />
-                ))}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-3 pb-2 px-2">
-            {legendData.slice(0, 3).map(({ label, color, currentPrice }) => (
-              <div key={label} className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-[9px] text-white/60">{condenseLabel(label)}</span>
-                <span className="text-[9px] font-semibold text-white">{currentPrice}%</span>
-              </div>
-            ))}
+          <div className="flex items-center gap-2 mt-1 text-[10px] text-white/50">
+            <span>Leading bracket</span>
+            {timeRemaining && timeRemaining !== 'Closed' && (
+              <>
+                <span>•</span>
+                <span>Closes {timeRemaining}</span>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* Brackets List */}
-      <div className="pb-2 overflow-y-auto">
+      {/* Probability Distribution Bars - Fills remaining space */}
+      <div className="flex-1 flex flex-col gap-1 min-h-0">
         {sortedBrackets.length === 0 ? (
           <div className="flex items-center justify-center h-full text-white/40 text-[11px]">
             No markets for {dayLabel}
           </div>
         ) : (
-          <div className="space-y-0.5">
-            {sortedBrackets.map((bracket, i) => {
-              const isLeader = bracket.ticker === leadingBracket?.ticker;
-              const probColor = getProbColor(bracket.yesPrice);
-              const priceChange = priceChanges[bracket.ticker];
+          sortedBrackets.map((bracket, i) => {
+            const isLeader = bracket.ticker === leadingBracket?.ticker;
+            const barColor = getTemperatureColor(bracket.label);
+            const priceChange = priceChanges[bracket.ticker];
 
-              return (
-                <div
-                  key={bracket.ticker || i}
-                  className={`group relative flex items-center justify-between py-1.5 px-1.5 rounded-lg transition-all ${
-                    isLeader
-                      ? 'bg-gradient-to-r from-blue-500/20 to-blue-500/5 ring-1 ring-blue-400/30'
-                      : 'hover:bg-white/5'
-                  }`}
-                >
-                  {/* Probability bar background */}
+            return (
+              <div
+                key={bracket.ticker || i}
+                className={`group flex items-center gap-2 px-2 rounded-lg transition-all cursor-pointer
+                           ${isLeader ? 'bg-white/10 ring-1 ring-blue-400/30' : 'hover:bg-white/5'}`}
+                style={{ flex: '1 1 0', minHeight: '36px' }}
+              >
+                {/* Temperature Label */}
+                <span className={`w-14 text-xs font-semibold flex-shrink-0 ${isLeader ? 'text-white' : 'text-white/70'}`}>
+                  {condenseLabel(bracket.label)}
+                </span>
+
+                {/* Bar Container */}
+                <div className="flex-1 h-5 bg-white/5 rounded-full overflow-hidden relative">
+                  {/* Animated Probability Bar */}
                   <div
-                    className={`absolute left-0 top-0 bottom-0 rounded-lg ${isLeader ? 'opacity-0' : 'opacity-30'}`}
+                    className="h-full rounded-full transition-all duration-500"
                     style={{
-                      width: `${bracket.yesPrice}%`,
-                      backgroundColor: probColor,
+                      width: `${Math.max(bracket.yesPrice, 2)}%`,
+                      background: `linear-gradient(90deg, ${barColor}80, ${barColor})`,
+                      boxShadow: isLeader ? `0 0 12px ${barColor}50` : 'none'
                     }}
                   />
-
-                  {/* Quick Add Button */}
-                  {canInsertChip && (
-                    <button
-                      onClick={(e) => handleBracketInsert(bracket, e)}
-                      className="relative opacity-0 group-hover:opacity-100 mr-1.5
-                                 w-4 h-4 rounded-full bg-white/25 border border-white/20
-                                 flex items-center justify-center transition-all z-10
-                                 hover:scale-110 hover:bg-white/35 flex-shrink-0
-                                 backdrop-blur-sm shadow-sm"
-                      title="Add to notes"
-                    >
-                      <Plus size={10} strokeWidth={3} className="text-white/90" />
-                    </button>
-                  )}
-
-                  {/* Content */}
-                  <span className={`relative text-[12px] font-bold flex-1 ${isLeader ? 'text-white' : 'text-white/70'}`}>
-                    {condenseLabel(bracket.label)}
-                  </span>
-
-                  {/* Price change indicator */}
-                  {priceChange !== undefined && priceChange !== 0 && (
-                    <span className={`relative text-[9px] font-medium mr-2 flex items-center gap-0.5 ${
-                      priceChange > 0 ? 'text-emerald-400' : 'text-red-400'
-                    }`}>
-                      {priceChange > 0 ? (
-                        <TrendingUp className="w-2.5 h-2.5" />
-                      ) : (
-                        <TrendingDown className="w-2.5 h-2.5" />
-                      )}
-                      {Math.abs(priceChange).toFixed(0)}
-                    </span>
-                  )}
-
-                  <span className={`relative text-[13px] font-bold tabular-nums ${isLeader ? 'text-white' : 'text-white/90'}`}>
-                    {bracket.yesPrice}%
-                  </span>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Price Change */}
+                {priceChange !== undefined && priceChange !== 0 && (
+                  <span className={`text-[9px] font-medium w-6 text-right flex-shrink-0 ${
+                    priceChange > 0 ? 'text-emerald-400' : 'text-red-400'
+                  }`}>
+                    {priceChange > 0 ? '↑' : '↓'}{Math.abs(priceChange).toFixed(0)}
+                  </span>
+                )}
+
+                {/* Percentage */}
+                <span className={`w-10 text-right text-sm font-bold tabular-nums flex-shrink-0
+                                 ${isLeader ? 'text-white' : 'text-white/70'}`}>
+                  {bracket.yesPrice}%
+                </span>
+
+                {/* Quick Add (hover) */}
+                {canInsertChip && (
+                  <button
+                    onClick={(e) => handleBracketInsert(bracket, e)}
+                    className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full
+                               bg-white/20 flex items-center justify-center transition-all
+                               hover:bg-white/30 flex-shrink-0"
+                    title="Add to notes"
+                  >
+                    <Plus size={10} strokeWidth={3} className="text-white/90" />
+                  </button>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
-      {/* Footer - Kalshi link and timer */}
-      <div className="pt-2 pb-1 flex items-center justify-between border-t border-white/10 mt-auto gap-2">
+      {/* Footer - Compact */}
+      <div className="pt-2 flex items-center justify-between border-t border-white/10 mt-2 flex-shrink-0">
         <a
           href={getKalshiUrl(citySlug, cityName)}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1 text-[10px] font-medium text-white/40 hover:text-white/60 transition-colors whitespace-nowrap"
+          className="flex items-center gap-1 text-[10px] font-medium text-white/40 hover:text-white/60 transition-colors"
         >
-          Kalshi Odds
+          Kalshi
           <ExternalLink className="w-2.5 h-2.5" />
         </a>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5">
           {timeRemaining && timeRemaining !== 'Closed' && (
-            <span className="text-[10px] text-white/40 whitespace-nowrap">Closes {timeRemaining}</span>
+            <span className="text-[10px] text-white/40">{timeRemaining}</span>
           )}
           <ChevronRight className="w-3.5 h-3.5 text-white/30" />
         </div>
