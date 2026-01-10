@@ -727,17 +727,12 @@ body {
 }
 
 /* ===== WIDGET GRID V2 - Apple Weather Style Layout ===== */
+/* Grid layout is controlled dynamically by gridLayoutEngine.js via inline styles */
+/* This CSS provides only base styles and responsive fallbacks */
 
 .widget-grid-v2 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: auto auto auto auto;
-  gap: 8px;
-  grid-template-areas:
-    "models       brackets     map         map"
-    "discussion   brackets     map         map"
-    "nearby       nearby       alerts      smallstack"
-    "pressure     visibility   forecast    rounding";
+  /* Base styles - actual grid properties set via inline styles from JS */
+  width: 100%;
 }
 
 /* Make all grid children stretch to fill their areas */
@@ -792,39 +787,15 @@ body {
   min-height: 130px;
 }
 
-/* Tablet layout (3 columns) */
+/* Tablet layout - let JS engine handle grid, CSS handles only component styling */
 @media (max-width: 1024px) {
-  .widget-grid-v2 {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto auto auto auto auto;
-    grid-template-areas:
-      "models       brackets     map"
-      "discussion   brackets     map"
-      "nearby       nearby       alerts"
-      "smallstack   smallstack   forecast"
-      "pressure     visibility   rounding";
-  }
-
   .widget-grid-v2 [style*="grid-area: smallstack"] {
     flex-direction: row;
   }
 }
 
-/* Mobile layout (2 columns) */
+/* Mobile layout - let JS engine handle grid, CSS handles only component styling */
 @media (max-width: 640px) {
-  .widget-grid-v2 {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: auto;
-    grid-template-areas:
-      "brackets     brackets"
-      "map          map"
-      "models       discussion"
-      "nearby       nearby"
-      "alerts       smallstack"
-      "pressure     visibility"
-      "forecast     rounding";
-  }
-
   .widget-grid-v2 [style*="grid-area: brackets"] {
     min-height: 180px;
   }
@@ -839,25 +810,8 @@ body {
   }
 }
 
-/* Extra small mobile (1 column) */
+/* Extra small mobile - smallstack styling */
 @media (max-width: 480px) {
-  .widget-grid-v2 {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    grid-template-areas:
-      "brackets"
-      "map"
-      "models"
-      "discussion"
-      "nearby"
-      "alerts"
-      "smallstack"
-      "pressure"
-      "visibility"
-      "forecast"
-      "rounding";
-  }
-
   .widget-grid-v2 [style*="grid-area: smallstack"] {
     flex-direction: row;
   }
