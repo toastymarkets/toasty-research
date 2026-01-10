@@ -254,11 +254,10 @@ export default function MarketBrackets({
       icon={TrendingUp}
       size="large"
       tier="primary"
-      className="h-full cursor-pointer flex flex-col"
+      className="h-full cursor-pointer"
       onClick={handleWidgetClick}
       headerRight={
         <div className="flex items-center gap-2">
-          {/* Day Toggle in header */}
           <div className="inline-flex bg-white/10 rounded-md p-0.5">
             <button
               onClick={(e) => { e.stopPropagation(); setDayOffset(0); }}
@@ -283,48 +282,61 @@ export default function MarketBrackets({
         </div>
       }
     >
-      {/* Hero: Leading Bracket */}
+      {/* Compact Leading Bracket Header */}
       {leadingBracket && (
-        <div className="bg-gradient-to-r from-blue-500/20 via-blue-500/10 to-transparent
-                        rounded-xl p-3 mb-3 border border-blue-400/20 flex-shrink-0">
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold text-white">
-                {condenseLabel(leadingBracket.label)}
-              </span>
-              <span className="text-2xl font-black text-white tabular-nums">
-                {leadingBracket.yesPrice}%
-              </span>
-            </div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-bold text-white">
+              {condenseLabel(leadingBracket.label)}
+            </span>
+            <span className="text-xl font-black text-white tabular-nums">
+              {leadingBracket.yesPrice}%
+            </span>
             {priceChanges[leadingBracket.ticker] !== undefined && priceChanges[leadingBracket.ticker] !== 0 && (
-              <span className={`text-xs font-semibold flex items-center gap-0.5 ${
+              <span className={`text-[10px] font-semibold flex items-center ${
                 priceChanges[leadingBracket.ticker] > 0 ? 'text-emerald-400' : 'text-red-400'
               }`}>
-                {priceChanges[leadingBracket.ticker] > 0 ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : (
-                  <TrendingDown className="w-3 h-3" />
-                )}
+                {priceChanges[leadingBracket.ticker] > 0 ? '↑' : '↓'}
                 {Math.abs(priceChanges[leadingBracket.ticker]).toFixed(0)}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-1 text-[10px] text-white/50">
-            <span>Leading bracket</span>
-            {timeRemaining && timeRemaining !== 'Closed' && (
-              <>
-                <span>•</span>
-                <span>Closes {timeRemaining}</span>
-              </>
-            )}
-          </div>
+          {timeRemaining && timeRemaining !== 'Closed' && (
+            <span className="text-[10px] text-white/40">{timeRemaining}</span>
+          )}
         </div>
       )}
 
-      {/* Probability Distribution Bars - Fills remaining space */}
-      <div className="flex-1 flex flex-col gap-1 min-h-0">
+      {/* Compact Sparkline Chart */}
+      {!chartLoading && chartData.length > 0 && (
+        <div className="h-[50px] mb-2 rounded-lg bg-white/5 overflow-hidden">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
+              <defs>
+                <linearGradient id="sparklineGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              {leadingBracket && (
+                <Area
+                  type="monotone"
+                  dataKey={leadingBracket.label}
+                  stroke="#3B82F6"
+                  strokeWidth={1.5}
+                  fill="url(#sparklineGradient)"
+                  dot={false}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Compact Probability Bars */}
+      <div className="space-y-0.5">
         {sortedBrackets.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-white/40 text-[11px]">
+          <div className="flex items-center justify-center py-4 text-white/40 text-[11px]">
             No markets for {dayLabel}
           </div>
         ) : (
@@ -336,31 +348,39 @@ export default function MarketBrackets({
             return (
               <div
                 key={bracket.ticker || i}
-                className={`group flex items-center gap-2 px-2 rounded-lg transition-all cursor-pointer
-                           ${isLeader ? 'bg-white/10 ring-1 ring-blue-400/30' : 'hover:bg-white/5'}`}
-                style={{ flex: '1 1 0', minHeight: '36px' }}
+                className={`group relative flex items-center gap-1.5 py-1 px-1.5 rounded-md transition-all
+                           ${isLeader ? 'bg-blue-500/15 ring-1 ring-blue-400/30' : 'hover:bg-white/5'}`}
               >
+                {/* Probability bar background */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 rounded-md opacity-25"
+                  style={{
+                    width: `${bracket.yesPrice}%`,
+                    backgroundColor: barColor,
+                  }}
+                />
+
+                {/* Quick Add Button */}
+                {canInsertChip && (
+                  <button
+                    onClick={(e) => handleBracketInsert(bracket, e)}
+                    className="relative opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full
+                               bg-white/20 flex items-center justify-center transition-all
+                               hover:bg-white/30 flex-shrink-0 z-10"
+                    title="Add to notes"
+                  >
+                    <Plus size={9} strokeWidth={3} className="text-white/90" />
+                  </button>
+                )}
+
                 {/* Temperature Label */}
-                <span className={`w-14 text-xs font-semibold flex-shrink-0 ${isLeader ? 'text-white' : 'text-white/70'}`}>
+                <span className={`relative text-[11px] font-semibold flex-1 ${isLeader ? 'text-white' : 'text-white/70'}`}>
                   {condenseLabel(bracket.label)}
                 </span>
 
-                {/* Bar Container */}
-                <div className="flex-1 h-5 bg-white/5 rounded-full overflow-hidden relative">
-                  {/* Animated Probability Bar */}
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.max(bracket.yesPrice, 2)}%`,
-                      background: `linear-gradient(90deg, ${barColor}80, ${barColor})`,
-                      boxShadow: isLeader ? `0 0 12px ${barColor}50` : 'none'
-                    }}
-                  />
-                </div>
-
                 {/* Price Change */}
                 {priceChange !== undefined && priceChange !== 0 && (
-                  <span className={`text-[9px] font-medium w-6 text-right flex-shrink-0 ${
+                  <span className={`relative text-[9px] font-medium ${
                     priceChange > 0 ? 'text-emerald-400' : 'text-red-400'
                   }`}>
                     {priceChange > 0 ? '↑' : '↓'}{Math.abs(priceChange).toFixed(0)}
@@ -368,31 +388,17 @@ export default function MarketBrackets({
                 )}
 
                 {/* Percentage */}
-                <span className={`w-10 text-right text-sm font-bold tabular-nums flex-shrink-0
-                                 ${isLeader ? 'text-white' : 'text-white/70'}`}>
+                <span className={`relative text-[12px] font-bold tabular-nums ${isLeader ? 'text-white' : 'text-white/80'}`}>
                   {bracket.yesPrice}%
                 </span>
-
-                {/* Quick Add (hover) */}
-                {canInsertChip && (
-                  <button
-                    onClick={(e) => handleBracketInsert(bracket, e)}
-                    className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full
-                               bg-white/20 flex items-center justify-center transition-all
-                               hover:bg-white/30 flex-shrink-0"
-                    title="Add to notes"
-                  >
-                    <Plus size={10} strokeWidth={3} className="text-white/90" />
-                  </button>
-                )}
               </div>
             );
           })
         )}
       </div>
 
-      {/* Footer - Compact */}
-      <div className="pt-2 flex items-center justify-between border-t border-white/10 mt-2 flex-shrink-0">
+      {/* Footer */}
+      <div className="pt-2 mt-auto flex items-center justify-between border-t border-white/10">
         <a
           href={getKalshiUrl(citySlug, cityName)}
           target="_blank"
@@ -403,12 +409,7 @@ export default function MarketBrackets({
           Kalshi
           <ExternalLink className="w-2.5 h-2.5" />
         </a>
-        <div className="flex items-center gap-1.5">
-          {timeRemaining && timeRemaining !== 'Closed' && (
-            <span className="text-[10px] text-white/40">{timeRemaining}</span>
-          )}
-          <ChevronRight className="w-3.5 h-3.5 text-white/30" />
-        </div>
+        <ChevronRight className="w-3.5 h-3.5 text-white/30" />
       </div>
     </GlassWidget>
 
