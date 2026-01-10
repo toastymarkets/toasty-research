@@ -284,7 +284,7 @@ export default function MarketBrackets({
     >
       {/* Compact Leading Bracket Header */}
       {leadingBracket && (
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 flex-shrink-0">
           <div className="flex items-baseline gap-1.5">
             <span className="text-lg font-bold text-white">
               {condenseLabel(leadingBracket.label)}
@@ -307,11 +307,11 @@ export default function MarketBrackets({
         </div>
       )}
 
-      {/* Compact Sparkline Chart */}
+      {/* Expandable Chart - grows to fill available space */}
       {!chartLoading && chartData.length > 0 && (
-        <div className="h-[50px] mb-2 rounded-lg bg-white/5 overflow-hidden">
+        <div className="flex-1 min-h-[80px] mb-2 rounded-lg bg-white/5 overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
               <defs>
                 <linearGradient id="sparklineGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.4} />
@@ -323,7 +323,7 @@ export default function MarketBrackets({
                   type="monotone"
                   dataKey={leadingBracket.label}
                   stroke="#3B82F6"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   fill="url(#sparklineGradient)"
                   dot={false}
                 />
@@ -334,7 +334,7 @@ export default function MarketBrackets({
       )}
 
       {/* Compact Probability Bars */}
-      <div className="space-y-0.5">
+      <div className="space-y-0.5 flex-shrink-0">
         {sortedBrackets.length === 0 ? (
           <div className="flex items-center justify-center py-4 text-white/40 text-[11px]">
             No markets for {dayLabel}
@@ -398,7 +398,7 @@ export default function MarketBrackets({
       </div>
 
       {/* Footer */}
-      <div className="pt-2 mt-auto flex items-center justify-between border-t border-white/10">
+      <div className="pt-2 flex-shrink-0 flex items-center justify-between border-t border-white/10">
         <a
           href={getKalshiUrl(citySlug, cityName)}
           target="_blank"
