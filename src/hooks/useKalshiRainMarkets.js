@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchKalshiWithCache } from '../utils/kalshiCache';
 
 /**
- * Kalshi API - uses proxy to bypass CORS
+ * Kalshi API configuration
  */
-const KALSHI_PROXY = '/api/kalshi';
-const KALSHI_PATH = 'trade-api/v2';
+const KALSHI_PATH = 'trade-api/v2/markets';
+const REFRESH_INTERVAL = 60000; // 60 seconds
 
 /**
  * Rain market series tickers
@@ -80,17 +81,13 @@ function getTodayTickerDate() {
 }
 
 /**
- * Fetch markets for a series
+ * Fetch markets for a series using cache utility
  */
 async function fetchMarkets(seriesTicker) {
-  const url = `${KALSHI_PROXY}?path=${KALSHI_PATH}/markets&series_ticker=${seriesTicker}&limit=50`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const data = await response.json();
+  const data = await fetchKalshiWithCache(KALSHI_PATH, {
+    series_ticker: seriesTicker,
+    limit: 50,
+  });
   return data.markets || [];
 }
 
@@ -291,11 +288,11 @@ export function useKalshiRainMarkets() {
     return () => clearTimeout(timeout);
   }, [fetchAllRainMarkets]);
 
-  // Refresh every 30 seconds (offset from temperature markets)
+  // Refresh at configured interval (60s to reduce rate limiting)
   useEffect(() => {
     // Start interval after initial delay + a small offset
     const startInterval = setTimeout(() => {
-      const interval = setInterval(fetchAllRainMarkets, 30000);
+      const interval = setInterval(fetchAllRainMarkets, REFRESH_INTERVAL);
       return () => clearInterval(interval);
     }, 2500);
     return () => clearTimeout(startInterval);

@@ -217,15 +217,19 @@ export function ResolutionWidget({
           {/* Countdowns - Always visible */}
           <div className="mt-auto pt-2 flex items-center justify-between border-t border-white/10">
             {cliCountdown && (
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] text-white/50">Next CLI</span>
-                <span className="text-[11px] text-amber-400 font-medium">{cliCountdown.formatted}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-white/50">Next CLI</span>
+                <span className={`text-sm text-amber-400 font-semibold ${cliCountdown.hours === 0 ? 'animate-pulse' : ''}`}>
+                  {cliCountdown.formatted}
+                </span>
               </div>
             )}
             {dsmCountdown && (
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] text-white/50">Next DSM</span>
-                <span className="text-[11px] text-cyan-400 font-medium">{dsmCountdown.formatted}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-white/50">Next DSM</span>
+                <span className={`text-sm text-cyan-400 font-semibold ${dsmCountdown.hours === 0 ? 'animate-pulse' : ''}`}>
+                  {dsmCountdown.formatted}
+                </span>
               </div>
             )}
           </div>

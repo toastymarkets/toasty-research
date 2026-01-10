@@ -133,8 +133,19 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
         className="cursor-pointer"
         headerRight={
           <div className="flex items-center gap-2">
-            <span className="text-xs text-white/50 tabular-nums">
-              {consensus.min}°-{consensus.max}°
+            {/* Prominent consensus average */}
+            <span className="text-sm font-semibold text-white tabular-nums">
+              {Math.round((consensus.min + consensus.max) / 2)}°
+            </span>
+            {/* Confidence badge */}
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+              consensus.spread <= 3
+                ? 'bg-green-500/20 text-green-400'
+                : consensus.spread <= 6
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-red-500/20 text-red-400'
+            }`}>
+              {consensus.spread <= 3 ? 'High' : consensus.spread <= 6 ? 'Med' : 'Low'}
             </span>
             {onToggleExpand && (
               <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
@@ -184,20 +195,10 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
             ))}
           </div>
 
-          {/* Agreement indicator with confidence badge */}
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] text-white/40">
-              ±{Math.round(consensus.spread / 2)}°
-            </span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded ${
-              consensus.spread <= 3
-                ? 'bg-green-500/20 text-green-400'
-                : consensus.spread <= 6
-                  ? 'bg-yellow-500/20 text-yellow-400'
-                  : 'bg-red-500/20 text-red-400'
-            }`}>
-              {consensus.spread <= 3 ? 'High' : consensus.spread <= 6 ? 'Med' : 'Low'}
-            </span>
+          {/* Model range indicator */}
+          <div className="flex items-center justify-between mt-1 text-[10px] text-white/40">
+            <span>Range: {consensus.min}°-{consensus.max}°</span>
+            <span>±{Math.round(consensus.spread / 2)}° spread</span>
           </div>
         </div>
       </GlassWidget>

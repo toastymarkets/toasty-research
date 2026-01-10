@@ -558,6 +558,18 @@ function BracketRowWithChart({
   condenseLabel,
 }) {
   const [period, setPeriod] = useState('1h');
+  const [chartReady, setChartReady] = useState(false);
+
+  // Delay chart rendering to ensure container has dimensions
+  useEffect(() => {
+    if (isExpanded && !chartReady) {
+      const timer = setTimeout(() => setChartReady(true), 50);
+      return () => clearTimeout(timer);
+    }
+    if (!isExpanded) {
+      setChartReady(false);
+    }
+  }, [isExpanded, chartReady]);
 
   // Fetch candlesticks when expanded
   const { candles, loading: candlesLoading } = useKalshiCandlesticks(
@@ -608,10 +620,13 @@ function BracketRowWithChart({
 
   return (
     <div className={`border border-white/5 rounded-lg ${isExpanded ? 'bg-white/5' : ''}`}>
-      {/* Main Row - Clickable */}
-      <button
+      {/* Main Row - Clickable (using div to allow nested button) */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onToggle}
-        className={`group relative w-full flex items-center justify-between py-2 px-2 rounded-lg transition-all ${
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
+        className={`group relative w-full flex items-center justify-between py-2 px-2 rounded-lg transition-all cursor-pointer ${
           isLeader ? 'bg-white/10' : 'hover:bg-white/5'
         }`}
       >
@@ -649,7 +664,7 @@ function BracketRowWithChart({
         <span className="relative text-sm font-bold tabular-nums text-white">
           {bracket.yesPrice}%
         </span>
-      </button>
+      </div>
 
       {/* Expanded Content - Chart */}
       {isExpanded && (
@@ -676,7 +691,7 @@ function BracketRowWithChart({
 
           {/* Chart */}
           <div className="h-[150px]">
-            {candlesLoading ? (
+            {candlesLoading || !chartReady ? (
               <div className="h-full flex items-center justify-center">
                 <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
               </div>

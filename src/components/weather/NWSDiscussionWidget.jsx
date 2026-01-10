@@ -452,7 +452,7 @@ function SectionTabs({ sections, activeSection, onSelect, compact = false }) {
  * DiscussionModal - Full forecast discussion modal
  */
 function DiscussionModal({ discussion, onClose }) {
-  const [activeSection, setActiveSection] = useState('synopsis');
+  const [activeSection, setActiveSection] = useState('summary');
   const [copied, setCopied] = useState(false);
   const contentRef = useRef(null);
   const { selectionPopup, handleMouseUp, clearSelection } = useTextSelection(contentRef);
