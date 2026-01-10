@@ -16,9 +16,9 @@ export const WIDGET_CONSTRAINTS = {
   },
   brackets: {
     id: 'brackets',
-    collapsed: { cols: 1, rows: 2 },
+    collapsed: { cols: 2, rows: 2 },
     expanded: { cols: 3, rows: 2 },
-    min: { cols: 1, rows: 2 },
+    min: { cols: 2, rows: 2 },
     priority: 5, // Highest - key trading widget
     canHide: false,
   },
