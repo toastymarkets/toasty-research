@@ -1,6 +1,6 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingUp, ExternalLink, ChevronRight, Plus, Maximize2, ChevronDown } from 'lucide-react';
+import { TrendingUp, ExternalLink, ChevronRight, Plus, Maximize2, ChevronDown, TrendingDown } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import { useDataChip } from '../../context/DataChipContext';
 import { useKalshiCandlesticks } from '../../hooks/useKalshiCandlesticks';
@@ -10,6 +10,8 @@ import ErrorState from '../ui/ErrorState';
 import MultiBracketChart from './MultiBracketChart';
 import {
   ResponsiveContainer,
+  AreaChart,
+  Area,
   LineChart,
   Line,
   XAxis,
@@ -119,6 +121,33 @@ export default function MarketBrackets({
   }, [closeTime]);
 
   const isLoading = loading || externalLoading;
+
+  // Fetch price history for the leading bracket (for sparkline chart)
+  const {
+    data: chartData,
+    legendData,
+    bracketColors,
+    loading: chartLoading,
+  } = useKalshiMultiBracketHistory(seriesTicker, brackets, '1h', 3, brackets.length > 0);
+
+  // Calculate price changes from chart data
+  const priceChanges = useMemo(() => {
+    if (!chartData || chartData.length < 2) return {};
+
+    const changes = {};
+    const firstPoint = chartData[0];
+    const lastPoint = chartData[chartData.length - 1];
+
+    brackets.forEach(bracket => {
+      const startPrice = firstPoint[bracket.label];
+      const endPrice = lastPoint[bracket.label];
+      if (startPrice && endPrice) {
+        changes[bracket.ticker] = endPrice - startPrice;
+      }
+    });
+
+    return changes;
+  }, [chartData, brackets]);
 
   if (!hasSeries) {
     return (
@@ -230,8 +259,8 @@ export default function MarketBrackets({
       )}
     >
 
-      {/* Day Toggle */}
-      <div className={isVertical ? 'pb-1' : 'pb-2'}>
+      {/* Header Row: Day Toggle + Leading Bracket Highlight */}
+      <div className="flex items-center justify-between pb-2">
         <div className="inline-flex bg-white/10 rounded-lg p-0.5">
           <button
             onClick={(e) => { e.stopPropagation(); setDayOffset(0); }}
@@ -250,10 +279,64 @@ export default function MarketBrackets({
             Tmw
           </button>
         </div>
+
+        {/* Leading bracket highlight */}
+        {leadingBracket && leadingBracket.yesPrice >= 50 && (
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-500/20 border border-blue-400/30">
+            <span className="text-[10px] font-semibold text-blue-300">
+              {condenseLabel(leadingBracket.label)}
+            </span>
+            <span className="text-[11px] font-bold text-white tabular-nums">
+              {leadingBracket.yesPrice}%
+            </span>
+          </div>
+        )}
       </div>
 
+      {/* Multi-bracket Price Chart */}
+      {!chartLoading && chartData.length > 0 && legendData.length > 0 && (
+        <div className="mb-3 rounded-lg bg-white/5 overflow-hidden">
+          {/* Chart */}
+          <div className="h-[90px] px-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 8, right: 4, left: 4, bottom: 4 }}>
+                <defs>
+                  {legendData.map(({ label, color }) => (
+                    <linearGradient key={label} id={`gradient-${label.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                      <stop offset="100%" stopColor={color} stopOpacity={0} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                {legendData.map(({ label, color }) => (
+                  <Area
+                    key={label}
+                    type="monotone"
+                    dataKey={label}
+                    stroke={color}
+                    strokeWidth={1.5}
+                    fill={`url(#gradient-${label.replace(/[^a-zA-Z0-9]/g, '')})`}
+                    dot={false}
+                  />
+                ))}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-3 pb-2 px-2">
+            {legendData.slice(0, 3).map(({ label, color, currentPrice }) => (
+              <div key={label} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-[9px] text-white/60">{condenseLabel(label)}</span>
+                <span className="text-[9px] font-semibold text-white">{currentPrice}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Brackets List */}
-      <div className="pb-2 overflow-y-auto flex-1">
+      <div className="pb-2 overflow-y-auto">
         {sortedBrackets.length === 0 ? (
           <div className="flex items-center justify-center h-full text-white/40 text-[11px]">
             No markets for {dayLabel}
@@ -263,17 +346,20 @@ export default function MarketBrackets({
             {sortedBrackets.map((bracket, i) => {
               const isLeader = bracket.ticker === leadingBracket?.ticker;
               const probColor = getProbColor(bracket.yesPrice);
+              const priceChange = priceChanges[bracket.ticker];
 
               return (
                 <div
                   key={bracket.ticker || i}
-                  className={`group relative flex items-center justify-between py-1.5 px-1 rounded-lg transition-all ${
-                    isLeader ? 'bg-white/10' : 'hover:bg-white/5'
+                  className={`group relative flex items-center justify-between py-1.5 px-1.5 rounded-lg transition-all ${
+                    isLeader
+                      ? 'bg-gradient-to-r from-blue-500/20 to-blue-500/5 ring-1 ring-blue-400/30'
+                      : 'hover:bg-white/5'
                   }`}
                 >
                   {/* Probability bar background */}
                   <div
-                    className="absolute left-0 top-0 bottom-0 rounded-lg opacity-30"
+                    className={`absolute left-0 top-0 bottom-0 rounded-lg ${isLeader ? 'opacity-0' : 'opacity-30'}`}
                     style={{
                       width: `${bracket.yesPrice}%`,
                       backgroundColor: probColor,
@@ -300,7 +386,21 @@ export default function MarketBrackets({
                     {condenseLabel(bracket.label)}
                   </span>
 
-                  <span className="relative text-[13px] font-bold tabular-nums text-white">
+                  {/* Price change indicator */}
+                  {priceChange !== undefined && priceChange !== 0 && (
+                    <span className={`relative text-[9px] font-medium mr-2 flex items-center gap-0.5 ${
+                      priceChange > 0 ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {priceChange > 0 ? (
+                        <TrendingUp className="w-2.5 h-2.5" />
+                      ) : (
+                        <TrendingDown className="w-2.5 h-2.5" />
+                      )}
+                      {Math.abs(priceChange).toFixed(0)}
+                    </span>
+                  )}
+
+                  <span className={`relative text-[13px] font-bold tabular-nums ${isLeader ? 'text-white' : 'text-white/90'}`}>
                     {bracket.yesPrice}%
                   </span>
                 </div>
