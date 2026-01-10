@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { fetchKalshiWithCache, isInBackoff } from '../utils/kalshiCache';
 
 /**
- * Kalshi API - uses proxy to bypass CORS
+ * Kalshi API configuration
  */
-const KALSHI_PROXY = '/api/kalshi';
-const KALSHI_PATH = 'trade-api/v2';
+const KALSHI_PATH = 'trade-api/v2/markets';
+const REFRESH_INTERVAL = 60000; // 60 seconds (reduced from 30s to avoid rate limiting)
 
 /**
  * Map city slugs to Kalshi series tickers (highest temperature)
@@ -65,17 +66,15 @@ function parseMarketToBracket(market) {
 }
 
 /**
- * Fetch markets for a single series with rate limiting
+ * Fetch markets for a single series using cache utility
  */
 async function fetchSeriesMarkets(seriesTicker) {
-  const url = `${KALSHI_PROXY}?path=${KALSHI_PATH}/markets&series_ticker=${seriesTicker}&limit=50`;
-  const response = await fetch(url);
+  // Use cached fetch with deduplication and rate limiting
+  const data = await fetchKalshiWithCache(KALSHI_PATH, {
+    series_ticker: seriesTicker,
+    limit: 50,
+  });
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const data = await response.json();
   const allMarkets = data.markets || [];
 
   // Filter to only today's markets
@@ -171,9 +170,9 @@ export function KalshiMarketsProvider({ children }) {
     fetchAllMarkets();
   }, [fetchAllMarkets]);
 
-  // Refresh every 30 seconds (slower to avoid rate limiting)
+  // Refresh at configured interval (60s to reduce rate limiting)
   useEffect(() => {
-    const interval = setInterval(fetchAllMarkets, 30000);
+    const interval = setInterval(fetchAllMarkets, REFRESH_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchAllMarkets]);
 
@@ -274,7 +273,7 @@ export function useLowTempMarkets() {
   }, [fetchAllMarkets]);
 
   useEffect(() => {
-    const interval = setInterval(fetchAllMarkets, 30000);
+    const interval = setInterval(fetchAllMarkets, REFRESH_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchAllMarkets]);
 

@@ -1,5 +1,9 @@
+import { createContext, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { useGridLayout } from '../../hooks/useGridLayout';
+
+// Context to share hidden widgets with Area components
+const HiddenWidgetsContext = createContext([]);
 
 /**
  * WidgetGridV2 - Apple Weather inspired grid layout with dynamic placement
@@ -19,9 +23,11 @@ export default function WidgetGridV2({ children, className = '', expandedWidgets
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={gridClassName} style={gridStyles}>
-      {children}
-    </div>
+    <HiddenWidgetsContext.Provider value={hiddenWidgets || []}>
+      <div className={gridClassName} style={gridStyles}>
+        {children}
+      </div>
+    </HiddenWidgetsContext.Provider>
   );
 }
 
@@ -51,8 +57,17 @@ const GRID_AREAS = {
 /**
  * WidgetGridV2.Area - Places widget in a named grid area
  * The grid engine handles sizing; this just assigns the area name
+ * Automatically hides when the area is in hiddenWidgets
  */
 function WidgetGridArea({ area, children, className = '', isExpanded = false }) {
+  const hiddenWidgets = useContext(HiddenWidgetsContext);
+  const isHidden = hiddenWidgets.includes(area);
+
+  // Don't render if hidden (removed from grid template)
+  if (isHidden) {
+    return null;
+  }
+
   return (
     <div
       className={`min-w-0 h-full widget-expansion-transition ${className}`}

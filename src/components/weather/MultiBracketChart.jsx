@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import ChartScreenshotButton from '../ui/ChartScreenshotButton';
 import {
@@ -57,6 +57,13 @@ export default function MultiBracketChart({
   const chartRef = useRef(null);
   const periods = ['1h', '6h', '1d', '1w', 'all'];
   const periodLabels = { '1h': '1H', '6h': '6H', '1d': '1D', '1w': '1W', 'all': 'ALL' };
+
+  // Delay chart rendering to ensure container has dimensions
+  const [chartReady, setChartReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setChartReady(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Calculate Y-axis domain
   const { minPrice, maxPrice } = useMemo(() => {
@@ -140,7 +147,7 @@ export default function MultiBracketChart({
 
       {/* Chart */}
       <div className="h-[180px]">
-        {loading ? (
+        {loading || !chartReady ? (
           <div className="h-full flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
           </div>

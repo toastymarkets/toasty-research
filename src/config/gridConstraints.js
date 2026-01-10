@@ -24,9 +24,9 @@ export const WIDGET_CONSTRAINTS = {
   },
   map: {
     id: 'map',
-    collapsed: { cols: 2, rows: 2 }, // ALWAYS 2x2 minimum
-    expanded: { cols: 2, rows: 3 },
-    min: { cols: 2, rows: 2 }, // Hard constraint
+    collapsed: { cols: 2, rows: 1 }, // Wide cinematic
+    expanded: { cols: 4, rows: 2 }, // Full mission control view
+    min: { cols: 2, rows: 1 },
     priority: 4,
     canHide: false,
   },
@@ -147,8 +147,8 @@ export const WIDGET_MIN_HEIGHTS = {
   // Tall widgets (span 2 rows)
   brackets: 268,
 
-  // Large widgets (2x2)
-  map: 188,
+  // Square widgets (1x1)
+  map: 130,
 
   // Expanded heights
   expanded: {

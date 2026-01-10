@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchKalshiWithCache } from '../utils/kalshiCache';
 
 /**
- * Kalshi API - uses proxy to bypass CORS
+ * Kalshi API configuration
  */
-const KALSHI_PROXY = '/api/kalshi';
-const KALSHI_PATH = 'trade-api/v2';
+const KALSHI_PATH = 'trade-api/v2/markets';
+const REFRESH_INTERVAL = 60000; // 60 seconds
 
 /**
  * Map city slugs to Kalshi snow series tickers
@@ -59,17 +60,13 @@ function getCurrentMonthSuffix() {
 }
 
 /**
- * Fetch markets for a snow series
+ * Fetch markets for a snow series using cache utility
  */
 async function fetchSnowMarkets(seriesTicker) {
-  const url = `${KALSHI_PROXY}?path=${KALSHI_PATH}/markets&series_ticker=${seriesTicker}&limit=50`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const data = await response.json();
+  const data = await fetchKalshiWithCache(KALSHI_PATH, {
+    series_ticker: seriesTicker,
+    limit: 50,
+  });
   return data.markets || [];
 }
 
@@ -198,10 +195,10 @@ export function useKalshiSnowMarkets() {
     return () => clearTimeout(timeout);
   }, [fetchAllSnowMarkets]);
 
-  // Refresh every 30 seconds (offset from other market hooks)
+  // Refresh at configured interval (60s to reduce rate limiting)
   useEffect(() => {
     const startInterval = setTimeout(() => {
-      const interval = setInterval(fetchAllSnowMarkets, 30000);
+      const interval = setInterval(fetchAllSnowMarkets, REFRESH_INTERVAL);
       return () => clearInterval(interval);
     }, 4500);
     return () => clearTimeout(startInterval);

@@ -67,7 +67,9 @@ body {
   --widget-small: 164px;
   --widget-medium: 344px;
   --widget-large: 344px;
-  --widget-gap: 12px;
+  --widget-gap: 12px; /* Desktop */
+  --widget-gap-tablet: 10px;
+  --widget-gap-mobile: 8px;
 
   /* Border radius */
   --radius-sm: 10px;
@@ -158,12 +160,51 @@ body {
   box-shadow: var(--glass-shadow-elevated);
 }
 
+/* Widget visual hierarchy tiers */
+
+/* Tier 1 - Primary trading widgets (Models, Brackets) */
+.glass-widget-primary {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 1px rgba(0, 122, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-widget-primary:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(0, 122, 255, 0.35);
+  box-shadow:
+    var(--glass-shadow-elevated),
+    0 0 20px rgba(0, 122, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Tier 2 - Visual widgets (Satellite, Nearby) - standard glass */
+.glass-widget-visual {
+  background: var(--glass-bg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Tier 3 - Secondary reference widgets */
+.glass-widget-secondary {
+  background: rgba(0, 0, 0, 0.25);
+  border: none;
+  box-shadow: var(--glass-shadow-subtle);
+}
+
+.glass-widget-secondary:hover {
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: var(--glass-shadow);
+}
+
 /* Widget header - Apple compact style */
 .widget-header {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 10px 4px;
+  padding: 10px 12px 6px;
   color: var(--glass-text-label);
   font-size: 10px;
   font-weight: 600;
@@ -179,7 +220,7 @@ body {
 
 /* Widget content - Apple compact style */
 .widget-content {
-  padding: 0 10px 10px;
+  padding: 0 12px 12px;
   color: var(--glass-text-primary);
 }
 
@@ -727,17 +768,12 @@ body {
 }
 
 /* ===== WIDGET GRID V2 - Apple Weather Style Layout ===== */
+/* Grid layout is controlled dynamically by gridLayoutEngine.js via inline styles */
+/* This CSS provides only base styles and responsive fallbacks */
 
 .widget-grid-v2 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: auto auto auto auto;
-  gap: 8px;
-  grid-template-areas:
-    "models       brackets     map         map"
-    "discussion   brackets     map         map"
-    "nearby       nearby       alerts      smallstack"
-    "pressure     visibility   forecast    rounding";
+  /* Base styles - actual grid properties set via inline styles from JS */
+  width: 100%;
 }
 
 /* Make all grid children stretch to fill their areas */
@@ -792,39 +828,15 @@ body {
   min-height: 130px;
 }
 
-/* Tablet layout (3 columns) */
+/* Tablet layout - let JS engine handle grid, CSS handles only component styling */
 @media (max-width: 1024px) {
-  .widget-grid-v2 {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto auto auto auto auto;
-    grid-template-areas:
-      "models       brackets     map"
-      "discussion   brackets     map"
-      "nearby       nearby       alerts"
-      "smallstack   smallstack   forecast"
-      "pressure     visibility   rounding";
-  }
-
   .widget-grid-v2 [style*="grid-area: smallstack"] {
     flex-direction: row;
   }
 }
 
-/* Mobile layout (2 columns) */
+/* Mobile layout - let JS engine handle grid, CSS handles only component styling */
 @media (max-width: 640px) {
-  .widget-grid-v2 {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: auto;
-    grid-template-areas:
-      "brackets     brackets"
-      "map          map"
-      "models       discussion"
-      "nearby       nearby"
-      "alerts       smallstack"
-      "pressure     visibility"
-      "forecast     rounding";
-  }
-
   .widget-grid-v2 [style*="grid-area: brackets"] {
     min-height: 180px;
   }
@@ -839,27 +851,49 @@ body {
   }
 }
 
-/* Extra small mobile (1 column) */
+/* Extra small mobile - smallstack styling */
 @media (max-width: 480px) {
-  .widget-grid-v2 {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    grid-template-areas:
-      "brackets"
-      "map"
-      "models"
-      "discussion"
-      "nearby"
-      "alerts"
-      "smallstack"
-      "pressure"
-      "visibility"
-      "forecast"
-      "rounding";
-  }
-
   .widget-grid-v2 [style*="grid-area: smallstack"] {
     flex-direction: row;
+  }
+}
+
+/* ===== WIDGET ENTRY ANIMATIONS ===== */
+/* Staggered reveal for polished load experience */
+
+@keyframes widget-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.widget-grid-v2 > * {
+  animation: widget-enter 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Staggered delays for each widget position */
+.widget-grid-v2 > *:nth-child(1) { animation-delay: 0ms; }
+.widget-grid-v2 > *:nth-child(2) { animation-delay: 40ms; }
+.widget-grid-v2 > *:nth-child(3) { animation-delay: 80ms; }
+.widget-grid-v2 > *:nth-child(4) { animation-delay: 120ms; }
+.widget-grid-v2 > *:nth-child(5) { animation-delay: 160ms; }
+.widget-grid-v2 > *:nth-child(6) { animation-delay: 200ms; }
+.widget-grid-v2 > *:nth-child(7) { animation-delay: 240ms; }
+.widget-grid-v2 > *:nth-child(8) { animation-delay: 280ms; }
+.widget-grid-v2 > *:nth-child(9) { animation-delay: 320ms; }
+.widget-grid-v2 > *:nth-child(10) { animation-delay: 360ms; }
+.widget-grid-v2 > *:nth-child(11) { animation-delay: 400ms; }
+.widget-grid-v2 > *:nth-child(12) { animation-delay: 440ms; }
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .widget-grid-v2 > * {
+    animation: none;
   }
 }
 
@@ -868,7 +902,7 @@ body {
 
 /* Animation for expansion/collapse */
 .widget-expansion-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Hidden widget state - for widgets displaced by expansion */

@@ -289,8 +289,8 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* Weather Map (2x2, expands to 3x3) */}
-          <WidgetGridV2.Area area="map" isExpanded={expandedWidgets.map}>
+          {/* Weather Map / Satellite */}
+          <WidgetGridV2.Area area="map" isExpanded={expandedWidgets.map} expansionSize="large">
             <WeatherMap
               lat={city.lat}
               lon={city.lon}
