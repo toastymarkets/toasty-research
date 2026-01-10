@@ -128,7 +128,7 @@ export default function MarketBrackets({
     legendData,
     bracketColors,
     loading: chartLoading,
-  } = useKalshiMultiBracketHistory(seriesTicker, brackets, '1h', 3, brackets.length > 0);
+  } = useKalshiMultiBracketHistory(seriesTicker, brackets, '1d', 10, brackets.length > 0);
 
   // Calculate price changes from chart data
   const priceChanges = useMemo(() => {
@@ -307,28 +307,61 @@ export default function MarketBrackets({
         </div>
       )}
 
-      {/* Expandable Chart - grows to fill available space */}
+      {/* Multi-bracket Chart - grows to fill available space */}
       {!chartLoading && chartData.length > 0 && (
         <div className="flex-1 min-h-[80px] mb-2 rounded-lg bg-white/5 overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-              <defs>
-                <linearGradient id="sparklineGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              {leadingBracket && (
-                <Area
-                  type="monotone"
-                  dataKey={leadingBracket.label}
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  fill="url(#sparklineGradient)"
-                  dot={false}
-                />
-              )}
-            </AreaChart>
+            <LineChart data={chartData} margin={{ top: 8, right: 8, left: -10, bottom: 8 }}>
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(time) => {
+                  const date = new Date(time);
+                  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                }}
+                interval="preserveStartEnd"
+                minTickGap={40}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => `${v}%`}
+                width={35}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(0,0,0,0.85)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                }}
+                labelFormatter={(time) => {
+                  const date = new Date(time);
+                  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                }}
+                formatter={(value, name) => [`${value}%`, name]}
+              />
+              {sortedBrackets.map((bracket) => {
+                const color = bracketColors[bracket.label] || getTemperatureColor(bracket.label);
+                const isLeader = bracket.ticker === leadingBracket?.ticker;
+                return (
+                  <Line
+                    key={bracket.ticker}
+                    type="monotone"
+                    dataKey={bracket.label}
+                    stroke={color}
+                    strokeWidth={isLeader ? 2.5 : 1.5}
+                    strokeOpacity={isLeader ? 1 : 0.6}
+                    dot={false}
+                    activeDot={{ r: 3, fill: color }}
+                  />
+                );
+              })}
+            </LineChart>
           </ResponsiveContainer>
         </div>
       )}
