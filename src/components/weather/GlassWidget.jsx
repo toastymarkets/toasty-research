@@ -3,11 +3,17 @@ import PropTypes from 'prop-types';
 /**
  * GlassWidget - Base container for all weather widgets
  * Apple Weather inspired glass card with header
+ *
+ * Tiers:
+ * - primary: Trading widgets (Models, Brackets) - subtle blue accent
+ * - visual: Visual widgets (Satellite, Nearby) - standard glass with border
+ * - secondary: Reference widgets (Discussion, Rain, etc.) - subtle glass
  */
 export default function GlassWidget({
   title,
   icon: Icon,
   size = 'medium',
+  tier = null,
   className = '',
   children,
   onClick,
@@ -20,10 +26,19 @@ export default function GlassWidget({
     large: 'min-h-[260px]',
   };
 
+  // Tier classes for visual hierarchy
+  const tierClasses = {
+    primary: 'glass-widget-primary',
+    visual: 'glass-widget-visual',
+    secondary: 'glass-widget-secondary',
+  };
+  const tierClass = tier ? tierClasses[tier] : '';
+
   return (
     <div
       className={`
         glass-widget flex flex-col w-full h-full max-w-full overflow-hidden
+        ${tierClass}
         ${sizeClasses[size]}
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
@@ -53,6 +68,7 @@ GlassWidget.propTypes = {
   title: PropTypes.string,
   icon: PropTypes.elementType,
   size: PropTypes.oneOf(['small', 'medium', 'large']),
+  tier: PropTypes.oneOf(['primary', 'visual', 'secondary']),
   className: PropTypes.string,
   children: PropTypes.node,
   onClick: PropTypes.func,

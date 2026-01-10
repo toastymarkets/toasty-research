@@ -122,7 +122,7 @@ export default function MarketBrackets({
 
   if (!hasSeries) {
     return (
-      <GlassWidget title="MARKET BRACKETS" icon={TrendingUp} size="large">
+      <GlassWidget title="MARKET BRACKETS" icon={TrendingUp} size="large" tier="primary">
         <div className="flex items-center justify-center h-full text-glass-text-muted text-sm">
           No Kalshi market available for this city
         </div>
@@ -132,7 +132,7 @@ export default function MarketBrackets({
 
   if (isLoading) {
     return (
-      <GlassWidget title="MARKET BRACKETS" icon={TrendingUp} size="large">
+      <GlassWidget title="MARKET BRACKETS" icon={TrendingUp} size="large" tier="primary">
         <div className="space-y-2 animate-pulse">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="flex items-center justify-between p-2">
@@ -151,7 +151,7 @@ export default function MarketBrackets({
 
   if (error) {
     return (
-      <GlassWidget title="MARKET BRACKETS" icon={TrendingUp} size="large">
+      <GlassWidget title="MARKET BRACKETS" icon={TrendingUp} size="large" tier="primary">
         <ErrorState
           message={error}
           onRetry={() => refetch(true)}
@@ -222,6 +222,7 @@ export default function MarketBrackets({
       title={widgetTitle}
       icon={TrendingUp}
       size="large"
+      tier="primary"
       className="h-full cursor-pointer"
       onClick={handleWidgetClick}
       headerRight={onToggleExpand && (
@@ -310,22 +311,22 @@ export default function MarketBrackets({
       </div>
 
       {/* Footer - Kalshi link and timer */}
-      <div className="pt-1 pb-2 flex items-center justify-between border-t border-white/10 mt-1">
+      <div className="pt-2 pb-1 flex items-center justify-between border-t border-white/10 mt-auto gap-2">
         <a
           href={getKalshiUrl(citySlug, cityName)}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1 text-[10px] font-medium text-white/40 uppercase tracking-wide hover:text-white/60 transition-colors"
+          className="flex items-center gap-1 text-[10px] font-medium text-white/40 hover:text-white/60 transition-colors whitespace-nowrap"
         >
           Kalshi Odds
           <ExternalLink className="w-2.5 h-2.5" />
         </a>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {timeRemaining && timeRemaining !== 'Closed' && (
-            <span className="text-[9px] text-white/40">Closes {timeRemaining}</span>
+            <span className="text-[10px] text-white/40 whitespace-nowrap">Closes {timeRemaining}</span>
           )}
-          <ChevronRight className="w-4 h-4 text-white/30" />
+          <ChevronRight className="w-3.5 h-3.5 text-white/30" />
         </div>
       </div>
     </GlassWidget>

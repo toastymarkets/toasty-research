@@ -124,12 +124,12 @@ export default function AlertsWidget({ lat, lon, cityName, isExpanded, onToggleE
               {news.slice(0, 3).map((item) => (
                 <div
                   key={item.id}
-                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                  className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                 >
-                  <p className="text-xs text-white/80 line-clamp-2">{item.title}</p>
-                  <div className="flex items-center gap-2 mt-1 text-[9px] text-white/40">
-                    {item.source && <span>{item.source}</span>}
-                    {item.publishedAt && <span>• {formatNewsTime(item.publishedAt)}</span>}
+                  <p className="text-xs text-white/80 line-clamp-3 leading-relaxed">{item.title}</p>
+                  <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-white/40">
+                    {item.source && <span className="whitespace-nowrap">{item.source}</span>}
+                    {item.publishedAt && <span className="whitespace-nowrap">• {formatNewsTime(item.publishedAt)}</span>}
                   </div>
                 </div>
               ))}
@@ -149,11 +149,9 @@ export default function AlertsWidget({ lat, lon, cityName, isExpanded, onToggleE
           )}
 
           {/* Footer */}
-          <div className="pt-2 border-t border-white/10 mt-2 flex items-center justify-between">
-            <p className="text-[10px] text-white/40">
-              Tap for details
-            </p>
-            <ChevronRight className="w-3 h-3 text-white/30" />
+          <div className="pt-2 border-t border-white/10 mt-auto flex items-center justify-between gap-2">
+            <span className="text-[10px] text-white/40 whitespace-nowrap">Tap for details</span>
+            <ChevronRight className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
           </div>
         </GlassWidget>
 
@@ -190,21 +188,19 @@ export default function AlertsWidget({ lat, lon, cityName, isExpanded, onToggleE
             return (
               <div
                 key={alert.id}
-                className={`w-full text-left p-2.5 rounded-lg ${colors.bg} ${colors.border} border transition-all hover:bg-white/10`}
+                className={`w-full text-left p-3 rounded-lg ${colors.bg} ${colors.border} border transition-all hover:bg-white/10`}
               >
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2.5">
                   <span className="text-lg flex-shrink-0">{icon}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`text-xs font-bold ${colors.text} truncate`}>
-                        {alert.event}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-white/60 line-clamp-2 mt-0.5">
-                      {alert.headline || alert.description?.slice(0, 100)}
+                    <span className={`text-xs font-bold ${colors.text} leading-tight block`}>
+                      {alert.event}
+                    </span>
+                    <p className="text-[10px] text-white/60 line-clamp-3 mt-1 leading-relaxed">
+                      {alert.headline || alert.description?.slice(0, 150)}
                     </p>
                     {alert.expires && (
-                      <p className="text-[9px] text-white/40 mt-1">
+                      <p className="text-[10px] text-white/40 mt-1.5 whitespace-nowrap">
                         {formatTimeAgo(alert.expires)}
                       </p>
                     )}
@@ -222,11 +218,9 @@ export default function AlertsWidget({ lat, lon, cityName, isExpanded, onToggleE
         </div>
 
         {/* Footer */}
-        <div className="pt-2 border-t border-white/10 mt-2 flex items-center justify-between">
-          <p className="text-[10px] text-white/40">
-            Source: NWS
-          </p>
-          <ChevronRight className="w-3 h-3 text-white/30" />
+        <div className="pt-2 border-t border-white/10 mt-auto flex items-center justify-between gap-2">
+          <span className="text-[10px] text-white/40 whitespace-nowrap">Source: NWS</span>
+          <ChevronRight className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
         </div>
       </GlassWidget>
 

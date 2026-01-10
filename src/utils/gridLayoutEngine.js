@@ -22,6 +22,15 @@ export function computeGridLayout(expandedWidgets, viewportWidth) {
   const breakpoint = getBreakpoint(viewportWidth);
   const maxCols = BREAKPOINTS[breakpoint].preferredCols;
 
+  // Responsive gap based on breakpoint
+  const gapMap = {
+    desktop: '12px',
+    tablet: '10px',
+    mobile: '8px',
+    xs: '8px',
+  };
+  const gap = gapMap[breakpoint];
+
   // Prepare widgets with current sizes
   const widgets = prepareWidgets(expandedWidgets, breakpoint);
 
@@ -37,7 +46,7 @@ export function computeGridLayout(expandedWidgets, viewportWidth) {
       gridTemplateColumns: `repeat(${maxCols}, 1fr)`,
       gridTemplateRows: `repeat(${totalRows}, auto)`,
       gridTemplateAreas,
-      gap: '8px',
+      gap,
     },
     areaMap: getAreaMap(grid),
     hiddenWidgets,

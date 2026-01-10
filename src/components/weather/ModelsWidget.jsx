@@ -66,7 +66,7 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
 
   if (loading || externalLoading) {
     return (
-      <GlassWidget title="MODELS" icon={Activity} size="small">
+      <GlassWidget title="MODELS" icon={Activity} size="small" tier="primary">
         <div className="flex items-center justify-center h-full animate-pulse">
           <div className="w-full h-12 bg-white/10 rounded" />
         </div>
@@ -76,7 +76,7 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
 
   if (error || !forecasts) {
     return (
-      <GlassWidget title="MODELS" icon={Activity} size="small">
+      <GlassWidget title="MODELS" icon={Activity} size="small" tier="primary">
         <ErrorState
           message={error || 'Unable to load models'}
           onRetry={() => refetch(true)}
@@ -129,6 +129,7 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
         title="MODELS"
         icon={Activity}
         size="small"
+        tier="primary"
         onClick={handleWidgetClick}
         className="cursor-pointer"
         headerRight={
