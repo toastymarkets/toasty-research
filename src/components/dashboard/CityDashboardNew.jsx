@@ -7,6 +7,7 @@ import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
 import { useNWSObservationHistory } from '../../hooks/useNWSObservationHistory';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 import { DataChipProvider } from '../../context/DataChipContext';
+import { useNWSAlerts } from '../../hooks/useNWSAlerts';
 import { DashboardWeatherBackground } from '../weather/DynamicWeatherBackground';
 import { FrogFriend } from '../frog';
 
@@ -76,6 +77,7 @@ function CityDashboardContent({ city, citySlug }) {
   const { observations, loading: observationsLoading, lastUpdated } = useNWSObservationHistory(city.stationId, 48);
   const marketData = useKalshiMarketsFromContext(citySlug);
   const localTime = useLocalTime(city.timezone);
+  const { alerts } = useNWSAlerts(city.lat, city.lon);
 
   // Convert NWS temperature to Fahrenheit
   const currentTempF = useMemo(() => {
@@ -323,16 +325,18 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* NWS Alerts (spans 2 rows) */}
-          <WidgetGridV2.Area area="alerts" isExpanded={expandedWidgets.alerts}>
-            <AlertsWidget
-              lat={city.lat}
-              lon={city.lon}
-              cityName={city.name}
-              isExpanded={expandedWidgets.alerts}
-              onToggleExpand={() => toggleExpansion('alerts')}
-            />
-          </WidgetGridV2.Area>
+          {/* NWS Alerts - only shown when there are active alerts */}
+          {alerts && alerts.length > 0 && (
+            <WidgetGridV2.Area area="alerts" isExpanded={expandedWidgets.alerts}>
+              <AlertsWidget
+                lat={city.lat}
+                lon={city.lon}
+                cityName={city.name}
+                isExpanded={expandedWidgets.alerts}
+                onToggleExpand={() => toggleExpansion('alerts')}
+              />
+            </WidgetGridV2.Area>
+          )}
 
           {/* Wind + Resolution stacked */}
           <WidgetGridV2.Area area="smallstack">

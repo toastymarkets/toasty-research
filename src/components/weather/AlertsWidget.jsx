@@ -73,15 +73,9 @@ export default function AlertsWidget({ lat, lon, cityName, isExpanded, onToggleE
     );
   }
 
-  // No alerts - collapsed single-line state
+  // No alerts - hide the widget entirely
   if (alerts.length === 0) {
-    return (
-      <div className="glass-widget px-3 py-2 flex items-center gap-2">
-        <Check className="w-4 h-4 text-emerald-400" />
-        <span className="text-xs text-emerald-400 font-medium">No Active Alerts</span>
-        <span className="text-[10px] text-white/30 ml-auto">NWS</span>
-      </div>
-    );
+    return null;
   }
 
   // Has alerts
