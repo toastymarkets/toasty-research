@@ -11,9 +11,10 @@ import { gridLayoutEngine, getBreakpoint } from '../utils/gridLayoutEngine';
 /**
  * useGridLayout - Main hook for computing dynamic grid layout
  * @param {Object} expandedWidgets - { widgetId: boolean } expansion state
+ * @param {Array} absentWidgets - Widget IDs that should not be rendered
  * @returns {Object} { gridStyles, areaMap, hiddenWidgets, isTransitioning }
  */
-export function useGridLayout(expandedWidgets) {
+export function useGridLayout(expandedWidgets, absentWidgets = []) {
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1024
   );
@@ -43,8 +44,8 @@ export function useGridLayout(expandedWidgets) {
 
   // Compute layout when dependencies change
   const layout = useMemo(() => {
-    return gridLayoutEngine.computeLayout(expandedWidgets, viewportWidth);
-  }, [expandedWidgets, viewportWidth]);
+    return gridLayoutEngine.computeLayout(expandedWidgets, viewportWidth, absentWidgets);
+  }, [expandedWidgets, viewportWidth, absentWidgets]);
 
   // Detect layout changes and trigger transition
   useEffect(() => {

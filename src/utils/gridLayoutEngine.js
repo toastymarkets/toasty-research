@@ -16,9 +16,10 @@ import {
  * Main entry point: compute layout for given expansion state
  * @param {Object} expandedWidgets - { widgetId: boolean }
  * @param {number} viewportWidth - Current viewport width
+ * @param {Array} absentWidgets - Widget IDs that should not be rendered (e.g., no alerts)
  * @returns {Object} { gridStyles, areaMap, hiddenWidgets }
  */
-export function computeGridLayout(expandedWidgets, viewportWidth) {
+export function computeGridLayout(expandedWidgets, viewportWidth, absentWidgets = []) {
   const breakpoint = getBreakpoint(viewportWidth);
   const maxCols = BREAKPOINTS[breakpoint].preferredCols;
 
@@ -31,8 +32,8 @@ export function computeGridLayout(expandedWidgets, viewportWidth) {
   };
   const gap = gapMap[breakpoint];
 
-  // Prepare widgets with current sizes
-  const widgets = prepareWidgets(expandedWidgets, breakpoint);
+  // Prepare widgets with current sizes (excluding absent widgets)
+  const widgets = prepareWidgets(expandedWidgets, breakpoint, absentWidgets);
 
   // Place widgets using bin-packing
   const { grid, totalRows, hiddenWidgets } = placeWidgets(widgets, maxCols, expandedWidgets);
@@ -69,10 +70,10 @@ export function getBreakpoint(width) {
 /**
  * Prepare widgets with their current sizes based on expansion state
  */
-function prepareWidgets(expandedWidgets, breakpoint) {
+function prepareWidgets(expandedWidgets, breakpoint, absentWidgets = []) {
   const maxCols = BREAKPOINTS[breakpoint].maxCols;
 
-  return DEFAULT_WIDGET_ORDER.map(widgetId => {
+  return DEFAULT_WIDGET_ORDER.filter(id => !absentWidgets.includes(id)).map(widgetId => {
     const constraint = WIDGET_CONSTRAINTS[widgetId];
     if (!constraint) return null;
 
@@ -308,13 +309,13 @@ class GridLayoutEngine {
   /**
    * Compute layout with caching
    */
-  computeLayout(expandedWidgets, viewportWidth) {
-    const cacheKey = this.getCacheKey(expandedWidgets, viewportWidth);
+  computeLayout(expandedWidgets, viewportWidth, absentWidgets = []) {
+    const cacheKey = this.getCacheKey(expandedWidgets, viewportWidth, absentWidgets);
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey);
     }
 
-    const layout = computeGridLayout(expandedWidgets, viewportWidth);
+    const layout = computeGridLayout(expandedWidgets, viewportWidth, absentWidgets);
 
     // Keep cache small (max 50 entries)
     if (this.cache.size >= 50) {
@@ -326,14 +327,15 @@ class GridLayoutEngine {
     return layout;
   }
 
-  getCacheKey(expandedWidgets, viewportWidth) {
+  getCacheKey(expandedWidgets, viewportWidth, absentWidgets = []) {
     const breakpoint = getBreakpoint(viewportWidth);
     const expandedKeys = Object.entries(expandedWidgets)
       .filter(([, v]) => v)
       .map(([k]) => k)
       .sort()
       .join(',');
-    return `${breakpoint}:${expandedKeys}`;
+    const absentKeys = [...absentWidgets].sort().join(',');
+    return `${breakpoint}:${expandedKeys}:${absentKeys}`;
   }
 
   clearCache() {

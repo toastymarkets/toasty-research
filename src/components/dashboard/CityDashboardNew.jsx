@@ -194,6 +194,16 @@ function CityDashboardContent({ city, citySlug }) {
     }));
   };
 
+  // Compute which widgets are absent (shouldn't be in grid)
+  const absentWidgets = useMemo(() => {
+    const absent = [];
+    // Hide alerts widget when no active alerts
+    if (!alerts || alerts.length === 0) {
+      absent.push('alerts');
+    }
+    return absent;
+  }, [alerts]);
+
   return (
     <>
       {/* Dynamic weather background */}
@@ -268,7 +278,7 @@ function CityDashboardContent({ city, citySlug }) {
 
       {/* Widget Grid V2 - CSS Grid with named areas */}
       <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 mt-2 pb-4">
-        <WidgetGridV2 expandedWidgets={expandedWidgets}>
+        <WidgetGridV2 expandedWidgets={expandedWidgets} absentWidgets={absentWidgets}>
           {/* Models Widget */}
           <WidgetGridV2.Area area="models" isExpanded={expandedWidgets.models} expansionSize="medium">
             <ModelsWidget

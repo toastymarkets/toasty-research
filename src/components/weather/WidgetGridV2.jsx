@@ -11,9 +11,9 @@ const HiddenWidgetsContext = createContext([]);
  * Uses a JavaScript layout engine to compute grid positions dynamically,
  * handling any combination of widget expansions automatically.
  */
-export default function WidgetGridV2({ children, className = '', expandedWidgets = {} }) {
-  // Compute dynamic grid layout based on expansion state
-  const { gridStyles, hiddenWidgets, isTransitioning } = useGridLayout(expandedWidgets);
+export default function WidgetGridV2({ children, className = '', expandedWidgets = {}, absentWidgets = [] }) {
+  // Compute dynamic grid layout based on expansion state and absent widgets
+  const { gridStyles, hiddenWidgets, isTransitioning } = useGridLayout(expandedWidgets, absentWidgets);
 
   const gridClassName = [
     'widget-grid-v2',
@@ -35,6 +35,7 @@ WidgetGridV2.propTypes = {
   children: PropTypes.node,
   className: PropTypes.string,
   expandedWidgets: PropTypes.object,
+  absentWidgets: PropTypes.array,
 };
 
 /**
