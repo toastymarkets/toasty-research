@@ -73,20 +73,14 @@ export default function AlertsWidget({ lat, lon, cityName, isExpanded, onToggleE
     );
   }
 
-  // No alerts - compact "All Clear" state
+  // No alerts - collapsed single-line state
   if (alerts.length === 0) {
     return (
-      <GlassWidget title="ALERTS" icon={AlertTriangle} size="medium">
-        <div className="flex items-center gap-3 h-full">
-          <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-            <Check className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-emerald-400">All Clear</p>
-            <p className="text-[10px] text-white/40">No active weather alerts</p>
-          </div>
-        </div>
-      </GlassWidget>
+      <div className="glass-widget px-3 py-2 flex items-center gap-2">
+        <Check className="w-4 h-4 text-emerald-400" />
+        <span className="text-xs text-emerald-400 font-medium">No Active Alerts</span>
+        <span className="text-[10px] text-white/30 ml-auto">NWS</span>
+      </div>
     );
   }
 
