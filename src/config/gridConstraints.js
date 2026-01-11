@@ -14,6 +14,16 @@ export const WIDGET_CONSTRAINTS = {
     priority: 3,
     canHide: false,
   },
+  intelstack: {
+    id: 'intelstack',
+    collapsed: { cols: 1, rows: 2 }, // 1 col, 2 rows for stacked widgets
+    expanded: { cols: 2, rows: 2 },
+    min: { cols: 1, rows: 2 },
+    priority: 3,
+    canHide: false,
+    isStack: true,
+    stackWidgets: ['models', 'alerts'],
+  },
   brackets: {
     id: 'brackets',
     collapsed: { cols: 2, rows: 2 },
@@ -115,8 +125,7 @@ export const BREAKPOINTS = {
 export const DEFAULT_WIDGET_ORDER = [
   'brackets',   // Priority 5 - key trading widget
   'map',        // Priority 4 - must be 2x2
-  'models',     // Priority 3
-  'alerts',     // Priority 3
+  'intelstack', // Priority 3 - models + alerts stacked
   'discussion', // Priority 2
   'nearby',     // Priority 2 - must be 2 cols
   'forecast',   // Priority 2
@@ -143,6 +152,7 @@ export const WIDGET_MIN_HEIGHTS = {
   alerts: 130,
   nearby: 130,
   smallstack: 130,
+  intelstack: 268, // Stacked models + alerts
 
   // Tall widgets (span 2 rows)
   brackets: 268,
@@ -158,6 +168,7 @@ export const WIDGET_MIN_HEIGHTS = {
     map: 280,
     alerts: 320,
     smallstack: 360,
+    intelstack: 380,
     forecast: 360,
     rounding: 280,
     visibility: 320,

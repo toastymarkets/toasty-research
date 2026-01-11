@@ -49,6 +49,7 @@ const GRID_AREAS = {
   nearby: 'nearby',
   alerts: 'alerts',
   smallstack: 'smallstack', // For stacked small widgets (wind + resolution)
+  intelstack: 'intelstack', // For stacked models + alerts
   pressure: 'pressure',
   visibility: 'visibility',
   forecast: 'forecast',

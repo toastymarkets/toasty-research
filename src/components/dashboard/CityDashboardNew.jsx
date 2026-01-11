@@ -195,14 +195,10 @@ function CityDashboardContent({ city, citySlug }) {
   };
 
   // Compute which widgets are absent (shouldn't be in grid)
+  // Note: alerts is now handled inside intelstack, not as a separate grid area
   const absentWidgets = useMemo(() => {
-    const absent = [];
-    // Hide alerts widget when no active alerts
-    if (!alerts || alerts.length === 0) {
-      absent.push('alerts');
-    }
-    return absent;
-  }, [alerts]);
+    return [];
+  }, []);
 
   return (
     <>
@@ -279,14 +275,25 @@ function CityDashboardContent({ city, citySlug }) {
       {/* Widget Grid V2 - CSS Grid with named areas */}
       <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 mt-2 pb-4">
         <WidgetGridV2 expandedWidgets={expandedWidgets} absentWidgets={absentWidgets}>
-          {/* Models Widget */}
-          <WidgetGridV2.Area area="models" isExpanded={expandedWidgets.models} expansionSize="medium">
-            <ModelsWidget
-              citySlug={citySlug}
-              loading={forecastLoading}
-              isExpanded={expandedWidgets.models}
-              onToggleExpand={() => toggleExpansion('models')}
-            />
+          {/* Intel Stack - Models + Alerts stacked */}
+          <WidgetGridV2.Area area="intelstack">
+            <WidgetGridV2.Stack>
+              <ModelsWidget
+                citySlug={citySlug}
+                loading={forecastLoading}
+                isExpanded={expandedWidgets.models}
+                onToggleExpand={() => toggleExpansion('models')}
+              />
+              {alerts && alerts.length > 0 && (
+                <AlertsWidget
+                  lat={city.lat}
+                  lon={city.lon}
+                  cityName={city.name}
+                  isExpanded={expandedWidgets.alerts}
+                  onToggleExpand={() => toggleExpansion('alerts')}
+                />
+              )}
+            </WidgetGridV2.Stack>
           </WidgetGridV2.Area>
 
           {/* Market Brackets */}
@@ -335,18 +342,6 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* NWS Alerts - only shown when there are active alerts */}
-          {alerts && alerts.length > 0 && (
-            <WidgetGridV2.Area area="alerts" isExpanded={expandedWidgets.alerts}>
-              <AlertsWidget
-                lat={city.lat}
-                lon={city.lon}
-                cityName={city.name}
-                isExpanded={expandedWidgets.alerts}
-                onToggleExpand={() => toggleExpansion('alerts')}
-              />
-            </WidgetGridV2.Area>
-          )}
 
           {/* Wind + Resolution stacked */}
           <WidgetGridV2.Area area="smallstack">
