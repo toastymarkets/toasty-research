@@ -223,7 +223,7 @@ function StationPopup({ station, observation, isMain }) {
  * Compact station cell - shows only ID + temperature
  * Full details appear in popup on click
  */
-function StationCell({ station, observation, isPrimary, isSelected, onClick, onQuickAdd, canInsertChip }) {
+function StationCell({ station, observation, isPrimary, isSelected, onClick, onQuickAdd, isEditorReady }) {
   const temp = observation?.temperature;
 
   return (
@@ -245,7 +245,7 @@ function StationCell({ station, observation, isPrimary, isSelected, onClick, onQ
       {/* Temperature + Quick Add */}
       <div className="flex items-center gap-2">
         {/* Quick Add Button - appears on hover */}
-        {canInsertChip && observation?.temperature != null && (
+        {isEditorReady && observation?.temperature != null && (
           <span
             onClick={(e) => onQuickAdd(e)}
             className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full
@@ -274,7 +274,7 @@ export default function NearbyStations({ citySlug, cityName }) {
   const [selectedStation, setSelectedStation] = useState(null);
   const markerRefs = useRef({});
 
-  const { insertDataChip, isAvailable: canInsertChip } = useDataChip();
+  const { insertDataChip, isEditorReady } = useDataChip();
 
   const config = CITY_CONFIGS[citySlug];
   const mainStationId = MAIN_STATIONS[citySlug];
@@ -400,7 +400,7 @@ export default function NearbyStations({ citySlug, cityName }) {
                 isSelected={selectedStation?.id === station.id}
                 onClick={() => handleStationClick(station)}
                 onQuickAdd={(e) => handleQuickAdd(station, observations[station.id], e)}
-                canInsertChip={canInsertChip}
+                isEditorReady={isEditorReady}
               />
             ))}
           </div>

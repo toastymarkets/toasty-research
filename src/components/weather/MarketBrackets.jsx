@@ -43,7 +43,7 @@ export default function MarketBrackets({
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow
   const [hoveredBracket, setHoveredBracket] = useState(null); // For chart-row interaction
   const { brackets, closeTime, loading, error, seriesTicker, refetch } = useKalshiMarkets(citySlug, dayOffset);
-  const { insertDataChip, isAvailable: canInsertChip } = useDataChip();
+  const { insertDataChip, isEditorReady } = useDataChip();
 
   const dayLabel = dayOffset === 0 ? 'today' : 'tomorrow';
   const hasSeries = CITY_SERIES[citySlug];
@@ -508,7 +508,7 @@ export default function MarketBrackets({
                 </span>
 
                 {/* Quick Add Button */}
-                {canInsertChip && (
+                {isEditorReady && (
                   <button
                     onClick={(e) => handleBracketInsert(bracket, e)}
                     className="relative opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full

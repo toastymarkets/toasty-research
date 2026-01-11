@@ -213,7 +213,7 @@ MarketBracketsModal.propTypes = {
  */
 function BracketRow({ bracket, seriesTicker, isExpanded, onToggle, isLeading }) {
   const [period, setPeriod] = useState('1h');
-  const { insertDataChip, isAvailable: canInsertChip } = useDataChip();
+  const { insertDataChip, isEditorReady } = useDataChip();
 
   // Fetch candlesticks when expanded
   const { candles, loading: candlesLoading } = useKalshiCandlesticks(
@@ -280,7 +280,7 @@ function BracketRow({ bracket, seriesTicker, isExpanded, onToggle, isLeading }) 
         }`}
       >
         {/* Quick Add Button */}
-        {canInsertChip && (
+        {isEditorReady && (
           <button
             onClick={handleBracketInsert}
             className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100
@@ -293,7 +293,7 @@ function BracketRow({ bracket, seriesTicker, isExpanded, onToggle, isLeading }) 
           </button>
         )}
 
-        <div className={`flex items-center gap-3 ${canInsertChip ? 'ml-3' : ''}`}>
+        <div className={`flex items-center gap-3 ${isEditorReady ? 'ml-3' : ''}`}>
           <ChevronDown
             className={`w-4 h-4 text-white/40 transition-transform ${
               isExpanded ? '' : '-rotate-90'

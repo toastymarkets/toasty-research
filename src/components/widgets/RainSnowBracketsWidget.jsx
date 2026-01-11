@@ -99,7 +99,7 @@ const RainSnowBracketsWidget = memo(function RainSnowBracketsWidget({
   const [snowData, setSnowData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { insertDataChip, isAvailable: canInsertChip } = useDataChip();
+  const { insertDataChip, isEditorReady } = useDataChip();
 
   const rainTicker = RAIN_SERIES.monthly?.[citySlug];
   const snowTicker = SNOW_CITY_SERIES?.[citySlug];
@@ -299,7 +299,7 @@ const RainSnowBracketsWidget = memo(function RainSnowBracketsWidget({
                 />
 
                 {/* Add to notes button */}
-                {canInsertChip && (
+                {isEditorReady && (
                   <button
                     onClick={(e) => handleBracketInsert(bracket, e)}
                     className="relative opacity-0 group-hover:opacity-100 mr-1

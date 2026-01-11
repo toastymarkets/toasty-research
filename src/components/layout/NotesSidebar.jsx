@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, createContext, useContext } from 'react';
+import { useState, useEffect, useMemo, createContext, useContext, useCallback } from 'react';
 import {
   FileText,
   ChevronLeft,
@@ -29,9 +29,29 @@ import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents.js';
 import { gatherCopilotContext } from '../../utils/copilotHelpers.js';
 import { formatRelativeTime, formatSaveTime } from '../../utils/timeFormatters.js';
 
-// Context to pass copilot data to NotepadEditor
+// Hook to detect mobile vs desktop
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(max-width: 1023px)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
+    const handler = (e) => setIsMobile(e.matches);
+
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  return isMobile;
+}
+
+// Context to pass copilot data to NotepadEditor (not exported to maintain HMR compatibility)
 const CopilotDataContext = createContext(null);
-export const useCopilotData = () => useContext(CopilotDataContext);
+const useCopilotData = () => useContext(CopilotDataContext);
 
 // ============================================================================
 // Header Controls
@@ -677,6 +697,7 @@ export default function NotesSidebar({
   observations,
 }) {
   const { isCollapsed, isDashboard, selectedNoteKey } = useNotesSidebar();
+  const isMobile = useIsMobile();
   const [dashboardNotes, setDashboardNotes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
@@ -784,11 +805,14 @@ export default function NotesSidebar({
         </NotepadProvider>
       </aside>
 
-      <MobileDrawer
-        storageKey={storageKey}
-        cityName={cityName}
-        copilotContext={copilotContext}
-      />
+      {/* Only render MobileDrawer on mobile to avoid duplicate editor registration */}
+      {isMobile && (
+        <MobileDrawer
+          storageKey={storageKey}
+          cityName={cityName}
+          copilotContext={copilotContext}
+        />
+      )}
     </>
   );
 }
