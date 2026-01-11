@@ -121,92 +121,64 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
 
   return (
     <>
-      <GlassWidget
-        title="MODELS"
-        icon={Activity}
-        size="small"
-        tier="primary"
+      <div
         onClick={handleWidgetClick}
-        className="cursor-pointer"
-        headerRight={onToggleExpand && (
-          <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
-        )}
+        className="glass-widget p-3 cursor-pointer hover:bg-white/5 transition-colors"
       >
-        <div className="flex flex-col h-full">
-          {/* Consensus Temperature - Large and prominent */}
-          <div className="text-center mb-3">
-            <div className="text-3xl font-light text-white tabular-nums">
-              {avgTemp}°
-            </div>
-            <div className="text-[10px] text-white/50 mt-0.5">
-              Model Consensus
-            </div>
+        {/* Header row: Title + Consensus */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-white/50" />
+            <span className="text-[10px] text-white/50 uppercase tracking-wide">Models</span>
           </div>
-
-          {/* Visual Range Bar */}
-          <div className="mb-3">
-            <div className="flex justify-between text-[10px] text-white/40 mb-1">
-              <span>{consensus.min}°</span>
-              <span className={confidenceColor}>
-                ±{Math.round(consensus.spread / 2)}° spread
-              </span>
-              <span>{consensus.max}°</span>
-            </div>
-            <div className="h-2 bg-white/10 rounded-full relative overflow-hidden">
-              {/* Range fill */}
-              <div
-                className="absolute inset-y-0 bg-gradient-to-r from-blue-500/50 via-white/30 to-orange-500/50 rounded-full"
-                style={{ left: '0%', right: '0%' }}
-              />
-              {/* Model dots */}
-              {models.map((model) => {
-                const temp = model.daily[0]?.high;
-                if (!temp) return null;
-                const position = ((temp - consensus.min) / (consensus.max - consensus.min)) * 100;
-                const isStar = model.name === starModel;
-                return (
-                  <div
-                    key={model.id}
-                    className={`absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border ${
-                      isStar ? 'bg-yellow-400 border-yellow-300' : 'bg-white border-white/50'
-                    }`}
-                    style={{ left: `${Math.max(5, Math.min(95, position))}%`, transform: 'translate(-50%, -50%)' }}
-                    title={`${model.name}: ${temp}°`}
-                  />
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Warm vs Cold Models */}
-          <div className="flex-1 grid grid-cols-2 gap-2 text-[10px]">
-            {/* Warmest */}
-            <div className="bg-orange-500/10 rounded-lg p-2">
-              <div className="text-orange-400/70 uppercase tracking-wide mb-1">Warmest</div>
-              <div className="flex items-center gap-1">
-                {warmestModel?.name === starModel && <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />}
-                <span className="text-white font-medium">{warmestModel?.name}</span>
-                <span className="text-orange-400 ml-auto">{warmestModel?.daily[0]?.high}°</span>
-              </div>
-            </div>
-            {/* Coldest */}
-            <div className="bg-blue-500/10 rounded-lg p-2">
-              <div className="text-blue-400/70 uppercase tracking-wide mb-1">Coldest</div>
-              <div className="flex items-center gap-1">
-                {coldestModel?.name === starModel && <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />}
-                <span className="text-white font-medium">{coldestModel?.name}</span>
-                <span className="text-blue-400 ml-auto">{coldestModel?.daily[0]?.high}°</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="pt-2 mt-auto border-t border-white/10 flex items-center justify-between text-[10px] text-white/40">
-            <span>{models.length} models</span>
-            <ChevronRight className="w-3 h-3" />
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold text-white tabular-nums">{avgTemp}°</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+              consensus.spread <= 3 ? 'bg-green-500/20 text-green-400' :
+              consensus.spread <= 6 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
+            }`}>
+              ±{Math.round(consensus.spread / 2)}°
+            </span>
           </div>
         </div>
-      </GlassWidget>
+
+        {/* Range Bar */}
+        <div className="mb-2">
+          <div className="h-1.5 bg-white/10 rounded-full relative overflow-hidden">
+            <div className="absolute inset-y-0 bg-gradient-to-r from-blue-500/40 via-white/20 to-orange-500/40 rounded-full" style={{ left: '0%', right: '0%' }} />
+            {models.map((model) => {
+              const temp = model.daily[0]?.high;
+              if (!temp) return null;
+              const position = ((temp - consensus.min) / (consensus.max - consensus.min)) * 100;
+              const isStar = model.name === starModel;
+              return (
+                <div
+                  key={model.id}
+                  className={`absolute top-1/2 w-1.5 h-1.5 rounded-full ${isStar ? 'bg-yellow-400' : 'bg-white'}`}
+                  style={{ left: `${Math.max(5, Math.min(95, position))}%`, transform: 'translate(-50%, -50%)' }}
+                  title={`${model.name}: ${temp}°`}
+                />
+              );
+            })}
+          </div>
+          <div className="flex justify-between text-[9px] text-white/30 mt-0.5">
+            <span>{consensus.min}°</span>
+            <span>{consensus.max}°</span>
+          </div>
+        </div>
+
+        {/* Warmest / Coldest row */}
+        <div className="flex items-center justify-between text-[10px]">
+          <div className="flex items-center gap-1">
+            <span className="text-orange-400">{warmestModel?.name}</span>
+            <span className="text-white/60">{warmestModel?.daily[0]?.high}°</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-blue-400">{coldestModel?.name}</span>
+            <span className="text-white/60">{coldestModel?.daily[0]?.high}°</span>
+          </div>
+        </div>
+      </div>
 
       {/* Detail Modal */}
       {isModalOpen && (
