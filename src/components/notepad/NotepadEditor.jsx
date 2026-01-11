@@ -16,7 +16,7 @@ import '../copilot/copilot.css';
 
 export default function NotepadEditor({ context }) {
   const { document, saveDocument } = useNotepad();
-  const { editorRef } = useDataChip();
+  const { registerEditor } = useDataChip();
   const copilot = useCopilot();
 
   // AI state
@@ -199,17 +199,15 @@ export default function NotepadEditor({ context }) {
     };
   }, [handleAISubmit]);
 
-  // Connect editor to DataChipContext ref for external insertions
+  // Connect editor to DataChipContext for external insertions
   useEffect(() => {
-    if (editorRef && editor) {
-      editorRef.current = editor;
+    if (editor) {
+      registerEditor(editor);
     }
     return () => {
-      if (editorRef) {
-        editorRef.current = null;
-      }
+      registerEditor(null);
     };
-  }, [editor, editorRef]);
+  }, [editor, registerEditor]);
 
   // Connect editor to CopilotContext for AI insertions
   useEffect(() => {

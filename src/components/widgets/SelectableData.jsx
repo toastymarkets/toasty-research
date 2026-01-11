@@ -10,10 +10,10 @@ export default function SelectableData({
   children,
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const { insertDataChip, isAvailable } = useDataChip();
+  const { insertDataChip, isEditorReady } = useDataChip();
 
-  // Don't show button if context is not available (e.g., in standalone view)
-  if (!isAvailable) {
+  // Don't show button if editor is not available (e.g., in standalone view)
+  if (!isEditorReady) {
     return children;
   }
 

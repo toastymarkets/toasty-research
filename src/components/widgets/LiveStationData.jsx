@@ -58,7 +58,7 @@ const ObservationRow = memo(function ObservationRow({
   getTempColorClass,
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const { insertDataChip, isAvailable } = useDataChip();
+  const { insertDataChip, isEditorReady } = useDataChip();
 
   const handleRowInsert = (e) => {
     e.stopPropagation();
@@ -85,7 +85,7 @@ const ObservationRow = memo(function ObservationRow({
       onMouseLeave={() => setIsHovered(false)}
     >
       <td className="py-0.5 pr-1 w-6">
-        {isAvailable && isHovered && (
+        {isEditorReady && isHovered && (
           <button
             onClick={handleRowInsert}
             className="w-4 h-4 flex items-center justify-center rounded-full bg-[var(--color-orange-main)] text-white hover:scale-110 transition-transform"
