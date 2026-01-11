@@ -187,7 +187,7 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
                   {/* Bias indicator */}
                   {bias && bias.bias !== 0 && (
                     <span className={`text-[8px] ${bias.bias > 0 ? 'text-orange-400' : 'text-blue-400'}`}>
-                      {bias.bias > 0 ? `+${bias.bias}▲` : `${bias.bias}▼`}
+                      {bias.bias > 0 ? `+${bias.bias}` : `${bias.bias}`}
                     </span>
                   )}
                 </button>

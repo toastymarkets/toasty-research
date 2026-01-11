@@ -586,14 +586,12 @@ export default function MarketBrackets({
 
                 {/* Edge Indicator */}
                 {dayOffset === 0 && bracketEdges[bracket.ticker] && Math.abs(bracketEdges[bracket.ticker].edge) >= 10 && (
-                  <span className={`relative text-[9px] font-medium px-1 py-0.5 rounded ${
+                  <span className={`relative text-[9px] font-medium px-1.5 py-0.5 rounded ${
                     bracketEdges[bracket.ticker].signal === 'underpriced'
                       ? 'bg-emerald-500/20 text-emerald-400'
                       : 'bg-amber-500/20 text-amber-400'
                   }`} title={`Model: ${bracketEdges[bracket.ticker].modelProb}% vs Market: ${bracket.yesPrice}%`}>
-                    {bracketEdges[bracket.ticker].magnitude === 'large'
-                      ? (bracketEdges[bracket.ticker].signal === 'underpriced' ? '🔻🔻' : '🔺🔺')
-                      : (bracketEdges[bracket.ticker].signal === 'underpriced' ? '🔻' : '🔺')}
+                    {bracketEdges[bracket.ticker].signal === 'underpriced' ? '+' : '-'}{Math.abs(bracketEdges[bracket.ticker].edge)}
                   </span>
                 )}
 
