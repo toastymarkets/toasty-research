@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check, BookOpen, AlertTriangle, Maximize2 } from 'lucide-react';
+import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check, BookOpen, AlertTriangle, Maximize2, Star } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -14,6 +14,7 @@ import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
 import { useMultiModelForecast, MODELS } from '../../hooks/useMultiModelForecast';
 import { insertModelsToNotes, NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
+import { getModelBias, getStarModel } from '../../data/modelBias';
 
 /**
  * Insert a single model forecast to notes
@@ -63,6 +64,9 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
 
   // Simple mobile detection
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  // Get the star (best) model for this city
+  const starModel = getStarModel(citySlug);
 
   if (loading || externalLoading) {
     return (
@@ -157,20 +161,35 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
         <div className="flex flex-col h-full justify-between">
           {/* Model boxes - 3 columns, 2 rows */}
           <div className="grid grid-cols-3 gap-1">
-            {models.slice(0, 6).map((model) => (
+            {models.slice(0, 6).map((model) => {
+              const bias = getModelBias(citySlug, model.name);
+              const isStar = model.name === starModel;
+
+              return (
               <div key={model.id} className="relative">
                 <button
                   onClick={(e) => handleModelClick(e, model)}
                   onMouseEnter={() => setHoveredModel(model.id)}
                   onMouseLeave={() => setHoveredModel(null)}
-                  className="w-full flex flex-col items-center py-1.5 px-1 rounded-lg bg-white/5 hover:bg-white/15 transition-colors cursor-pointer group"
+                  className={`w-full flex flex-col items-center py-1.5 px-1 rounded-lg transition-colors cursor-pointer group ${
+                    isStar ? 'bg-yellow-500/10 ring-1 ring-yellow-500/30' : 'bg-white/5 hover:bg-white/15'
+                  }`}
                 >
-                  <span className="text-[9px] text-white/40 group-hover:text-white/60 uppercase tracking-wide">
-                    {model.name.slice(0, 3)}
-                  </span>
+                  <div className="flex items-center gap-0.5">
+                    {isStar && <Star className="w-2 h-2 text-yellow-400 fill-yellow-400" />}
+                    <span className="text-[9px] text-white/40 group-hover:text-white/60 uppercase tracking-wide">
+                      {model.name.slice(0, 3)}
+                    </span>
+                  </div>
                   <span className="text-sm font-medium text-white tabular-nums">
                     {model.daily[0]?.high}°
                   </span>
+                  {/* Bias indicator */}
+                  {bias && bias.bias !== 0 && (
+                    <span className={`text-[8px] ${bias.bias > 0 ? 'text-orange-400' : 'text-blue-400'}`}>
+                      {bias.bias > 0 ? `+${bias.bias}▲` : `${bias.bias}▼`}
+                    </span>
+                  )}
                 </button>
                 {/* Tooltip on hover */}
                 {hoveredModel === model.id && (
@@ -193,7 +212,8 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Model range indicator */}

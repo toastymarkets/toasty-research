@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingUp, ExternalLink, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, ExternalLink, Plus, Thermometer } from 'lucide-react';
 import { useKalshiMarkets, CITY_SERIES } from '../../hooks/useKalshiMarkets';
 import { useDataChip } from '../../context/DataChipContext';
 import { useKalshiMultiBracketHistory } from '../../hooks/useKalshiMultiBracketHistory';
+import { useSettlementObservation } from '../../hooks/useSettlementObservation';
+import { useMultiModelForecast } from '../../hooks/useMultiModelForecast';
+import { calculateAllEdges, getModelConsensus } from '../../utils/edgeCalculator';
 import GlassWidget from './GlassWidget';
 import ErrorState from '../ui/ErrorState';
 import {
@@ -44,6 +47,29 @@ export default function MarketBrackets({
   const [hoveredBracket, setHoveredBracket] = useState(null); // For chart-row interaction
   const { brackets, closeTime, loading, error, seriesTicker, refetch } = useKalshiMarkets(citySlug, dayOffset);
   const { insertDataChip, isEditorReady } = useDataChip();
+
+  // Settlement station observation - THE temperature that determines settlement
+  const {
+    temperature: settlementTemp,
+    trend: settlementTrend,
+    isStale: settlementStale,
+    stationId,
+    stationName,
+  } = useSettlementObservation(citySlug);
+
+  // Model forecasts for edge calculation
+  const { forecasts: modelForecasts } = useMultiModelForecast(citySlug);
+
+  // Calculate model consensus and edges
+  const modelConsensus = useMemo(() => {
+    if (!modelForecasts?.models) return null;
+    return getModelConsensus(modelForecasts.models);
+  }, [modelForecasts]);
+
+  const bracketEdges = useMemo(() => {
+    if (!modelForecasts?.models || !brackets?.length) return {};
+    return calculateAllEdges(modelForecasts.models, brackets);
+  }, [modelForecasts, brackets]);
 
   const dayLabel = dayOffset === 0 ? 'today' : 'tomorrow';
   const hasSeries = CITY_SERIES[citySlug];
@@ -273,23 +299,40 @@ export default function MarketBrackets({
       tier="primary"
       className="h-full"
       headerRight={
-        <div className="inline-flex bg-white/10 rounded-md p-0.5 text-xs">
-          <button
-            onClick={() => setDayOffset(0)}
-            className={`px-2.5 py-1 font-medium rounded transition-all ${
-              dayOffset === 0 ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/60'
-            }`}
-          >
-            Today
-          </button>
-          <button
-            onClick={() => setDayOffset(1)}
-            className={`px-2.5 py-1 font-medium rounded transition-all ${
-              dayOffset === 1 ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/60'
-            }`}
-          >
-            Tomorrow
-          </button>
+        <div className="flex items-center gap-3">
+          {/* Settlement Station Observation Badge */}
+          {settlementTemp != null && dayOffset === 0 && (
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${
+              settlementStale ? 'bg-amber-500/20' : 'bg-cyan-500/20'
+            }`} title={`Current temp at ${stationId} (${stationName})`}>
+              <Thermometer className={`w-3 h-3 ${settlementStale ? 'text-amber-400' : 'text-cyan-400'}`} />
+              <span className={`text-sm font-bold tabular-nums ${settlementStale ? 'text-amber-400' : 'text-cyan-400'}`}>
+                {settlementTemp}°
+              </span>
+              {settlementTrend === 'rising' && <TrendingUp className="w-3 h-3 text-orange-400" />}
+              {settlementTrend === 'falling' && <TrendingDown className="w-3 h-3 text-blue-400" />}
+            </div>
+          )}
+
+          {/* Day Toggle */}
+          <div className="inline-flex bg-white/10 rounded-md p-0.5 text-xs">
+            <button
+              onClick={() => setDayOffset(0)}
+              className={`px-2.5 py-1 font-medium rounded transition-all ${
+                dayOffset === 0 ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/60'
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setDayOffset(1)}
+              className={`px-2.5 py-1 font-medium rounded transition-all ${
+                dayOffset === 1 ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/60'
+              }`}
+            >
+              Tomorrow
+            </button>
+          </div>
         </div>
       }
     >
@@ -336,6 +379,27 @@ export default function MarketBrackets({
                 {timeRemaining}
               </span>
             )}
+          </div>
+        )}
+
+        {/* Model vs Market Comparison */}
+        {modelConsensus && leadingBracket && dayOffset === 0 && (
+          <div className="mt-2 flex items-center gap-2 text-[10px]">
+            <span className="text-white/40">Models:</span>
+            <span className="text-white/70 font-medium">{modelConsensus.mean}° avg</span>
+            <span className="text-white/30">({modelConsensus.min}°-{modelConsensus.max}°)</span>
+            {(() => {
+              const leadingEdge = bracketEdges[leadingBracket.ticker];
+              if (!leadingEdge || Math.abs(leadingEdge.edge) < 5) return null;
+              const isOverpriced = leadingEdge.signal === 'overpriced';
+              return (
+                <span className={`px-1.5 py-0.5 rounded ${
+                  isOverpriced ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+                }`}>
+                  {isOverpriced ? 'Market warm vs models' : 'Market cold vs models'}
+                </span>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -520,6 +584,19 @@ export default function MarketBrackets({
                   </button>
                 )}
 
+                {/* Edge Indicator */}
+                {dayOffset === 0 && bracketEdges[bracket.ticker] && Math.abs(bracketEdges[bracket.ticker].edge) >= 10 && (
+                  <span className={`relative text-[9px] font-medium px-1 py-0.5 rounded ${
+                    bracketEdges[bracket.ticker].signal === 'underpriced'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-amber-500/20 text-amber-400'
+                  }`} title={`Model: ${bracketEdges[bracket.ticker].modelProb}% vs Market: ${bracket.yesPrice}%`}>
+                    {bracketEdges[bracket.ticker].magnitude === 'large'
+                      ? (bracketEdges[bracket.ticker].signal === 'underpriced' ? '🔻🔻' : '🔺🔺')
+                      : (bracketEdges[bracket.ticker].signal === 'underpriced' ? '🔻' : '🔺')}
+                  </span>
+                )}
+
                 {/* Price Change Badge */}
                 {priceChange !== undefined && priceChange !== 0 && (
                   <span className={`relative text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded ${
@@ -544,14 +621,22 @@ export default function MarketBrackets({
       </div>
 
       {/* Footer */}
-      <div className="pt-2 mt-1 flex-shrink-0 border-t border-white/10">
+      <div className="pt-2 mt-1 flex-shrink-0 border-t border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[10px] text-white/40">
+          <span>Settlement: {stationId}</span>
+          {closeTime && (
+            <span className="text-white/30">
+              Closes {closeTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+            </span>
+          )}
+        </div>
         <a
           href={getKalshiUrl(citySlug, cityName)}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/60 transition-colors"
+          className="flex items-center gap-1 text-[10px] text-white/40 hover:text-white/60 transition-colors"
         >
-          Trade on Kalshi
+          Kalshi
           <ExternalLink className="w-3 h-3" />
         </a>
       </div>
