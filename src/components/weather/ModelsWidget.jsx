@@ -146,48 +146,96 @@ export default function ModelsWidget({ citySlug, lat, lon, loading: externalLoad
     );
   }
 
+  // Calculate spread percentage for visual indicator
+  const spreadPercent = Math.min(100, (consensus.spread / 10) * 100);
+
   return (
     <>
-      <div className="glass-widget h-full flex flex-row">
-        {/* Left Section - Consensus temp + confidence */}
-        <div className="flex flex-col justify-center px-4 py-2 border-r border-white/10 min-w-[100px]">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Activity className="w-3.5 h-3.5 text-white/50" />
-            <span className="text-[10px] text-white/50 uppercase tracking-wide font-medium">Models</span>
-          </div>
-          <div className="text-3xl font-light text-white tabular-nums leading-none">
-            {avgTemp}°
-          </div>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="text-xs text-white/50">±{Math.round(consensus.spread / 2)}°</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${confidence.bg} ${confidence.color}`}>
-              {confidence.label}
-            </span>
+      <div className="glass-widget h-full flex flex-row overflow-hidden group cursor-pointer" onClick={handleExpandClick}>
+        {/* Left Section - Hero Consensus */}
+        <div className="flex flex-col justify-center items-center px-5 py-3 min-w-[110px] relative">
+          {/* Subtle gradient glow behind temp */}
+          <div
+            className={`absolute inset-0 opacity-20 ${
+              confidence.label === 'HIGH' ? 'bg-gradient-to-br from-green-500/30 to-transparent' :
+              confidence.label === 'MED' ? 'bg-gradient-to-br from-yellow-500/30 to-transparent' :
+              'bg-gradient-to-br from-red-500/30 to-transparent'
+            }`}
+          />
+
+          <div className="relative">
+            {/* Consensus Temperature - Large and prominent */}
+            <div className="text-4xl font-extralight text-white tabular-nums tracking-tight leading-none">
+              {avgTemp}°
+            </div>
+
+            {/* Confidence Badge - Pill style */}
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${confidence.bg} backdrop-blur-sm`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  confidence.label === 'HIGH' ? 'bg-green-400' :
+                  confidence.label === 'MED' ? 'bg-yellow-400' : 'bg-red-400'
+                } animate-pulse`} />
+                <span className={confidence.color}>±{Math.round(consensus.spread / 2)}°</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Section - Dot chart + models + actions */}
-        <div className="flex-1 flex flex-col justify-between py-2 px-3 min-w-0">
-          {/* Top: Dot Chart */}
-          <div className="relative h-6 bg-white/5 rounded-lg">
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 via-transparent to-orange-500/20" />
-            <div className="absolute inset-0 flex items-center">
-              {sortedModels.map((model) => {
+        {/* Vertical Divider with gradient */}
+        <div className="w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+
+        {/* Right Section - Model Spread Visualization */}
+        <div className="flex-1 flex flex-col justify-center py-2 px-4 min-w-0 relative">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <Activity className="w-3 h-3 text-white/40" />
+              <span className="text-[10px] text-white/50 uppercase tracking-widest font-medium">Model Consensus</span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-blue-400/80 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span>Expand</span>
+              <ChevronRight className="w-3 h-3" />
+            </div>
+          </div>
+
+          {/* Model Spread Visualization - Elegant Bar */}
+          <div className="relative h-8 mb-2">
+            {/* Temperature Range Bar */}
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-white/5 overflow-hidden">
+              {/* Gradient fill showing spread */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/40 via-white/20 to-orange-500/40" />
+            </div>
+
+            {/* Model Dots with better spacing */}
+            <div className="absolute inset-x-3 top-1/2 -translate-y-1/2">
+              {sortedModels.map((model, index) => {
                 const temp = model.daily[0]?.high;
                 if (!temp) return null;
                 const range = consensus.max - consensus.min || 1;
                 const position = ((temp - consensus.min) / range) * 100;
                 const isStar = model.name === starModel;
+
                 return (
                   <div
                     key={model.id}
-                    className="absolute"
-                    style={{ left: `${Math.max(6, Math.min(94, position))}%`, transform: 'translateX(-50%)' }}
-                    title={`${model.name}: ${temp}°`}
+                    className="absolute transition-all duration-300 group/dot"
+                    style={{
+                      left: `${Math.max(2, Math.min(98, position))}%`,
+                      transform: 'translateX(-50%)',
+                      zIndex: isStar ? 10 : index
+                    }}
+                    title={`${model.name}: ${temp}°F`}
                   >
+                    {/* Glow effect for star model */}
+                    {isStar && (
+                      <div className="absolute inset-0 -m-1 rounded-full bg-yellow-400/30 blur-sm" />
+                    )}
                     <div
-                      className={`w-2.5 h-2.5 rounded-full border-2 ${
-                        isStar ? 'bg-yellow-400 border-yellow-300' : 'border-white/50'
+                      className={`relative w-3 h-3 rounded-full border-2 shadow-lg transition-transform hover:scale-125 ${
+                        isStar
+                          ? 'bg-yellow-400 border-yellow-200 shadow-yellow-400/50'
+                          : 'border-white/60 shadow-black/20'
                       }`}
                       style={{ backgroundColor: isStar ? undefined : model.color }}
                     />
@@ -195,44 +243,35 @@ export default function ModelsWidget({ citySlug, lat, lon, loading: externalLoad
                 );
               })}
             </div>
-            <div className="absolute bottom-0 left-1.5 text-[8px] text-white/30">{consensus.min}°</div>
-            <div className="absolute bottom-0 right-1.5 text-[8px] text-white/30">{consensus.max}°</div>
+
+            {/* Range Labels */}
+            <div className="absolute left-0 bottom-0 text-[9px] text-blue-400/60 font-medium tabular-nums">{consensus.min}°</div>
+            <div className="absolute right-0 bottom-0 text-[9px] text-orange-400/60 font-medium tabular-nums">{consensus.max}°</div>
           </div>
 
-          {/* Middle: Model labels (compact) */}
-          <div className="flex items-center gap-2 text-[10px] overflow-hidden">
-            {sortedModels.slice(0, 5).map((model) => {
+          {/* Model Legend - Compact pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            {sortedModels.slice(0, 6).map((model) => {
               const temp = model.daily[0]?.high;
               const isStar = model.name === starModel;
               return (
-                <div key={model.id} className="flex items-center gap-0.5 whitespace-nowrap">
-                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: model.color }} />
-                  <span className={`text-white/60 ${isStar ? 'font-medium' : ''}`}>{model.name}</span>
-                  <span className="text-white/40">{temp}°</span>
+                <div
+                  key={model.id}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] whitespace-nowrap transition-colors ${
+                    isStar ? 'bg-yellow-500/10' : 'bg-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  <div
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0 ring-1 ring-white/20"
+                    style={{ backgroundColor: model.color }}
+                  />
+                  <span className={`${isStar ? 'text-yellow-200' : 'text-white/60'}`}>
+                    {model.name}
+                  </span>
+                  <span className="text-white/30">{temp}°</span>
                 </div>
               );
             })}
-          </div>
-
-          {/* Bottom: Actions */}
-          <div className="flex items-center justify-between">
-            <a
-              href={windyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-[10px] text-white/40 hover:text-white/60 transition-colors"
-            >
-              <Globe className="w-3 h-3" />
-              <span>Windy</span>
-            </a>
-            <button
-              onClick={handleExpandClick}
-              className="flex items-center gap-0.5 text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              <span>More</span>
-              <ChevronRight className="w-3 h-3" />
-            </button>
           </div>
         </div>
       </div>
