@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check, BookOpen, AlertTriangle, Maximize2, Star } from 'lucide-react';
+import { Activity, X, ChevronRight, TrendingUp, TrendingDown, Plus, Check, BookOpen, AlertTriangle, Maximize2, Star, ExternalLink, Globe } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -15,6 +15,15 @@ import ErrorState from '../ui/ErrorState';
 import { useMultiModelForecast, MODELS } from '../../hooks/useMultiModelForecast';
 import { insertModelsToNotes, NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents';
 import { getModelBias, getStarModel } from '../../data/modelBias';
+
+/**
+ * Get confidence label and color based on model spread
+ */
+function getConfidence(spread) {
+  if (spread <= 3) return { label: 'HIGH', color: 'text-green-400', bg: 'bg-green-500/20' };
+  if (spread <= 6) return { label: 'MED', color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
+  return { label: 'LOW', color: 'text-red-400', bg: 'bg-red-500/20' };
+}
 
 /**
  * Insert a single model forecast to notes
@@ -47,10 +56,10 @@ function insertSingleModelToNotes(model, dayData, dateLabel) {
 }
 
 /**
- * ModelsWidget - Redesigned with visual range bar
- * Shows consensus temp prominently with a visual spread indicator
+ * ModelsWidget - Square 2x2 widget showing model consensus and spread
+ * Apple Weather inspired design with large hero temperature
  */
-export default function ModelsWidget({ citySlug, loading: externalLoading = false, isExpanded = false, onToggleExpand }) {
+export default function ModelsWidget({ citySlug, lat, lon, loading: externalLoading = false, isExpanded = false, onToggleExpand }) {
   const { forecasts, loading, error, refetch } = useMultiModelForecast(citySlug);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -60,38 +69,61 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
   // Get the star (best) model for this city
   const starModel = getStarModel(citySlug);
 
+  // Windy.com URL for this location
+  const windyUrl = lat && lon
+    ? `https://www.windy.com/?temp,${lat},${lon},10`
+    : 'https://www.windy.com';
+
   if (loading || externalLoading) {
     return (
-      <GlassWidget title="MODELS" icon={Activity} size="small" tier="primary">
-        <div className="flex items-center justify-center h-full animate-pulse">
-          <div className="w-full h-12 bg-white/10 rounded" />
+      <div className="glass-widget h-full flex flex-row">
+        <div className="flex flex-col justify-center px-4 py-2 border-r border-white/10 min-w-[100px]">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Activity className="w-3.5 h-3.5 text-white/50" />
+            <span className="text-[10px] text-white/50 uppercase tracking-wide font-medium">Models</span>
+          </div>
+          <div className="animate-pulse">
+            <div className="w-14 h-8 bg-white/10 rounded" />
+          </div>
         </div>
-      </GlassWidget>
+        <div className="flex-1 flex items-center justify-center animate-pulse">
+          <div className="w-full h-6 mx-3 bg-white/10 rounded" />
+        </div>
+      </div>
     );
   }
 
   if (error || !forecasts) {
     return (
-      <GlassWidget title="MODELS" icon={Activity} size="small" tier="primary">
-        <ErrorState
-          message={error || 'Unable to load models'}
-          onRetry={() => refetch(true)}
-          compact
-        />
-      </GlassWidget>
+      <div className="glass-widget h-full flex flex-row">
+        <div className="flex flex-col justify-center px-4 py-2 border-r border-white/10 min-w-[100px]">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Activity className="w-3.5 h-3.5 text-white/50" />
+            <span className="text-[10px] text-white/50 uppercase tracking-wide font-medium">Models</span>
+          </div>
+          <span className="text-xl text-white/30">--°</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-3">
+          <ErrorState
+            message={error || 'Unable to load'}
+            onRetry={() => refetch(true)}
+            compact
+          />
+        </div>
+      </div>
     );
   }
 
   const { models, consensus } = forecasts;
   const avgTemp = Math.round((consensus.min + consensus.max) / 2);
+  const confidence = getConfidence(consensus.spread);
 
-  // Sort models by temperature
-  const sortedModels = [...models].sort((a, b) => (b.daily[0]?.high || 0) - (a.daily[0]?.high || 0));
-  const warmestModel = sortedModels[0];
-  const coldestModel = sortedModels[sortedModels.length - 1];
+  // Sort models by temperature for display
+  const sortedModels = [...models].sort((a, b) => (a.daily[0]?.high || 0) - (b.daily[0]?.high || 0));
 
-  // Handle widget click
-  const handleWidgetClick = () => {
+  // Handle expand click
+  const handleExpandClick = (e) => {
+    e.stopPropagation();
     if (isMobile) {
       setIsModalOpen(true);
     } else if (onToggleExpand) {
@@ -108,74 +140,99 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
         forecasts={forecasts}
         onCollapse={onToggleExpand}
         citySlug={citySlug}
+        lat={lat}
+        lon={lon}
       />
     );
   }
 
-  // Confidence color
-  const confidenceColor = consensus.spread <= 3
-    ? 'text-green-400'
-    : consensus.spread <= 6
-      ? 'text-yellow-400'
-      : 'text-red-400';
-
   return (
     <>
-      <div
-        onClick={handleWidgetClick}
-        className="glass-widget p-3 cursor-pointer hover:bg-white/5 transition-colors"
-      >
-        {/* Header row: Title + Consensus */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
+      <div className="glass-widget h-full flex flex-row">
+        {/* Left Section - Consensus temp + confidence */}
+        <div className="flex flex-col justify-center px-4 py-2 border-r border-white/10 min-w-[100px]">
+          <div className="flex items-center gap-1.5 mb-1">
             <Activity className="w-3.5 h-3.5 text-white/50" />
-            <span className="text-[10px] text-white/50 uppercase tracking-wide">Models</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-wide font-medium">Models</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-white tabular-nums">{avgTemp}°</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-              consensus.spread <= 3 ? 'bg-green-500/20 text-green-400' :
-              consensus.spread <= 6 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
-            }`}>
-              ±{Math.round(consensus.spread / 2)}°
+          <div className="text-3xl font-light text-white tabular-nums leading-none">
+            {avgTemp}°
+          </div>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="text-xs text-white/50">±{Math.round(consensus.spread / 2)}°</span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${confidence.bg} ${confidence.color}`}>
+              {confidence.label}
             </span>
           </div>
         </div>
 
-        {/* Range Bar */}
-        <div className="mb-2">
-          <div className="h-1.5 bg-white/10 rounded-full relative overflow-hidden">
-            <div className="absolute inset-y-0 bg-gradient-to-r from-blue-500/40 via-white/20 to-orange-500/40 rounded-full" style={{ left: '0%', right: '0%' }} />
-            {models.map((model) => {
+        {/* Right Section - Dot chart + models + actions */}
+        <div className="flex-1 flex flex-col justify-between py-2 px-3 min-w-0">
+          {/* Top: Dot Chart */}
+          <div className="relative h-6 bg-white/5 rounded-lg">
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 via-transparent to-orange-500/20" />
+            <div className="absolute inset-0 flex items-center">
+              {sortedModels.map((model) => {
+                const temp = model.daily[0]?.high;
+                if (!temp) return null;
+                const range = consensus.max - consensus.min || 1;
+                const position = ((temp - consensus.min) / range) * 100;
+                const isStar = model.name === starModel;
+                return (
+                  <div
+                    key={model.id}
+                    className="absolute"
+                    style={{ left: `${Math.max(6, Math.min(94, position))}%`, transform: 'translateX(-50%)' }}
+                    title={`${model.name}: ${temp}°`}
+                  >
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full border-2 ${
+                        isStar ? 'bg-yellow-400 border-yellow-300' : 'border-white/50'
+                      }`}
+                      style={{ backgroundColor: isStar ? undefined : model.color }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="absolute bottom-0 left-1.5 text-[8px] text-white/30">{consensus.min}°</div>
+            <div className="absolute bottom-0 right-1.5 text-[8px] text-white/30">{consensus.max}°</div>
+          </div>
+
+          {/* Middle: Model labels (compact) */}
+          <div className="flex items-center gap-2 text-[10px] overflow-hidden">
+            {sortedModels.slice(0, 5).map((model) => {
               const temp = model.daily[0]?.high;
-              if (!temp) return null;
-              const position = ((temp - consensus.min) / (consensus.max - consensus.min)) * 100;
               const isStar = model.name === starModel;
               return (
-                <div
-                  key={model.id}
-                  className={`absolute top-1/2 w-1.5 h-1.5 rounded-full ${isStar ? 'bg-yellow-400' : 'bg-white'}`}
-                  style={{ left: `${Math.max(5, Math.min(95, position))}%`, transform: 'translate(-50%, -50%)' }}
-                  title={`${model.name}: ${temp}°`}
-                />
+                <div key={model.id} className="flex items-center gap-0.5 whitespace-nowrap">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: model.color }} />
+                  <span className={`text-white/60 ${isStar ? 'font-medium' : ''}`}>{model.name}</span>
+                  <span className="text-white/40">{temp}°</span>
+                </div>
               );
             })}
           </div>
-          <div className="flex justify-between text-[9px] text-white/30 mt-0.5">
-            <span>{consensus.min}°</span>
-            <span>{consensus.max}°</span>
-          </div>
-        </div>
 
-        {/* Warmest / Coldest row */}
-        <div className="flex items-center justify-between text-[10px]">
-          <div className="flex items-center gap-1">
-            <span className="text-orange-400">{warmestModel?.name}</span>
-            <span className="text-white/60">{warmestModel?.daily[0]?.high}°</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-blue-400">{coldestModel?.name}</span>
-            <span className="text-white/60">{coldestModel?.daily[0]?.high}°</span>
+          {/* Bottom: Actions */}
+          <div className="flex items-center justify-between">
+            <a
+              href={windyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+            >
+              <Globe className="w-3 h-3" />
+              <span>Windy</span>
+            </a>
+            <button
+              onClick={handleExpandClick}
+              className="flex items-center gap-0.5 text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              <span>More</span>
+              <ChevronRight className="w-3 h-3" />
+            </button>
           </div>
         </div>
       </div>
@@ -194,6 +251,8 @@ export default function ModelsWidget({ citySlug, loading: externalLoading = fals
 
 ModelsWidget.propTypes = {
   citySlug: PropTypes.string.isRequired,
+  lat: PropTypes.number,
+  lon: PropTypes.number,
   loading: PropTypes.bool,
   isExpanded: PropTypes.bool,
   onToggleExpand: PropTypes.func,
@@ -202,7 +261,7 @@ ModelsWidget.propTypes = {
 /**
  * ExpandedModelsInline - Inline expanded view for desktop
  */
-function ExpandedModelsInline({ forecasts, onCollapse, citySlug }) {
+function ExpandedModelsInline({ forecasts, onCollapse, citySlug, lat, lon }) {
   const [selectedDay, setSelectedDay] = useState(0);
   const [addedDay, setAddedDay] = useState(null);
   const [activeTab, setActiveTab] = useState('forecast');
@@ -459,6 +518,8 @@ ExpandedModelsInline.propTypes = {
   forecasts: PropTypes.object.isRequired,
   onCollapse: PropTypes.func.isRequired,
   citySlug: PropTypes.string,
+  lat: PropTypes.number,
+  lon: PropTypes.number,
 };
 
 /**
