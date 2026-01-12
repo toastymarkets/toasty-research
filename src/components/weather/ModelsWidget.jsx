@@ -151,55 +151,57 @@ export default function ModelsWidget({ citySlug, lat, lon, loading: externalLoad
 
   return (
     <>
-      <div className="glass-widget h-full flex flex-row overflow-hidden group cursor-pointer" onClick={handleExpandClick}>
-        {/* Left Section - Hero Consensus */}
-        <div className="flex flex-col justify-center items-center px-5 py-3 min-w-[110px] relative">
-          {/* Subtle gradient glow behind temp */}
-          <div
-            className={`absolute inset-0 opacity-20 ${
-              confidence.label === 'HIGH' ? 'bg-gradient-to-br from-green-500/30 to-transparent' :
-              confidence.label === 'MED' ? 'bg-gradient-to-br from-yellow-500/30 to-transparent' :
-              'bg-gradient-to-br from-red-500/30 to-transparent'
-            }`}
-          />
-
-          <div className="relative">
-            {/* Consensus Temperature - Large and prominent */}
-            <div className="text-4xl font-extralight text-white tabular-nums tracking-tight leading-none">
-              {avgTemp}°
-            </div>
-
-            {/* Confidence Badge - Pill style */}
-            <div className="flex items-center justify-center gap-1.5 mt-2">
-              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${confidence.bg} backdrop-blur-sm`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  confidence.label === 'HIGH' ? 'bg-green-400' :
-                  confidence.label === 'MED' ? 'bg-yellow-400' : 'bg-red-400'
-                } animate-pulse`} />
-                <span className={confidence.color}>±{Math.round(consensus.spread / 2)}°</span>
-              </div>
-            </div>
+      <div className="glass-widget h-full flex flex-col overflow-hidden group cursor-pointer" onClick={handleExpandClick}>
+        {/* Widget Header - Matching other widgets */}
+        <div className="widget-header justify-between">
+          <div className="flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5" />
+            <span>MODELS</span>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-blue-400/80 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span>Expand</span>
+            <ChevronRight className="w-3 h-3" />
           </div>
         </div>
 
-        {/* Vertical Divider with gradient */}
-        <div className="w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+        {/* Content Row */}
+        <div className="flex-1 flex flex-row px-3 pb-3 gap-3 min-h-0">
+          {/* Left Section - Hero Consensus */}
+          <div className="flex flex-col justify-center items-center min-w-[90px] relative">
+            {/* Subtle gradient glow behind temp */}
+            <div
+              className={`absolute inset-0 opacity-20 rounded-lg ${
+                confidence.label === 'HIGH' ? 'bg-gradient-to-br from-green-500/30 to-transparent' :
+                confidence.label === 'MED' ? 'bg-gradient-to-br from-yellow-500/30 to-transparent' :
+                'bg-gradient-to-br from-red-500/30 to-transparent'
+              }`}
+            />
 
-        {/* Right Section - Model Spread Visualization */}
-        <div className="flex-1 flex flex-col justify-center py-2 px-4 min-w-0 relative">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <Activity className="w-3 h-3 text-white/40" />
-              <span className="text-[10px] text-white/50 uppercase tracking-widest font-medium">Model Consensus</span>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] text-blue-400/80 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span>Expand</span>
-              <ChevronRight className="w-3 h-3" />
+            <div className="relative">
+              {/* Consensus Temperature - Large and prominent */}
+              <div className="text-3xl font-extralight text-white tabular-nums tracking-tight leading-none">
+                {avgTemp}°
+              </div>
+
+              {/* Confidence Badge - Pill style */}
+              <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium ${confidence.bg} backdrop-blur-sm`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${
+                    confidence.label === 'HIGH' ? 'bg-green-400' :
+                    confidence.label === 'MED' ? 'bg-yellow-400' : 'bg-red-400'
+                  } animate-pulse`} />
+                  <span className={confidence.color}>±{Math.round(consensus.spread / 2)}°</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Model Spread Visualization - Elegant Bar */}
+          {/* Vertical Divider with gradient */}
+          <div className="w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+
+          {/* Right Section - Model Spread Visualization */}
+          <div className="flex-1 flex flex-col justify-center min-w-0">
+            {/* Model Spread Visualization - Elegant Bar */}
           <div className="relative h-8 mb-2">
             {/* Temperature Range Bar */}
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-white/5 overflow-hidden">
@@ -273,6 +275,7 @@ export default function ModelsWidget({ citySlug, lat, lon, loading: externalLoad
               );
             })}
           </div>
+        </div>
         </div>
       </div>
 
