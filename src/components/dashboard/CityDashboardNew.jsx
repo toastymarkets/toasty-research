@@ -7,6 +7,7 @@ import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
 import { useNWSObservationHistory } from '../../hooks/useNWSObservationHistory';
 import { useNotesSidebar } from '../../context/NotesSidebarContext';
 import { DataChipProvider } from '../../context/DataChipContext';
+import { useNWSAlerts } from '../../hooks/useNWSAlerts';
 import { DashboardWeatherBackground } from '../weather/DynamicWeatherBackground';
 import { FrogFriend } from '../frog';
 
@@ -16,7 +17,6 @@ import {
   HourlyForecast,
   TenDayForecast,
   MarketBrackets,
-  NWSForecastWidget,
   NWSDiscussionWidget,
   ModelsWidget,
   WidgetGridV2,
@@ -76,6 +76,7 @@ function CityDashboardContent({ city, citySlug }) {
   const { observations, loading: observationsLoading, lastUpdated } = useNWSObservationHistory(city.stationId, 48);
   const marketData = useKalshiMarketsFromContext(citySlug);
   const localTime = useLocalTime(city.timezone);
+  const { alerts } = useNWSAlerts(city.lat, city.lon);
 
   // Convert NWS temperature to Fahrenheit
   const currentTempF = useMemo(() => {
@@ -180,7 +181,6 @@ function CityDashboardContent({ city, citySlug }) {
     wind: false,
     rain: false,
     map: false,
-    forecast: false,
     alerts: false,
   });
 
@@ -191,6 +191,16 @@ function CityDashboardContent({ city, citySlug }) {
       [widgetId]: !prev[widgetId]
     }));
   };
+
+  // Compute which widgets are absent (shouldn't be in grid)
+  // Alerts is hidden when there are no active alerts
+  const absentWidgets = useMemo(() => {
+    const absent = [];
+    if (!alerts || alerts.length === 0) {
+      absent.push('alerts');
+    }
+    return absent;
+  }, [alerts]);
 
   return (
     <>
@@ -266,16 +276,31 @@ function CityDashboardContent({ city, citySlug }) {
 
       {/* Widget Grid V2 - CSS Grid with named areas */}
       <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 mt-2 pb-4">
-        <WidgetGridV2 expandedWidgets={expandedWidgets}>
-          {/* Models Widget */}
-          <WidgetGridV2.Area area="models" isExpanded={expandedWidgets.models} expansionSize="medium">
+        <WidgetGridV2 expandedWidgets={expandedWidgets} absentWidgets={absentWidgets}>
+          {/* Models Widget - 2x2 square */}
+          <WidgetGridV2.Area area="models" isExpanded={expandedWidgets.models}>
             <ModelsWidget
               citySlug={citySlug}
+              lat={city.lat}
+              lon={city.lon}
               loading={forecastLoading}
               isExpanded={expandedWidgets.models}
               onToggleExpand={() => toggleExpansion('models')}
             />
           </WidgetGridV2.Area>
+
+          {/* Alerts Widget - 1x1, conditionally shown */}
+          {alerts && alerts.length > 0 && (
+            <WidgetGridV2.Area area="alerts" isExpanded={expandedWidgets.alerts}>
+              <AlertsWidget
+                lat={city.lat}
+                lon={city.lon}
+                cityName={city.name}
+                isExpanded={expandedWidgets.alerts}
+                onToggleExpand={() => toggleExpansion('alerts')}
+              />
+            </WidgetGridV2.Area>
+          )}
 
           {/* Market Brackets */}
           <WidgetGridV2.Area area="brackets" isExpanded={expandedWidgets.brackets} expansionSize="medium">
@@ -323,16 +348,6 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* NWS Alerts (spans 2 rows) */}
-          <WidgetGridV2.Area area="alerts" isExpanded={expandedWidgets.alerts}>
-            <AlertsWidget
-              lat={city.lat}
-              lon={city.lon}
-              cityName={city.name}
-              isExpanded={expandedWidgets.alerts}
-              onToggleExpand={() => toggleExpansion('alerts')}
-            />
-          </WidgetGridV2.Area>
 
           {/* Wind + Resolution stacked */}
           <WidgetGridV2.Area area="smallstack">
@@ -373,18 +388,6 @@ function CityDashboardContent({ city, citySlug }) {
               cityName={city.name}
               isExpanded={expandedWidgets.rain}
               onToggleExpand={() => toggleExpansion('rain')}
-            />
-          </WidgetGridV2.Area>
-
-          {/* NWS Forecast */}
-          <WidgetGridV2.Area area="forecast" isExpanded={expandedWidgets.forecast}>
-            <NWSForecastWidget
-              citySlug={citySlug}
-              lat={city.lat}
-              lon={city.lon}
-              timezone={city.timezone}
-              isExpanded={expandedWidgets.forecast}
-              onToggleExpand={() => toggleExpansion('forecast')}
             />
           </WidgetGridV2.Area>
 

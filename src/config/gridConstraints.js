@@ -8,10 +8,10 @@
 export const WIDGET_CONSTRAINTS = {
   models: {
     id: 'models',
-    collapsed: { cols: 1, rows: 1 },
-    expanded: { cols: 2, rows: 2 },
-    min: { cols: 1, rows: 1 },
-    priority: 3,
+    collapsed: { cols: 2, rows: 1 }, // Horizontal widget like map
+    expanded: { cols: 4, rows: 2 },
+    min: { cols: 2, rows: 1 },
+    priority: 4, // High priority - key forecast widget
     canHide: false,
   },
   brackets: {
@@ -80,14 +80,6 @@ export const WIDGET_CONSTRAINTS = {
     priority: 1,
     canHide: true,
   },
-  forecast: {
-    id: 'forecast',
-    collapsed: { cols: 1, rows: 1 },
-    expanded: { cols: 2, rows: 2 },
-    min: { cols: 1, rows: 1 },
-    priority: 2,
-    canHide: true,
-  },
   rounding: {
     id: 'rounding',
     collapsed: { cols: 1, rows: 1 },
@@ -114,12 +106,11 @@ export const BREAKPOINTS = {
  */
 export const DEFAULT_WIDGET_ORDER = [
   'brackets',   // Priority 5 - key trading widget
-  'map',        // Priority 4 - must be 2x2
-  'models',     // Priority 3
-  'alerts',     // Priority 3
+  'models',     // Priority 4 - 2x2 forecast models
+  'map',        // Priority 4 - wide satellite
+  'alerts',     // Priority 3 - conditionally shown
   'discussion', // Priority 2
   'nearby',     // Priority 2 - must be 2 cols
-  'forecast',   // Priority 2
   'smallstack', // Priority 1
   'pressure',   // Priority 1
   'visibility', // Priority 1
@@ -134,20 +125,21 @@ export const WIDGET_MIN_HEIGHTS = {
   // Small widgets (1x1)
   pressure: 110,
   visibility: 110,
-  forecast: 110,
   rounding: 110,
 
   // Medium widgets
-  models: 130,
   discussion: 130,
   alerts: 130,
   nearby: 130,
   smallstack: 130,
 
-  // Tall widgets (span 2 rows)
+  // Square widgets (2x2)
   brackets: 268,
 
-  // Square widgets (1x1)
+  // Horizontal widgets (2x1)
+  models: 130,
+
+  // Wide widgets
   map: 130,
 
   // Expanded heights
@@ -158,7 +150,6 @@ export const WIDGET_MIN_HEIGHTS = {
     map: 280,
     alerts: 320,
     smallstack: 360,
-    forecast: 360,
     rounding: 280,
     visibility: 320,
   },
