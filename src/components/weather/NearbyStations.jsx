@@ -96,37 +96,56 @@ const fetchNearbyStations = async (citySlug) => {
 };
 
 /**
- * Fetch latest observation for a station
+ * Fetch latest observation and calculate today's running high
  */
 const fetchLatestObservation = async (stationId) => {
   try {
+    // Fetch recent observations to calculate running high
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     const response = await fetch(
-      `https://api.weather.gov/stations/${stationId}/observations/latest`,
+      `https://api.weather.gov/stations/${stationId}/observations?start=${todayStart.toISOString()}&limit=50`,
       { headers: { 'User-Agent': 'Toasty Research App' } }
     );
     if (!response.ok) return null;
 
     const data = await response.json();
-    const props = data.properties;
+    const observations = data.features || [];
 
-    const tempC = props.temperature?.value;
+    if (observations.length === 0) return null;
+
+    // Get latest observation (first in the array)
+    const latestObs = observations[0]?.properties;
+    if (!latestObs) return null;
+
+    const tempC = latestObs.temperature?.value;
     const tempF = tempC != null ? Math.round((tempC * 9/5) + 32) : null;
-    const dewpointC = props.dewpoint?.value;
+    const dewpointC = latestObs.dewpoint?.value;
     const dewpointF = dewpointC != null ? Math.round((dewpointC * 9/5) + 32) : null;
-    const windSpeedKmh = props.windSpeed?.value;
+    const windSpeedKmh = latestObs.windSpeed?.value;
     const windSpeedMph = windSpeedKmh != null ? Math.round(windSpeedKmh * 0.621371) : null;
-    const windDeg = props.windDirection?.value;
+    const windDeg = latestObs.windDirection?.value;
     const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
     const windDir = windDeg != null ? dirs[Math.round(windDeg / 22.5) % 16] : null;
 
+    // Calculate running high from today's observations
+    const todayTemps = observations
+      .map(obs => obs.properties?.temperature?.value)
+      .filter(t => t != null)
+      .map(t => Math.round((t * 9/5) + 32));
+
+    const runningHigh = todayTemps.length > 0 ? Math.max(...todayTemps) : null;
+
     return {
       temperature: tempF,
+      runningHigh, // Today's running high calculated from observations
       dewpoint: dewpointF,
-      humidity: props.relativeHumidity?.value ? Math.round(props.relativeHumidity.value) : null,
+      humidity: latestObs.relativeHumidity?.value ? Math.round(latestObs.relativeHumidity.value) : null,
       windSpeed: windSpeedMph,
       windDirection: windDir,
-      conditions: props.textDescription || 'N/A',
-      timestamp: new Date(props.timestamp),
+      conditions: latestObs.textDescription || 'N/A',
+      timestamp: new Date(latestObs.timestamp),
     };
   } catch (error) {
     return null;
@@ -187,9 +206,15 @@ function StationPopup({ station, observation, isMain }) {
       {observation ? (
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">Temp:</span>
+            <span className="text-gray-600">Current:</span>
             <span className="font-semibold text-gray-900">{observation.temperature}°F</span>
           </div>
+          {observation.runningHigh != null && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">24h High:</span>
+              <span className="font-semibold text-orange-600">{observation.runningHigh}°F</span>
+            </div>
+          )}
           {observation.dewpoint != null && (
             <div className="flex justify-between">
               <span className="text-gray-600">Dew Point:</span>
@@ -220,11 +245,12 @@ function StationPopup({ station, observation, isMain }) {
 }
 
 /**
- * Compact station cell - shows only ID + temperature
+ * Compact station cell - shows ID, current temperature, and running high
  * Full details appear in popup on click
  */
 function StationCell({ station, observation, isPrimary, isSelected, onClick, onQuickAdd, isEditorReady }) {
   const temp = observation?.temperature;
+  const maxTemp = observation?.runningHigh;
 
   return (
     <button
@@ -242,7 +268,7 @@ function StationCell({ station, observation, isPrimary, isSelected, onClick, onQ
         <span className="text-xs font-medium text-white/80">{station.id}</span>
       </div>
 
-      {/* Temperature + Quick Add */}
+      {/* Temperature section */}
       <div className="flex items-center gap-2">
         {/* Quick Add Button - appears on hover */}
         {isEditorReady && observation?.temperature != null && (
@@ -256,9 +282,17 @@ function StationCell({ station, observation, isPrimary, isSelected, onClick, onQ
             <Plus size={12} strokeWidth={2.5} className="text-white/80" />
           </span>
         )}
-        <span className="text-base font-semibold text-white tabular-nums">
-          {temp != null ? `${temp}°` : '—'}
-        </span>
+        {/* Current temp + Running high */}
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-base font-semibold text-white tabular-nums">
+            {temp != null ? `${temp}°` : '—'}
+          </span>
+          {maxTemp != null && maxTemp !== temp && (
+            <span className="text-[10px] text-orange-400/70 tabular-nums" title="24h high">
+              ↑{maxTemp}°
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );

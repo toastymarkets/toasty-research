@@ -59,8 +59,20 @@ function insertSingleModelToNotes(model, dayData, dateLabel) {
  * ModelsWidget - Square 2x2 widget showing model consensus and spread
  * Apple Weather inspired design with large hero temperature
  */
+/**
+ * Format time ago for display
+ */
+function formatTimeAgo(date) {
+  if (!date) return '';
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
 export default function ModelsWidget({ citySlug, lat, lon, loading: externalLoading = false, isExpanded = false, onToggleExpand }) {
-  const { forecasts, loading, error, refetch } = useMultiModelForecast(citySlug);
+  const { forecasts, loading, error, refetch, lastUpdated } = useMultiModelForecast(citySlug);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Simple mobile detection
@@ -157,11 +169,13 @@ export default function ModelsWidget({ citySlug, lat, lon, loading: externalLoad
           <div className="flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5" />
             <span>MODELS</span>
+            {lastUpdated && (
+              <span className="text-[9px] text-white/30 font-normal normal-case tracking-normal ml-1">
+                {formatTimeAgo(lastUpdated)}
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-blue-400/80 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span>Expand</span>
-            <ChevronRight className="w-3 h-3" />
-          </div>
+          <Maximize2 className="w-3 h-3 text-white/30 hover:text-white/60 transition-colors" />
         </div>
 
         {/* Content Row */}
