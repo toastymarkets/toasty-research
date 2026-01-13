@@ -300,16 +300,16 @@ function ToastySummaryContent({ summary, loading, error, onRefresh }) {
             }
             if (line.startsWith('•') || line.startsWith('-')) {
               return (
-                <div key={i} className="flex gap-2.5 ml-1 mt-2">
+                <div key={i} className="flex gap-2.5 ml-1 mt-1">
                   <span className="text-violet-400 mt-0.5">•</span>
                   <span>{line.replace(/^[•-]\s*/, '')}</span>
                 </div>
               );
             }
             if (line.trim()) {
-              return <div key={i} className="mt-2 first:mt-0">{line}</div>;
+              return <div key={i} className="mt-1.5 first:mt-0">{line}</div>;
             }
-            return <div key={i} className="h-3" />;
+            return <div key={i} className="h-1.5" />;
           })
         ) : (
           <p className="text-white/40 italic text-center py-4">No summary available</p>
