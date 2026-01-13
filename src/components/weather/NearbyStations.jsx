@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { MapPin, Plus, Maximize2 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { MapPin } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import GlassWidget from './GlassWidget';
-import { useDataChip } from '../../context/DataChipContext';
 
 /**
  * City grid configurations for NWS station lookup
@@ -39,30 +38,74 @@ const MAIN_STATIONS = {
 };
 
 /**
- * Create glowing marker icon
+ * Get temperature color based on value
  */
-const createGlowingIcon = (color, isMain = false) => {
-  const size = isMain ? 16 : 12;
-  const glowSize = isMain ? '12px 4px' : '8px 2px';
-
-  return L.divIcon({
-    html: `<div style="
-      width: ${size}px;
-      height: ${size}px;
-      background: ${color};
-      border-radius: 50%;
-      box-shadow: 0 0 ${glowSize} ${color}80;
-      border: 2px solid white;
-    "></div>`,
-    className: 'glowing-marker',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2 - 5],
-  });
+const getTempColor = (temp) => {
+  if (temp == null) return '#6B7280'; // gray
+  if (temp <= 32) return '#3B82F6'; // blue-500 - freezing
+  if (temp <= 50) return '#60A5FA'; // blue-400 - cold
+  if (temp <= 60) return '#93C5FD'; // blue-300 - cool
+  if (temp <= 70) return '#9CA3AF'; // gray-400 - mild
+  if (temp <= 80) return '#FBBF24'; // amber-400 - warm
+  if (temp <= 90) return '#F97316'; // orange-500 - hot
+  return '#EF4444'; // red-500 - very hot
 };
 
-const primaryIcon = createGlowingIcon('#10B981', true);
-const nearbyIcon = createGlowingIcon('#3B82F6', false);
+/**
+ * Get background color for temp (darker variant for marker bg)
+ */
+const getTempBgColor = (temp) => {
+  if (temp == null) return 'rgba(107, 114, 128, 0.9)';
+  if (temp <= 32) return 'rgba(59, 130, 246, 0.85)';
+  if (temp <= 50) return 'rgba(96, 165, 250, 0.85)';
+  if (temp <= 60) return 'rgba(147, 197, 253, 0.85)';
+  if (temp <= 70) return 'rgba(75, 85, 99, 0.85)';
+  if (temp <= 80) return 'rgba(251, 191, 36, 0.85)';
+  if (temp <= 90) return 'rgba(249, 115, 22, 0.85)';
+  return 'rgba(239, 68, 68, 0.85)';
+};
+
+/**
+ * Create temperature label marker icon
+ */
+const createTempIcon = (temp, runningHigh, isPrimary) => {
+  const bgColor = getTempBgColor(temp);
+  const hasRunningHigh = runningHigh != null && runningHigh !== temp;
+
+  // Build the label text
+  let labelText = temp != null ? `${temp}°` : '—';
+  if (isPrimary && hasRunningHigh) {
+    labelText += `<span style="font-size: 9px; opacity: 0.8; margin-left: 2px;">↑${runningHigh}</span>`;
+  }
+
+  const primaryStyles = isPrimary ? `
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8), 0 0 12px 4px rgba(16, 185, 129, 0.4);
+    border: 1px solid rgba(16, 185, 129, 0.9);
+  ` : `
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+  `;
+
+  return L.divIcon({
+    html: `<div class="temp-marker-label" style="
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      background: ${bgColor};
+      padding: 3px 6px;
+      border-radius: 6px;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+      ${primaryStyles}
+      display: flex;
+      align-items: center;
+      transform: translate(-50%, -50%);
+    ">${labelText}</div>`,
+    className: 'temp-marker',
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+};
 
 /**
  * Fetch nearby stations from NWS API
@@ -100,7 +143,6 @@ const fetchNearbyStations = async (citySlug) => {
  */
 const fetchLatestObservation = async (stationId) => {
   try {
-    // Fetch recent observations to calculate running high
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -115,7 +157,6 @@ const fetchLatestObservation = async (stationId) => {
 
     if (observations.length === 0) return null;
 
-    // Get latest observation (first in the array)
     const latestObs = observations[0]?.properties;
     if (!latestObs) return null;
 
@@ -129,7 +170,6 @@ const fetchLatestObservation = async (stationId) => {
     const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
     const windDir = windDeg != null ? dirs[Math.round(windDeg / 22.5) % 16] : null;
 
-    // Calculate running high from today's observations
     const todayTemps = observations
       .map(obs => obs.properties?.temperature?.value)
       .filter(t => t != null)
@@ -139,7 +179,7 @@ const fetchLatestObservation = async (stationId) => {
 
     return {
       temperature: tempF,
-      runningHigh, // Today's running high calculated from observations
+      runningHigh,
       dewpoint: dewpointF,
       humidity: latestObs.relativeHumidity?.value ? Math.round(latestObs.relativeHumidity.value) : null,
       windSpeed: windSpeedMph,
@@ -155,18 +195,9 @@ const fetchLatestObservation = async (stationId) => {
 /**
  * Format distance in miles
  */
-const formatDistance = (meters) => `${(meters / 1609.34).toFixed(1)} mi`;
-
-/**
- * Format time ago
- */
-const formatTimeAgo = (date) => {
-  if (!date) return '';
-  const s = Math.floor((new Date() - date) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 120) return '1 min ago';
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  return `${Math.floor(s / 3600)}h ago`;
+const formatDistance = (meters) => {
+  const miles = meters / 1609.34;
+  return miles < 10 ? `${miles.toFixed(1)}mi` : `${Math.round(miles)}mi`;
 };
 
 /**
@@ -178,137 +209,111 @@ function FitBounds({ stations }) {
   useEffect(() => {
     if (stations.length > 0) {
       const bounds = L.latLngBounds(stations.map(s => [s.lat, s.lon]));
-      map.fitBounds(bounds, { padding: [30, 30] });
+      map.fitBounds(bounds, { padding: [35, 35] });
     }
   }, [stations, map]);
 
   return null;
 }
 
-
 /**
- * Station popup content
+ * Hover card component - appears when hovering a marker
  */
-function StationPopup({ station, observation, isMain }) {
+function HoverCard({ station, observation, isPrimary, position, mapContainer }) {
+  if (!position || !mapContainer) return null;
+
+  const distanceText = formatDistance(station.distance);
+  const temp = observation?.temperature;
+  const runningHigh = observation?.runningHigh;
+  const hasRunningHigh = runningHigh != null && runningHigh !== temp;
+
+  // Calculate position relative to map container
+  const containerRect = mapContainer.getBoundingClientRect();
+  const left = position.x;
+  const top = position.y;
+
+  // Determine if card should appear above or below marker
+  const showAbove = top > containerRect.height / 2;
+
   return (
-    <div className="min-w-[180px]">
-      <div className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-        {station.name}
-        {isMain && (
-          <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
-            Primary
+    <div
+      className="absolute z-[1000] pointer-events-none"
+      style={{
+        left: `${left}px`,
+        top: showAbove ? `${top - 8}px` : `${top + 8}px`,
+        transform: showAbove ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
+      }}
+    >
+      <div className="bg-black/85 backdrop-blur-xl rounded-lg px-3 py-2.5 border border-white/20 shadow-2xl min-w-[120px]">
+        {/* Station ID */}
+        <div className="flex items-center gap-1.5 mb-1">
+          {isPrimary && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(16,185,129,0.6)]" />
+          )}
+          <span className="text-[11px] font-medium text-white/90">{station.id}</span>
+          <span className="text-[10px] text-white/40 ml-auto">{distanceText}</span>
+        </div>
+
+        {/* Temperature */}
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-xl font-bold text-white tabular-nums">
+            {temp != null ? `${temp}°` : '—'}
           </span>
+          {hasRunningHigh && (
+            <span className="text-xs text-orange-400 tabular-nums">↑{runningHigh}°</span>
+          )}
+        </div>
+
+        {/* Additional info */}
+        {observation && (
+          <div className="text-[10px] text-white/50 mt-1 space-y-0.5">
+            {observation.windSpeed != null && (
+              <div>{observation.windDirection} {observation.windSpeed}mph</div>
+            )}
+            {observation.humidity != null && (
+              <div>{observation.humidity}% humidity</div>
+            )}
+          </div>
         )}
       </div>
-      <div className="text-xs text-gray-500 mb-2">
-        {station.id} • {formatDistance(station.distance)}
-      </div>
-      {observation ? (
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Current:</span>
-            <span className="font-semibold text-gray-900">{observation.temperature}°F</span>
-          </div>
-          {observation.runningHigh != null && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">24h High:</span>
-              <span className="font-semibold text-orange-600">{observation.runningHigh}°F</span>
-            </div>
-          )}
-          {observation.dewpoint != null && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Dew Point:</span>
-              <span className="text-gray-900">{observation.dewpoint}°F</span>
-            </div>
-          )}
-          {observation.humidity != null && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Humidity:</span>
-              <span className="text-gray-900">{observation.humidity}%</span>
-            </div>
-          )}
-          {observation.windSpeed != null && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Wind:</span>
-              <span className="text-gray-900">{observation.windDirection} {observation.windSpeed} mph</span>
-            </div>
-          )}
-          <div className="text-[10px] text-gray-400 pt-1 border-t border-gray-100">
-            Updated {formatTimeAgo(observation.timestamp)}
-          </div>
-        </div>
-      ) : (
-        <div className="text-sm text-gray-400">Loading...</div>
-      )}
     </div>
   );
 }
 
 /**
- * Compact station cell - shows ID, current temperature, and running high
- * Full details appear in popup on click
+ * Custom marker with hover detection
  */
-function StationCell({ station, observation, isPrimary, isSelected, onClick, onQuickAdd, isEditorReady }) {
+function TempMarker({ station, observation, isPrimary, onHover, onLeave }) {
   const temp = observation?.temperature;
-  const maxTemp = observation?.runningHigh;
+  const runningHigh = observation?.runningHigh;
+
+  const icon = useMemo(
+    () => createTempIcon(temp, runningHigh, isPrimary),
+    [temp, runningHigh, isPrimary]
+  );
 
   return (
-    <button
-      className={`
-        group relative flex items-center justify-between w-full
-        py-2 px-3 text-left transition-all
-        hover:bg-white/10 rounded-lg
-        ${isSelected ? 'bg-white/15' : ''}
-      `}
-      onClick={onClick}
-    >
-      {/* Station ID with indicator */}
-      <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isPrimary ? 'bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : 'bg-blue-400'}`} />
-        <span className="text-xs font-medium text-white/80">{station.id}</span>
-      </div>
-
-      {/* Temperature section */}
-      <div className="flex items-center gap-2">
-        {/* Quick Add Button - appears on hover */}
-        {isEditorReady && observation?.temperature != null && (
-          <span
-            onClick={(e) => onQuickAdd(e)}
-            className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full
-                       bg-white/20 flex items-center justify-center transition-opacity
-                       hover:bg-white/30"
-            title="Add to notes"
-          >
-            <Plus size={12} strokeWidth={2.5} className="text-white/80" />
-          </span>
-        )}
-        {/* Current temp + Running high */}
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-base font-semibold text-white tabular-nums">
-            {temp != null ? `${temp}°` : '—'}
-          </span>
-          {maxTemp != null && maxTemp !== temp && (
-            <span className="text-[10px] text-orange-400/70 tabular-nums" title="24h high">
-              ↑{maxTemp}°
-            </span>
-          )}
-        </div>
-      </div>
-    </button>
+    <Marker
+      position={[station.lat, station.lon]}
+      icon={icon}
+      eventHandlers={{
+        mouseover: (e) => onHover(station, e),
+        mouseout: onLeave,
+      }}
+    />
   );
 }
 
 /**
- * NearbyStations - Weather stations widget with map and cards
+ * NearbyStations - Weather stations widget with temperature-labeled map
  */
-export default function NearbyStations({ citySlug, cityName }) {
+export default function NearbyStations({ citySlug }) {
   const [stations, setStations] = useState([]);
   const [observations, setObservations] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedStation, setSelectedStation] = useState(null);
-  const markerRefs = useRef({});
-
-  const { insertDataChip, isEditorReady } = useDataChip();
+  const [hoveredStation, setHoveredStation] = useState(null);
+  const [hoverPosition, setHoverPosition] = useState(null);
+  const mapContainerRef = useRef(null);
 
   const config = CITY_CONFIGS[citySlug];
   const mainStationId = MAIN_STATIONS[citySlug];
@@ -338,31 +343,50 @@ export default function NearbyStations({ citySlug, cityName }) {
     loadStations();
   }, [citySlug]);
 
-  // Handle quick add to notes
-  const handleQuickAdd = (station, obs, e) => {
-    e.stopPropagation();
+  // Handle marker hover
+  const handleMarkerHover = useCallback((station, e) => {
+    if (mapContainerRef.current) {
+      const containerRect = mapContainerRef.current.getBoundingClientRect();
+      const point = e.containerPoint;
+      setHoverPosition({ x: point.x, y: point.y });
+      setHoveredStation(station);
+    }
+  }, []);
 
-    const timestamp = new Date().toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+  const handleMarkerLeave = useCallback(() => {
+    setHoveredStation(null);
+    setHoverPosition(null);
+  }, []);
 
-    insertDataChip({
-      value: `${obs.temperature}°F`,
-      secondary: station.id,
-      label: 'Station Obs',
-      source: `NWS ${station.id}`,
-      timestamp,
-      type: 'weather',
-    });
-  };
+  // Calculate temperature range and primary station info
+  const { tempRange, primaryObs, latestTimestamp } = useMemo(() => {
+    const temps = Object.values(observations)
+      .map(o => o?.temperature)
+      .filter(t => t != null);
 
-  // Handle station selection
-  const handleStationClick = (station) => {
-    setSelectedStation(station);
-    markerRefs.current[station.id]?.openPopup();
-  };
+    const primary = observations[mainStationId];
+    const latest = Object.values(observations)
+      .map(o => o?.timestamp)
+      .filter(Boolean)
+      .sort((a, b) => b - a)[0];
+
+    return {
+      tempRange: temps.length > 0
+        ? { min: Math.min(...temps), max: Math.max(...temps) }
+        : null,
+      primaryObs: primary,
+      latestTimestamp: latest,
+    };
+  }, [observations, mainStationId]);
+
+  // Format timestamp for display
+  const timeAgo = useMemo(() => {
+    if (!latestTimestamp) return '';
+    const s = Math.floor((new Date() - latestTimestamp) / 1000);
+    if (s < 60) return 'now';
+    if (s < 3600) return `${Math.floor(s / 60)}m`;
+    return `${Math.floor(s / 3600)}h`;
+  }, [latestTimestamp]);
 
   if (!config) {
     return (
@@ -375,7 +399,12 @@ export default function NearbyStations({ citySlug, cityName }) {
   }
 
   return (
-    <GlassWidget title="NEARBY STATIONS" icon={MapPin} size="large">
+    <GlassWidget
+      title="NEARBY STATIONS"
+      icon={MapPin}
+      size="large"
+      headerRight={timeAgo && <span className="text-[10px] text-white/40">{timeAgo} ago</span>}
+    >
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -384,15 +413,19 @@ export default function NearbyStations({ citySlug, cityName }) {
           </div>
         </div>
       ) : (
-        <>
-          {/* Map Container */}
-          <div className="h-[180px] rounded-lg overflow-hidden mb-3 -mx-1">
+        <div className="flex flex-col h-full -mx-1">
+          {/* Full-height Map Container */}
+          <div
+            ref={mapContainerRef}
+            className="flex-1 min-h-0 rounded-lg overflow-hidden relative"
+            style={{ minHeight: '200px' }}
+          >
             <MapContainer
               center={[config.lat, config.lon]}
               zoom={9}
               style={{ height: '100%', width: '100%' }}
-              scrollWheelZoom={false}
-              zoomControl={false}
+              scrollWheelZoom={true}
+              zoomControl={true}
               attributionControl={false}
             >
               <TileLayer
@@ -402,54 +435,58 @@ export default function NearbyStations({ citySlug, cityName }) {
               <FitBounds stations={stations} />
 
               {stations.map((station) => (
-                <Marker
+                <TempMarker
                   key={station.id}
-                  position={[station.lat, station.lon]}
-                  icon={station.id === mainStationId ? primaryIcon : nearbyIcon}
-                  ref={ref => { if (ref) markerRefs.current[station.id] = ref; }}
-                  eventHandlers={{
-                    click: () => setSelectedStation(station),
-                  }}
-                >
-                  <Popup>
-                    <StationPopup
-                      station={station}
-                      observation={observations[station.id]}
-                      isMain={station.id === mainStationId}
-                    />
-                  </Popup>
-                </Marker>
+                  station={station}
+                  observation={observations[station.id]}
+                  isPrimary={station.id === mainStationId}
+                  onHover={handleMarkerHover}
+                  onLeave={handleMarkerLeave}
+                />
               ))}
             </MapContainer>
-          </div>
 
-          {/* Station Grid - 2 columns for better readability */}
-          <div className="grid grid-cols-2 gap-1">
-            {stations.slice(0, 6).map((station) => (
-              <StationCell
-                key={station.id}
-                station={station}
-                observation={observations[station.id]}
-                isPrimary={station.id === mainStationId}
-                isSelected={selectedStation?.id === station.id}
-                onClick={() => handleStationClick(station)}
-                onQuickAdd={(e) => handleQuickAdd(station, observations[station.id], e)}
-                isEditorReady={isEditorReady}
+            {/* Hover Card Overlay */}
+            {hoveredStation && (
+              <HoverCard
+                station={hoveredStation}
+                observation={observations[hoveredStation.id]}
+                isPrimary={hoveredStation.id === mainStationId}
+                position={hoverPosition}
+                mapContainer={mapContainerRef.current}
               />
-            ))}
+            )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-2 mt-1 border-t border-white/10">
-            <div className="flex items-center gap-2 text-[10px] text-white/40">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Primary station</span>
+          {/* Footer Summary Bar */}
+          <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-white/10 px-1">
+            {/* Primary station summary */}
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(16,185,129,0.5)]" />
+              <span className="text-xs font-medium text-white/90">
+                {mainStationId}
+              </span>
+              {primaryObs && (
+                <span className="text-xs text-white/70 tabular-nums">
+                  {primaryObs.temperature}°
+                  {primaryObs.runningHigh != null && primaryObs.runningHigh !== primaryObs.temperature && (
+                    <span className="text-orange-400/80 ml-0.5">↑{primaryObs.runningHigh}°</span>
+                  )}
+                </span>
+              )}
             </div>
-            <span className="text-[10px] text-white/40">
-              {stations.length} stations
-            </span>
+
+            {/* Range and count */}
+            <div className="flex items-center gap-3 text-[10px] text-white/50">
+              {tempRange && (
+                <span className="tabular-nums">
+                  {tempRange.min}°–{tempRange.max}°
+                </span>
+              )}
+              <span>{stations.length} stn</span>
+            </div>
           </div>
-        </>
+        </div>
       )}
     </GlassWidget>
   );
@@ -457,5 +494,4 @@ export default function NearbyStations({ citySlug, cityName }) {
 
 NearbyStations.propTypes = {
   citySlug: PropTypes.string.isRequired,
-  cityName: PropTypes.string.isRequired,
 };
