@@ -340,11 +340,12 @@ function CityDashboardContent({ city, citySlug }) {
             />
           </WidgetGridV2.Area>
 
-          {/* Nearby Stations (2x2) */}
-          <WidgetGridV2.Area area="nearby">
+          {/* Nearby Stations (2x1 collapsed, 4x2 expanded) */}
+          <WidgetGridV2.Area area="nearby" isExpanded={expandedWidgets.nearby}>
             <NearbyStations
               citySlug={citySlug}
-              cityName={city.name}
+              isExpanded={expandedWidgets.nearby}
+              onToggleExpand={() => toggleExpansion('nearby')}
             />
           </WidgetGridV2.Area>
 

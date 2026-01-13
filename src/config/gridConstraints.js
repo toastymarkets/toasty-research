@@ -41,7 +41,7 @@ export const WIDGET_CONSTRAINTS = {
   nearby: {
     id: 'nearby',
     collapsed: { cols: 2, rows: 1 }, // ALWAYS 2 cols minimum
-    expanded: { cols: 2, rows: 2 },
+    expanded: { cols: 4, rows: 2 }, // Full width for expanded view with tabs
     min: { cols: 2, rows: 1 }, // Hard constraint
     priority: 2,
     canHide: false,
@@ -148,6 +148,7 @@ export const WIDGET_MIN_HEIGHTS = {
     brackets: 380,
     discussion: 400,
     map: 280,
+    nearby: 380, // Full expanded view with tabs
     alerts: 320,
     smallstack: 360,
     rounding: 280,
