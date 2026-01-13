@@ -338,24 +338,18 @@ html {
 
 /* ===== NEARBY STATIONS MAP MARKERS ===== */
 
-/* Temperature marker styles for NearbyStations widget */
-.temp-marker {
+/* Dot marker styles for NearbyStations widget */
+.dot-marker {
   background: transparent !important;
   border: none !important;
 }
 
-.temp-marker-label {
+.station-dot {
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.temp-marker-label:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-  z-index: 1000 !important;
 }
 
 /* Hide default leaflet marker styles */
-.leaflet-marker-icon.temp-marker {
+.leaflet-marker-icon.dot-marker {
   background: none !important;
   border: none !important;
   box-shadow: none !important;
