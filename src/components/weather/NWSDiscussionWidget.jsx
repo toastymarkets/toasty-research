@@ -288,7 +288,7 @@ function ToastySummaryContent({ summary, loading, error, onRefresh }) {
         </div>
       )}
 
-      <div className="text-[13px] text-white/85 leading-[1.8] tracking-wide font-light whitespace-pre-wrap max-h-[400px] overflow-y-auto pr-2 -mr-2">
+      <div className="text-[13px] text-white/85 leading-[1.8] tracking-wide font-light whitespace-pre-wrap">
         {displayContent ? (
           displayContent.split('\n').map((line, i) => {
             if (line.startsWith('**') && line.includes('**')) {
