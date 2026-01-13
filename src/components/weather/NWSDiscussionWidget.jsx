@@ -1032,15 +1032,17 @@ export default function NWSDiscussionWidget({
           </div>
         }
       >
-        <div className="flex flex-col h-full justify-between gap-2 overflow-hidden">
+        <div className="flex flex-col h-full gap-3 overflow-hidden">
           {/* AI Summary (if available) */}
           {shortSummary && (
-            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-400/20">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Sparkles className="w-3 h-3 text-purple-400" />
-                <span className="text-[9px] font-semibold text-purple-300 uppercase tracking-wide">AI Summary</span>
+            <div className="flex-1 min-h-0">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                <span className="text-[10px] font-medium text-violet-300/90 uppercase tracking-widest">
+                  AI Forecast
+                </span>
               </div>
-              <p className="text-[11px] text-white/80 leading-relaxed line-clamp-2">
+              <p className="text-[13px] leading-[1.65] text-white/95 font-light tracking-wide line-clamp-4">
                 {shortSummary}
               </p>
             </div>
@@ -1048,44 +1050,60 @@ export default function NWSDiscussionWidget({
 
           {/* Loading state for AI summary */}
           {summaryLoading && !shortSummary && (
-            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-400/20">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
-                <span className="text-[9px] text-purple-300/60 italic">Generating summary...</span>
+            <div className="flex-1 flex items-center justify-center py-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-400 animate-pulse" />
+                <span className="text-xs text-violet-300/70 font-light italic">Generating forecast...</span>
               </div>
             </div>
           )}
 
           {/* Fallback to synopsis if no AI summary */}
           {!shortSummary && !summaryLoading && synopsisExcerpt && (
-            <p className="text-[11px] text-white/70 leading-relaxed line-clamp-2">
-              {synopsisExcerpt}
-            </p>
+            <div className="flex-1 min-h-0">
+              <p className="text-[13px] leading-[1.65] text-white/85 font-light tracking-wide line-clamp-4">
+                {synopsisExcerpt}
+              </p>
+            </div>
           )}
 
           {/* Empty state */}
           {!shortSummary && !summaryLoading && !synopsisExcerpt && (
-            <p className="text-[11px] text-white/50 italic">
-              Tap to view forecast discussion
-            </p>
-          )}
-
-          {keywords.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 overflow-hidden">
-              {keywords.map((kw, i) => {
-                const baseColors = CATEGORY_COLORS[kw.category]?.replace('hover:bg-', '') || 'bg-white/20 text-white/80';
-                return (
-                  <span key={i} className={`${baseColors} px-2 py-0.5 rounded-full text-[10px] font-medium`}>
-                    {kw.text}
-                  </span>
-                );
-              })}
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-xs text-white/40 font-light italic">
+                Tap to view forecast discussion
+              </p>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-[10px] text-white/40 pt-1 border-t border-white/5">
-            <span className="font-medium">NWS {discussion.office}</span>
-            <span>{formatRelativeTime(discussion.issuanceTime)}</span>
+          {/* Footer metadata */}
+          <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-medium text-white/50 tracking-wide">
+                NWS {discussion.office}
+              </span>
+              {keywords.length > 0 && (
+                <>
+                  <span className="text-white/20">·</span>
+                  <div className="flex gap-1">
+                    {keywords.slice(0, 2).map((kw, i) => {
+                      const baseColors = CATEGORY_COLORS[kw.category]?.replace('hover:bg-', '') || 'bg-white/20 text-white/80';
+                      return (
+                        <span key={i} className={`${baseColors} px-1.5 py-0.5 rounded text-[9px] font-medium opacity-60`}>
+                          {kw.text}
+                        </span>
+                      );
+                    })}
+                    {keywords.length > 2 && (
+                      <span className="text-[9px] text-white/30 px-1">+{keywords.length - 2}</span>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+            <span className="text-[10px] text-white/35 font-light tracking-wide">
+              {formatRelativeTime(discussion.issuanceTime)}
+            </span>
           </div>
         </div>
       </GlassWidget>
