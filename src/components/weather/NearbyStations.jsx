@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
-import { MapPin } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapPin, Radio } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import GlassWidget from './GlassWidget';
@@ -38,72 +38,46 @@ const MAIN_STATIONS = {
 };
 
 /**
- * Get temperature color based on value
+ * Create refined dot marker icon with pulsing effect for hovered state
  */
-const getTempColor = (temp) => {
-  if (temp == null) return '#6B7280'; // gray
-  if (temp <= 32) return '#3B82F6'; // blue-500 - freezing
-  if (temp <= 50) return '#60A5FA'; // blue-400 - cold
-  if (temp <= 60) return '#93C5FD'; // blue-300 - cool
-  if (temp <= 70) return '#9CA3AF'; // gray-400 - mild
-  if (temp <= 80) return '#FBBF24'; // amber-400 - warm
-  if (temp <= 90) return '#F97316'; // orange-500 - hot
-  return '#EF4444'; // red-500 - very hot
-};
+const createDotIcon = (isPrimary, isHovered) => {
+  const baseSize = isPrimary ? 10 : 7;
+  const size = isHovered ? baseSize * 1.6 : baseSize;
+  const primaryColor = '#34D399'; // emerald-400
+  const secondaryColor = '#60A5FA'; // blue-400
+  const color = isPrimary ? primaryColor : secondaryColor;
 
-/**
- * Get background color for temp (darker variant for marker bg)
- */
-const getTempBgColor = (temp) => {
-  if (temp == null) return 'rgba(107, 114, 128, 0.9)';
-  if (temp <= 32) return 'rgba(59, 130, 246, 0.85)';
-  if (temp <= 50) return 'rgba(96, 165, 250, 0.85)';
-  if (temp <= 60) return 'rgba(147, 197, 253, 0.85)';
-  if (temp <= 70) return 'rgba(75, 85, 99, 0.85)';
-  if (temp <= 80) return 'rgba(251, 191, 36, 0.85)';
-  if (temp <= 90) return 'rgba(249, 115, 22, 0.85)';
-  return 'rgba(239, 68, 68, 0.85)';
-};
-
-/**
- * Create temperature label marker icon
- */
-const createTempIcon = (temp, runningHigh, isPrimary) => {
-  const bgColor = getTempBgColor(temp);
-  const hasRunningHigh = runningHigh != null && runningHigh !== temp;
-
-  // Build the label text
-  let labelText = temp != null ? `${temp}°` : '—';
-  if (isPrimary && hasRunningHigh) {
-    labelText += `<span style="font-size: 9px; opacity: 0.8; margin-left: 2px;">↑${runningHigh}</span>`;
-  }
-
-  const primaryStyles = isPrimary ? `
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8), 0 0 12px 4px rgba(16, 185, 129, 0.4);
-    border: 1px solid rgba(16, 185, 129, 0.9);
-  ` : `
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.2);
-  `;
+  const pulseRing = isHovered ? `
+    <div style="
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1px solid ${color};
+      opacity: 0.4;
+      animation: pulse-ring 1.5s ease-out infinite;
+    "></div>
+  ` : '';
 
   return L.divIcon({
-    html: `<div class="temp-marker-label" style="
-      font-size: 11px;
-      font-weight: 600;
-      color: white;
-      background: ${bgColor};
-      padding: 3px 6px;
-      border-radius: 6px;
-      white-space: nowrap;
-      backdrop-filter: blur(8px);
-      ${primaryStyles}
-      display: flex;
-      align-items: center;
-      transform: translate(-50%, -50%);
-    ">${labelText}</div>`,
-    className: 'temp-marker',
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    html: `
+      <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+        ${pulseRing}
+        <div class="station-dot" style="
+          width: ${size}px;
+          height: ${size}px;
+          background: ${color};
+          border-radius: 50%;
+          border: 2px solid rgba(255,255,255,0.9);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow:
+            0 0 ${isHovered ? '12px' : '6px'} ${color}60,
+            0 2px 4px rgba(0,0,0,0.3);
+        "></div>
+      </div>
+    `,
+    className: 'dot-marker',
+    iconSize: [size + 8, size + 8],
+    iconAnchor: [(size + 8) / 2, (size + 8) / 2],
   });
 };
 
@@ -124,7 +98,7 @@ const fetchNearbyStations = async (citySlug) => {
     const data = await response.json();
     return data.features
       .filter(f => /^K[A-Z]{3}$/.test(f.properties.stationIdentifier))
-      .slice(0, 10)
+      .slice(0, 6)
       .map(f => ({
         id: f.properties.stationIdentifier,
         name: f.properties.name,
@@ -162,13 +136,6 @@ const fetchLatestObservation = async (stationId) => {
 
     const tempC = latestObs.temperature?.value;
     const tempF = tempC != null ? Math.round((tempC * 9/5) + 32) : null;
-    const dewpointC = latestObs.dewpoint?.value;
-    const dewpointF = dewpointC != null ? Math.round((dewpointC * 9/5) + 32) : null;
-    const windSpeedKmh = latestObs.windSpeed?.value;
-    const windSpeedMph = windSpeedKmh != null ? Math.round(windSpeedKmh * 0.621371) : null;
-    const windDeg = latestObs.windDirection?.value;
-    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-    const windDir = windDeg != null ? dirs[Math.round(windDeg / 22.5) % 16] : null;
 
     const todayTemps = observations
       .map(obs => obs.properties?.temperature?.value)
@@ -180,24 +147,11 @@ const fetchLatestObservation = async (stationId) => {
     return {
       temperature: tempF,
       runningHigh,
-      dewpoint: dewpointF,
-      humidity: latestObs.relativeHumidity?.value ? Math.round(latestObs.relativeHumidity.value) : null,
-      windSpeed: windSpeedMph,
-      windDirection: windDir,
-      conditions: latestObs.textDescription || 'N/A',
       timestamp: new Date(latestObs.timestamp),
     };
   } catch (error) {
     return null;
   }
-};
-
-/**
- * Format distance in miles
- */
-const formatDistance = (meters) => {
-  const miles = meters / 1609.34;
-  return miles < 10 ? `${miles.toFixed(1)}mi` : `${Math.round(miles)}mi`;
 };
 
 /**
@@ -209,7 +163,7 @@ function FitBounds({ stations }) {
   useEffect(() => {
     if (stations.length > 0) {
       const bounds = L.latLngBounds(stations.map(s => [s.lat, s.lon]));
-      map.fitBounds(bounds, { padding: [35, 35] });
+      map.fitBounds(bounds, { padding: [30, 30] });
     }
   }, [stations, map]);
 
@@ -217,79 +171,181 @@ function FitBounds({ stations }) {
 }
 
 /**
- * Hover card component - appears when hovering a marker
+ * Temperature position indicator - shows where temp falls in the range
  */
-function HoverCard({ station, observation, isPrimary, position, mapContainer }) {
-  if (!position || !mapContainer) return null;
+function TempIndicator({ temp, min, max, isPrimary }) {
+  if (temp == null || min == null || max == null || min === max) return null;
 
-  const distanceText = formatDistance(station.distance);
+  const position = ((temp - min) / (max - min)) * 100;
+  const color = isPrimary ? 'bg-emerald-400' : 'bg-blue-400';
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/5 rounded-full overflow-hidden">
+      <div
+        className={`absolute h-full w-1 ${color} rounded-full transition-all duration-300`}
+        style={{ left: `calc(${position}% - 2px)` }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Station row component - refined instrument-style display
+ */
+function StationRow({ station, observation, isPrimary, isHovered, onHover, tempRange }) {
   const temp = observation?.temperature;
-  const runningHigh = observation?.runningHigh;
-  const hasRunningHigh = runningHigh != null && runningHigh !== temp;
-
-  // Calculate position relative to map container
-  const containerRect = mapContainer.getBoundingClientRect();
-  const left = position.x;
-  const top = position.y;
-
-  // Determine if card should appear above or below marker
-  const showAbove = top > containerRect.height / 2;
+  const high = observation?.runningHigh;
+  const hasHigh = high != null && high !== temp;
 
   return (
     <div
-      className="absolute z-[1000] pointer-events-none"
-      style={{
-        left: `${left}px`,
-        top: showAbove ? `${top - 8}px` : `${top + 8}px`,
-        transform: showAbove ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
-      }}
+      className={`
+        group relative flex items-center gap-3 px-2.5 py-2 rounded-lg cursor-pointer
+        transition-all duration-200 ease-out
+        ${isHovered
+          ? 'bg-white/[0.08] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]'
+          : 'hover:bg-white/[0.04]'
+        }
+        ${isPrimary ? 'bg-emerald-500/[0.06]' : ''}
+      `}
+      onMouseEnter={() => onHover(station.id)}
+      onMouseLeave={() => onHover(null)}
     >
-      <div className="bg-black/85 backdrop-blur-xl rounded-lg px-3 py-2.5 border border-white/20 shadow-2xl min-w-[120px]">
-        {/* Station ID */}
-        <div className="flex items-center gap-1.5 mb-1">
-          {isPrimary && (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(16,185,129,0.6)]" />
-          )}
-          <span className="text-[11px] font-medium text-white/90">{station.id}</span>
-          <span className="text-[10px] text-white/40 ml-auto">{distanceText}</span>
-        </div>
-
-        {/* Temperature */}
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-xl font-bold text-white tabular-nums">
-            {temp != null ? `${temp}°` : '—'}
-          </span>
-          {hasRunningHigh && (
-            <span className="text-xs text-orange-400 tabular-nums">↑{runningHigh}°</span>
-          )}
-        </div>
-
-        {/* Additional info */}
-        {observation && (
-          <div className="text-[10px] text-white/50 mt-1 space-y-0.5">
-            {observation.windSpeed != null && (
-              <div>{observation.windDirection} {observation.windSpeed}mph</div>
-            )}
-            {observation.humidity != null && (
-              <div>{observation.humidity}% humidity</div>
-            )}
+      {/* Station indicator */}
+      <div className="flex items-center justify-center w-5">
+        {isPrimary ? (
+          <div className="relative">
+            <Radio size={12} className="text-emerald-400" strokeWidth={2.5} />
+            <div className="absolute inset-0 animate-ping">
+              <Radio size={12} className="text-emerald-400/30" strokeWidth={2.5} />
+            </div>
           </div>
+        ) : (
+          <div className={`
+            w-1.5 h-1.5 rounded-full transition-all duration-200
+            ${isHovered ? 'bg-blue-400 scale-125' : 'bg-white/30'}
+          `} />
         )}
+      </div>
+
+      {/* Station ID */}
+      <span className={`
+        font-mono text-[11px] tracking-wide transition-colors duration-200
+        ${isPrimary
+          ? 'text-emerald-300 font-medium'
+          : isHovered ? 'text-white/90' : 'text-white/60'
+        }
+      `}>
+        {station.id}
+      </span>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Temperature values */}
+      <div className="flex items-baseline gap-1.5 font-mono">
+        {/* Current temp */}
+        <span className={`
+          text-sm tabular-nums font-semibold transition-colors duration-200
+          ${isPrimary ? 'text-white' : isHovered ? 'text-white' : 'text-white/80'}
+        `}>
+          {temp != null ? temp : '—'}
+          <span className="text-[10px] text-white/40">°</span>
+        </span>
+
+        {/* Running high */}
+        {hasHigh && (
+          <span className="text-[10px] tabular-nums text-orange-400/90 font-medium">
+            ↑{high}
+          </span>
+        )}
+      </div>
+
+      {/* Temperature position indicator */}
+      <TempIndicator
+        temp={temp}
+        min={tempRange?.min}
+        max={tempRange?.max}
+        isPrimary={isPrimary}
+      />
+    </div>
+  );
+}
+
+/**
+ * Station table component with refined styling
+ */
+function StationTable({ stations, observations, mainStationId, hoveredId, onHover, tempRange }) {
+  const spread = tempRange ? tempRange.max - tempRange.min : 0;
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Station list */}
+      <div className="flex-1 space-y-0.5 overflow-y-auto scrollbar-hide">
+        {stations.map((station, index) => (
+          <div
+            key={station.id}
+            style={{
+              animationDelay: `${index * 50}ms`,
+              opacity: 0,
+              animation: 'fadeSlideIn 0.3s ease-out forwards'
+            }}
+          >
+            <StationRow
+              station={station}
+              observation={observations[station.id]}
+              isPrimary={station.id === mainStationId}
+              isHovered={station.id === hoveredId}
+              onHover={onHover}
+              tempRange={tempRange}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Footer stats */}
+      <div className="pt-2.5 mt-2 border-t border-white/[0.06]">
+        <div className="flex items-center justify-between text-[10px]">
+          {/* Range display */}
+          {tempRange && (
+            <div className="flex items-center gap-2">
+              <span className="text-white/40 uppercase tracking-wider">Range</span>
+              <span className="font-mono tabular-nums text-white/70">
+                {tempRange.min}°
+                <span className="text-white/30 mx-0.5">→</span>
+                {tempRange.max}°
+              </span>
+              {spread > 0 && (
+                <span className={`
+                  font-mono tabular-nums px-1.5 py-0.5 rounded
+                  ${spread >= 10
+                    ? 'bg-orange-500/20 text-orange-300'
+                    : spread >= 5
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : 'bg-white/10 text-white/50'
+                  }
+                `}>
+                  ±{Math.round(spread / 2)}°
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Station count */}
+          <span className="text-white/30 font-mono">{stations.length} stn</span>
+        </div>
       </div>
     </div>
   );
 }
 
 /**
- * Custom marker with hover detection
+ * Map marker component with hover state
  */
-function TempMarker({ station, observation, isPrimary, onHover, onLeave }) {
-  const temp = observation?.temperature;
-  const runningHigh = observation?.runningHigh;
-
+function DotMarker({ station, isPrimary, isHovered, onHover }) {
   const icon = useMemo(
-    () => createTempIcon(temp, runningHigh, isPrimary),
-    [temp, runningHigh, isPrimary]
+    () => createDotIcon(isPrimary, isHovered),
+    [isPrimary, isHovered]
   );
 
   return (
@@ -297,23 +353,21 @@ function TempMarker({ station, observation, isPrimary, onHover, onLeave }) {
       position={[station.lat, station.lon]}
       icon={icon}
       eventHandlers={{
-        mouseover: (e) => onHover(station, e),
-        mouseout: onLeave,
+        mouseover: () => onHover(station.id),
+        mouseout: () => onHover(null),
       }}
     />
   );
 }
 
 /**
- * NearbyStations - Weather stations widget with temperature-labeled map
+ * NearbyStations - Weather stations widget with refined table + map layout
  */
 export default function NearbyStations({ citySlug }) {
   const [stations, setStations] = useState([]);
   const [observations, setObservations] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [hoveredStation, setHoveredStation] = useState(null);
-  const [hoverPosition, setHoverPosition] = useState(null);
-  const mapContainerRef = useRef(null);
+  const [hoveredStationId, setHoveredStationId] = useState(null);
 
   const config = CITY_CONFIGS[citySlug];
   const mainStationId = MAIN_STATIONS[citySlug];
@@ -343,28 +397,17 @@ export default function NearbyStations({ citySlug }) {
     loadStations();
   }, [citySlug]);
 
-  // Handle marker hover
-  const handleMarkerHover = useCallback((station, e) => {
-    if (mapContainerRef.current) {
-      const containerRect = mapContainerRef.current.getBoundingClientRect();
-      const point = e.containerPoint;
-      setHoverPosition({ x: point.x, y: point.y });
-      setHoveredStation(station);
-    }
+  // Handle hover (shared between table and map)
+  const handleHover = useCallback((stationId) => {
+    setHoveredStationId(stationId);
   }, []);
 
-  const handleMarkerLeave = useCallback(() => {
-    setHoveredStation(null);
-    setHoverPosition(null);
-  }, []);
-
-  // Calculate temperature range and primary station info
-  const { tempRange, primaryObs, latestTimestamp } = useMemo(() => {
+  // Calculate temperature range and timestamp
+  const { tempRange, latestTimestamp } = useMemo(() => {
     const temps = Object.values(observations)
       .map(o => o?.temperature)
       .filter(t => t != null);
 
-    const primary = observations[mainStationId];
     const latest = Object.values(observations)
       .map(o => o?.timestamp)
       .filter(Boolean)
@@ -374,10 +417,9 @@ export default function NearbyStations({ citySlug }) {
       tempRange: temps.length > 0
         ? { min: Math.min(...temps), max: Math.max(...temps) }
         : null,
-      primaryObs: primary,
       latestTimestamp: latest,
     };
-  }, [observations, mainStationId]);
+  }, [observations]);
 
   // Format timestamp for display
   const timeAgo = useMemo(() => {
@@ -403,23 +445,36 @@ export default function NearbyStations({ citySlug }) {
       title="NEARBY STATIONS"
       icon={MapPin}
       size="large"
-      headerRight={timeAgo && <span className="text-[10px] text-white/40">{timeAgo} ago</span>}
+      headerRight={timeAgo && (
+        <span className="text-[10px] text-white/40 font-mono">{timeAgo} ago</span>
+      )}
     >
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto mb-2" />
-            <span className="text-white/40 text-xs">Loading stations...</span>
+            <div className="relative w-8 h-8 mx-auto mb-3">
+              <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-400 animate-spin" />
+            </div>
+            <span className="text-white/40 text-xs font-mono tracking-wide">LOADING</span>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col h-full -mx-1">
-          {/* Full-height Map Container */}
-          <div
-            ref={mapContainerRef}
-            className="flex-1 min-h-0 rounded-lg overflow-hidden relative"
-            style={{ minHeight: '200px' }}
-          >
+        <div className="flex h-full gap-3">
+          {/* Left: Station Table */}
+          <div className="w-[46%] min-w-0">
+            <StationTable
+              stations={stations}
+              observations={observations}
+              mainStationId={mainStationId}
+              hoveredId={hoveredStationId}
+              onHover={handleHover}
+              tempRange={tempRange}
+            />
+          </div>
+
+          {/* Right: Map */}
+          <div className="flex-1 min-w-0 rounded-lg overflow-hidden ring-1 ring-white/[0.06]">
             <MapContainer
               center={[config.lat, config.lon]}
               zoom={9}
@@ -435,59 +490,42 @@ export default function NearbyStations({ citySlug }) {
               <FitBounds stations={stations} />
 
               {stations.map((station) => (
-                <TempMarker
+                <DotMarker
                   key={station.id}
                   station={station}
-                  observation={observations[station.id]}
                   isPrimary={station.id === mainStationId}
-                  onHover={handleMarkerHover}
-                  onLeave={handleMarkerLeave}
+                  isHovered={station.id === hoveredStationId}
+                  onHover={handleHover}
                 />
               ))}
             </MapContainer>
-
-            {/* Hover Card Overlay */}
-            {hoveredStation && (
-              <HoverCard
-                station={hoveredStation}
-                observation={observations[hoveredStation.id]}
-                isPrimary={hoveredStation.id === mainStationId}
-                position={hoverPosition}
-                mapContainer={mapContainerRef.current}
-              />
-            )}
-          </div>
-
-          {/* Footer Summary Bar */}
-          <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-white/10 px-1">
-            {/* Primary station summary */}
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(16,185,129,0.5)]" />
-              <span className="text-xs font-medium text-white/90">
-                {mainStationId}
-              </span>
-              {primaryObs && (
-                <span className="text-xs text-white/70 tabular-nums">
-                  {primaryObs.temperature}°
-                  {primaryObs.runningHigh != null && primaryObs.runningHigh !== primaryObs.temperature && (
-                    <span className="text-orange-400/80 ml-0.5">↑{primaryObs.runningHigh}°</span>
-                  )}
-                </span>
-              )}
-            </div>
-
-            {/* Range and count */}
-            <div className="flex items-center gap-3 text-[10px] text-white/50">
-              {tempRange && (
-                <span className="tabular-nums">
-                  {tempRange.min}°–{tempRange.max}°
-                </span>
-              )}
-              <span>{stations.length} stn</span>
-            </div>
           </div>
         </div>
       )}
+
+      {/* Animation keyframes */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes pulse-ring {
+          0% {
+            transform: scale(1);
+            opacity: 0.4;
+          }
+          100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </GlassWidget>
   );
 }
