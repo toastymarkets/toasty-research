@@ -204,6 +204,8 @@ function SelectionPopupButton({ selectionPopup, onAdd }) {
  * ToastySummaryContent - AI-generated forecast summary
  */
 function ToastySummaryContent({ summary, loading, error, onRefresh }) {
+  const [activeDay, setActiveDay] = useState('today');
+
   if (loading && !summary) {
     return (
       <div className="flex flex-col items-center justify-center py-8 gap-3">
@@ -236,6 +238,13 @@ function ToastySummaryContent({ summary, loading, error, onRefresh }) {
     );
   }
 
+  // Get the content to display based on active tab
+  const displayContent = summary
+    ? (activeDay === 'today' ? summary.today : summary.tomorrow) || summary.raw
+    : null;
+
+  const hasTomorrow = summary?.tomorrow && summary.tomorrow.trim().length > 0;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-white/5">
@@ -253,9 +262,35 @@ function ToastySummaryContent({ summary, loading, error, onRefresh }) {
         </button>
       </div>
 
+      {/* Day selector tabs */}
+      {hasTomorrow && (
+        <div className="flex items-center gap-1.5 p-1 bg-black/20 rounded-lg border border-white/5">
+          <button
+            onClick={() => setActiveDay('today')}
+            className={`flex-1 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-200 ${
+              activeDay === 'today'
+                ? 'bg-white/10 text-white shadow-sm border border-white/10'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+            }`}
+          >
+            Today
+          </button>
+          <button
+            onClick={() => setActiveDay('tomorrow')}
+            className={`flex-1 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-200 ${
+              activeDay === 'tomorrow'
+                ? 'bg-white/10 text-white shadow-sm border border-white/10'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+            }`}
+          >
+            Tomorrow
+          </button>
+        </div>
+      )}
+
       <div className="text-[13px] text-white/85 leading-[1.8] tracking-wide font-light whitespace-pre-wrap">
-        {summary ? (
-          summary.split('\n').map((line, i) => {
+        {displayContent ? (
+          displayContent.split('\n').map((line, i) => {
             if (line.startsWith('**') && line.includes('**')) {
               return (
                 <div key={i} className="font-semibold text-white mt-4 first:mt-0 text-sm tracking-tight">
@@ -1001,22 +1036,26 @@ export default function NWSDiscussionWidget({
   }
 
   // Compact widget view
-  // Extract short summary (first sentence or ~150 chars) from AI summary
+  // Extract short summary (first sentence or ~150 chars) from AI summary (today only)
   const getShortSummary = () => {
     if (!summary) return null;
 
+    // Use today's summary for compact view
+    const todaySummary = summary.today || summary.raw || '';
+    if (!todaySummary) return null;
+
     // Get first sentence or first 150 characters
-    const firstSentence = summary.split(/[.!?]\s/)[0];
+    const firstSentence = todaySummary.split(/[.!?]\s/)[0];
     if (firstSentence.length > 0 && firstSentence.length <= 150) {
       return firstSentence + '.';
     }
 
     // Otherwise truncate at 150 chars
-    if (summary.length > 150) {
-      return summary.substring(0, 147) + '...';
+    if (todaySummary.length > 150) {
+      return todaySummary.substring(0, 147) + '...';
     }
 
-    return summary;
+    return todaySummary;
   };
 
   const shortSummary = getShortSummary();

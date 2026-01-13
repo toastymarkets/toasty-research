@@ -66,7 +66,7 @@ export default async function handler(req) {
       : buildSystemPrompt(context, lastUserMessage);
 
     // Call Claude API with streaming
-    // Summary mode uses fewer tokens since output is constrained
+    // Summary mode uses more tokens for two-day forecast (today + tomorrow)
     const response = await fetch(ANTHROPIC_API_URL, {
       method: 'POST',
       headers: {
@@ -76,7 +76,7 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         model: 'claude-3-5-haiku-20241022',
-        max_tokens: isSummaryMode ? 400 : 300,
+        max_tokens: isSummaryMode ? 800 : 300,
         system: systemPrompt,
         messages: messages.map(m => ({
           role: m.role,

@@ -18,10 +18,13 @@ export const SUMMARY_SYSTEM_PROMPT = `You are a quantitative meteorologist extra
    - MED: Model spread 3-4°F
    - LOW: Model spread ≥5°F
 
-4. **TODAY ONLY**: Extract information for TODAY only. Ignore all future days.
+4. **TWO-DAY FORECAST**: Extract information for BOTH TODAY and TOMORROW. Generate separate summaries for each day.
 
 ## Output Format (STRICT - Follow Exactly)
 
+Generate TWO separate summaries in this exact format:
+
+---TODAY---
 **TODAY'S HIGH: [MIN]-[MAX]°F** | Models: [spread]°F spread | Confidence: [HIGH/MED/LOW]
 
 **Synoptic Drivers (from AFD):**
@@ -38,6 +41,22 @@ export const SUMMARY_SYSTEM_PROMPT = `You are a quantitative meteorologist extra
 • Wind: [exact speeds/directions from AFD]
 • Clouds: [exact coverage from AFD]
 • Models: [list actual model values: GFS XX°, NBM XX°, etc.]
+
+---TOMORROW---
+**TOMORROW'S HIGH: [MIN]-[MAX]°F** | Models: [spread]°F spread | Confidence: [HIGH/MED/LOW]
+
+**Synoptic Drivers (from AFD):**
+• [Quote or closely paraphrase AFD text about pressure systems, fronts, air masses for TOMORROW]
+• [Include trajectory: will systems intensify/weaken/move?]
+
+**Key Meteorological Processes:**
+• [List EVERY significant process mentioned for TOMORROW]
+
+**Trading Signals:**
+• Precip: [exact probability from AFD for tomorrow, or "not mentioned"]
+• Wind: [exact speeds/directions from AFD for tomorrow]
+• Clouds: [exact coverage from AFD for tomorrow]
+• Models: [list actual model values for tomorrow: GFS XX°, NBM XX°, etc.]
 
 ## What You MUST Extract (if mentioned in AFD)
 
@@ -93,10 +112,11 @@ export const SUMMARY_SYSTEM_PROMPT = `You are a quantitative meteorologist extra
 - "vs normal" comparisons (unless AFD explicitly states departure from normal)
 - Confidence assessments not based on model spread
 - Aviation/marine/fire weather details
-- Forecasts for any day other than TODAY
+- Forecasts for days beyond TOMORROW
 - Made-up or assumed information
 
 ## Example of CORRECT output:
+---TODAY---
 **TODAY'S HIGH: 62-65°F** | Models: 3°F spread | Confidence: MED
 
 **Synoptic Drivers (from AFD):**
@@ -115,6 +135,24 @@ export const SUMMARY_SYSTEM_PROMPT = `You are a quantitative meteorologist extra
 • Clouds: Clear to mostly clear (AFD: "minimal cloud cover")
 • Models: GFS 63°F, NBM 62°F, ECM 64°F, ICO 65°F
 
+---TOMORROW---
+**TOMORROW'S HIGH: 68-72°F** | Models: 4°F spread | Confidence: MED
+
+**Synoptic Drivers (from AFD):**
+• "Ridge continues to strengthen and shift eastward"
+• "Offshore flow weakens slightly"
+
+**Key Processes Mentioned:**
+• Warming trend
+• Diminishing offshore flow
+• Continued high pressure dominance
+
+**Trading Signals:**
+• Precip: 0% (AFD: "dry conditions persist")
+• Wind: NE 10-15 mph (AFD: "lighter winds expected")
+• Clouds: Mostly clear
+• Models: GFS 70°F, NBM 68°F, ECM 71°F, ICO 72°F
+
 ## Example of WRONG output (DO NOT DO THIS):
 **TODAY'S HIGH: 65°F** (+3°F vs normal) | Confidence: HIGH
 • Northerly flow aloft increasing temperatures ← INFERENCE, not in AFD
@@ -129,12 +167,19 @@ export function buildSummaryPrompt(context) {
 
   parts.push('\n\n---\n## FORECAST DISCUSSION TO SUMMARIZE\n');
 
-  // Add explicit TODAY's date - CRITICAL for disambiguation
+  // Add explicit TODAY's and TOMORROW's dates - CRITICAL for disambiguation
   const today = new Date();
-  const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
-  const fullDate = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  parts.push(`**⚠️ TODAY IS: ${fullDate}**`);
-  parts.push(`**Extract information for ${dayOfWeek} (today) ONLY.**\n`);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const todayDayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const tomorrowDayOfWeek = tomorrow.toLocaleDateString('en-US', { weekday: 'long' });
+  const todayFullDate = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const tomorrowFullDate = tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  parts.push(`**⚠️ TODAY IS: ${todayFullDate}**`);
+  parts.push(`**⚠️ TOMORROW IS: ${tomorrowFullDate}**`);
+  parts.push(`**Extract information for BOTH ${todayDayOfWeek} (today) AND ${tomorrowDayOfWeek} (tomorrow).**\n`);
 
   if (context?.city) {
     parts.push(`**City:** ${context.city.name}`);
@@ -178,12 +223,14 @@ export function buildSummaryPrompt(context) {
       parts.push(`**SYNOPSIS:**\n${afd.synopsis}\n`);
     }
     if (afd.nearTerm) {
-      parts.push(`**NEAR TERM (extract TODAY - ${dayOfWeek} info):**\n${afd.nearTerm}\n`);
+      parts.push(`**NEAR TERM (extract TODAY - ${todayDayOfWeek} info):**\n${afd.nearTerm}\n`);
     }
     if (afd.shortTerm) {
-      parts.push(`**SHORT TERM (extract TODAY - ${dayOfWeek} info only):**\n${afd.shortTerm}\n`);
+      parts.push(`**SHORT TERM (extract TODAY - ${todayDayOfWeek} and TOMORROW - ${tomorrowDayOfWeek} info):**\n${afd.shortTerm}\n`);
     }
-    // Deliberately exclude longTerm to reduce confusion
+    if (afd.longTerm) {
+      parts.push(`**LONG TERM (extract TOMORROW - ${tomorrowDayOfWeek} info if mentioned):**\n${afd.longTerm}\n`);
+    }
   }
 
   parts.push('\n---\n## CURRENT CONDITIONS (for reference)\n');
@@ -210,10 +257,12 @@ export function buildSummaryPrompt(context) {
 
   parts.push('\n---');
   parts.push(`\nNow generate the summary. Remember:`);
-  parts.push(`1. Use the MODEL RANGE for temperature (not a single number)`);
-  parts.push(`2. Use the pre-calculated CONFIDENCE LEVEL`);
-  parts.push(`3. EXTRACT facts from AFD - do not infer`);
-  parts.push(`4. Include advection patterns if mentioned in AFD`);
+  parts.push(`1. Generate TWO separate summaries: one for TODAY (${todayDayOfWeek}) and one for TOMORROW (${tomorrowDayOfWeek})`);
+  parts.push(`2. Use the ---TODAY--- and ---TOMORROW--- section markers exactly as shown`);
+  parts.push(`3. Use the MODEL RANGE for temperature (not a single number)`);
+  parts.push(`4. Use the pre-calculated CONFIDENCE LEVEL`);
+  parts.push(`5. EXTRACT facts from AFD - do not infer`);
+  parts.push(`6. Include advection patterns if mentioned in AFD`);
 
   return parts.join('\n');
 }
