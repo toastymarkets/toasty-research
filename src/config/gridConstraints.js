@@ -33,7 +33,7 @@ export const WIDGET_CONSTRAINTS = {
   discussion: {
     id: 'discussion',
     collapsed: { cols: 1, rows: 1 },
-    expanded: { cols: 4, rows: 2 },
+    expanded: { cols: 2, rows: 2 }, // Max half-page width
     min: { cols: 1, rows: 1 },
     priority: 2,
     canHide: false,
