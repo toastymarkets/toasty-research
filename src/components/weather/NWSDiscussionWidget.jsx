@@ -598,24 +598,16 @@ function ExpandedDiscussionInline({
   cityName,
   weather,
   markets,
+  summary,
+  summaryLoading,
+  summaryError,
+  refreshSummary,
 }) {
   const [activeTab, setActiveTab] = useState('discussion');
   const [activeSection, setActiveSection] = useState('summary');
   const [copied, setCopied] = useState(false);
   const contentRef = useRef(null);
   const { selectionPopup, handleMouseUp, clearSelection } = useTextSelection(contentRef);
-
-  // Get model forecast data for AI summary grounding
-  const { forecasts: modelForecasts } = useMultiModelForecast(citySlug);
-
-  const { summary, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useToastySummary({
-    citySlug,
-    cityName,
-    discussion,
-    weather,
-    markets,
-    models: modelForecasts,
-  });
 
   const fullDiscussionText = [
     discussion.synopsis,
@@ -818,6 +810,10 @@ ExpandedDiscussionInline.propTypes = {
   cityName: PropTypes.string,
   weather: PropTypes.object,
   markets: PropTypes.object,
+  summary: PropTypes.string,
+  summaryLoading: PropTypes.bool,
+  summaryError: PropTypes.string,
+  refreshSummary: PropTypes.func,
 };
 
 // ============================================================================
@@ -851,6 +847,19 @@ export default function NWSDiscussionWidget({
     forecastOffice || discussion?.office,
     true
   );
+
+  // Get model forecast data for AI summary grounding
+  const { forecasts: modelForecasts } = useMultiModelForecast(citySlug);
+
+  // Preload AI summary (even in compact view) to prevent flickering when expanding
+  const { summary, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useToastySummary({
+    citySlug,
+    cityName,
+    discussion,
+    weather,
+    markets,
+    models: modelForecasts,
+  });
 
   const fetchDiscussion = useCallback(async () => {
     if (!lat || !lon) return;
@@ -974,11 +983,35 @@ export default function NWSDiscussionWidget({
         cityName={cityName}
         weather={weather}
         markets={markets}
+        summary={summary}
+        summaryLoading={summaryLoading}
+        summaryError={summaryError}
+        refreshSummary={refreshSummary}
       />
     );
   }
 
   // Compact widget view
+  // Extract short summary (first sentence or ~150 chars) from AI summary
+  const getShortSummary = () => {
+    if (!summary) return null;
+
+    // Get first sentence or first 150 characters
+    const firstSentence = summary.split(/[.!?]\s/)[0];
+    if (firstSentence.length > 0 && firstSentence.length <= 150) {
+      return firstSentence + '.';
+    }
+
+    // Otherwise truncate at 150 chars
+    if (summary.length > 150) {
+      return summary.substring(0, 147) + '...';
+    }
+
+    return summary;
+  };
+
+  const shortSummary = getShortSummary();
+
   return (
     <>
       <GlassWidget
@@ -1000,11 +1033,38 @@ export default function NWSDiscussionWidget({
         }
       >
         <div className="flex flex-col h-full justify-between gap-2 overflow-hidden">
-          {synopsisExcerpt ? (
+          {/* AI Summary (if available) */}
+          {shortSummary && (
+            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-400/20">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Sparkles className="w-3 h-3 text-purple-400" />
+                <span className="text-[9px] font-semibold text-purple-300 uppercase tracking-wide">AI Summary</span>
+              </div>
+              <p className="text-[11px] text-white/80 leading-relaxed line-clamp-2">
+                {shortSummary}
+              </p>
+            </div>
+          )}
+
+          {/* Loading state for AI summary */}
+          {summaryLoading && !shortSummary && (
+            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-400/20">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
+                <span className="text-[9px] text-purple-300/60 italic">Generating summary...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Fallback to synopsis if no AI summary */}
+          {!shortSummary && !summaryLoading && synopsisExcerpt && (
             <p className="text-[11px] text-white/70 leading-relaxed line-clamp-2">
               {synopsisExcerpt}
             </p>
-          ) : (
+          )}
+
+          {/* Empty state */}
+          {!shortSummary && !summaryLoading && !synopsisExcerpt && (
             <p className="text-[11px] text-white/50 italic">
               Tap to view forecast discussion
             </p>
