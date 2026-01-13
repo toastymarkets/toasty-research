@@ -424,8 +424,8 @@ export default function NearbyStations({ citySlug }) {
               center={[config.lat, config.lon]}
               zoom={9}
               style={{ height: '100%', width: '100%' }}
-              scrollWheelZoom={false}
-              zoomControl={false}
+              scrollWheelZoom={true}
+              zoomControl={true}
               attributionControl={false}
             >
               <TileLayer
