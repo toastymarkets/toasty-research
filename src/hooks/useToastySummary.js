@@ -7,7 +7,7 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
  * Uses the copilot API in summary mode
  */
 export function useToastySummary({ citySlug, cityName, discussion, weather, markets, models }) {
-  const [summary, setSummary] = useState(null);
+  const [summary, setSummary] = useState(null); // Will contain { today, tomorrow }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -137,7 +137,8 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
               const data = JSON.parse(line.slice(6));
               if (data.type === 'text') {
                 fullText += data.content;
-                setSummary(fullText);
+                // Show raw text while streaming, will parse at the end
+                setSummary({ raw: fullText, today: null, tomorrow: null });
               } else if (data.type === 'error') {
                 throw new Error(data.message);
               }
@@ -153,9 +154,11 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
         }
       }
 
-      // Cache the final summary
+      // Parse and cache the final summary
       if (fullText) {
-        cacheSummary(fullText);
+        const parsed = parseTwoDaySummary(fullText);
+        setSummary(parsed);
+        cacheSummary(parsed);
       }
     } catch (e) {
       console.error('Error fetching summary:', e);
@@ -209,6 +212,25 @@ function getWindDirection(degrees) {
   const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
+}
+
+// Helper to parse two-day summary into separate sections
+function parseTwoDaySummary(fullText) {
+  if (!fullText) return { today: null, tomorrow: null, raw: fullText };
+
+  // Split by section markers
+  const todayMatch = fullText.match(/---TODAY---([\s\S]*?)(?:---TOMORROW---|$)/);
+  const tomorrowMatch = fullText.match(/---TOMORROW---([\s\S]*?)$/);
+
+  const today = todayMatch ? todayMatch[1].trim() : null;
+  const tomorrow = tomorrowMatch ? tomorrowMatch[1].trim() : null;
+
+  // If no sections found, put everything in today for backwards compatibility
+  if (!today && !tomorrow) {
+    return { today: fullText.trim(), tomorrow: null, raw: fullText };
+  }
+
+  return { today, tomorrow, raw: fullText };
 }
 
 export default useToastySummary;
