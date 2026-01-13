@@ -208,9 +208,17 @@ function ToastySummaryContent({ summary, loading, error, onRefresh }) {
 
   if (loading && !summary) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 gap-3">
-        <Sparkles className="w-6 h-6 text-purple-400 animate-pulse" />
-        <p className="text-white/50 text-sm">Generating summary...</p>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-violet-400" />
+            <span className="text-[13px] font-medium text-white tracking-tight">AI Forecast Summary</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center py-6 gap-2">
+          <Sparkles className="w-5 h-5 text-purple-400 animate-pulse" />
+          <p className="text-white/50 text-xs">Generating summary...</p>
+        </div>
       </div>
     );
   }
@@ -218,22 +226,30 @@ function ToastySummaryContent({ summary, loading, error, onRefresh }) {
   if (error && !summary) {
     const isDevError = error.includes('vercel dev');
     return (
-      <div className="flex flex-col items-center justify-center py-8 gap-3">
-        <AlertCircle className="w-6 h-6 text-amber-400" />
-        <p className="text-white/60 text-sm text-center max-w-xs">{error}</p>
-        {isDevError ? (
-          <p className="text-white/40 text-xs text-center">
-            Use the Synopsis tab for raw NWS content
-          </p>
-        ) : (
-          <button
-            onClick={onRefresh}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-          >
-            <RefreshCw className="w-3 h-3" />
-            Try again
-          </button>
-        )}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-violet-400" />
+            <span className="text-[13px] font-medium text-white tracking-tight">AI Forecast Summary</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center py-6 gap-2">
+          <AlertCircle className="w-5 h-5 text-amber-400" />
+          <p className="text-white/60 text-xs text-center max-w-xs">{error}</p>
+          {isDevError ? (
+            <p className="text-white/40 text-[10px] text-center">
+              Use the Synopsis tab for raw NWS content
+            </p>
+          ) : (
+            <button
+              onClick={onRefresh}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-white/10 hover:bg-white/20 text-white rounded transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Try again
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -246,79 +262,81 @@ function ToastySummaryContent({ summary, loading, error, onRefresh }) {
   const hasTomorrow = summary?.tomorrow && summary.tomorrow.trim().length > 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+    <div className="space-y-3">
+      {/* Compact header with inline day tabs */}
+      <div className="flex items-center justify-between pb-2 border-b border-white/5">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-[18px] h-[18px] text-violet-400" />
-          <span className="text-sm font-medium text-white tracking-tight">AI Forecast Summary</span>
+          <Sparkles className="w-4 h-4 text-violet-400" />
+          <span className="text-[13px] font-medium text-white tracking-tight">AI Forecast Summary</span>
+          {/* Inline day selector pills */}
+          {hasTomorrow && (
+            <div className="flex items-center gap-0.5 ml-2 p-0.5 bg-black/30 rounded-md">
+              <button
+                onClick={() => setActiveDay('today')}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all duration-150 ${
+                  activeDay === 'today'
+                    ? 'bg-violet-500/30 text-violet-200'
+                    : 'text-white/40 hover:text-white/60'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setActiveDay('tomorrow')}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all duration-150 ${
+                  activeDay === 'tomorrow'
+                    ? 'bg-violet-500/30 text-violet-200'
+                    : 'text-white/40 hover:text-white/60'
+                }`}
+              >
+                Tomorrow
+              </button>
+            </div>
+          )}
         </div>
         <button
           onClick={onRefresh}
           disabled={loading}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 rounded-lg transition-all duration-200 border border-white/5 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/70 transition-all duration-150 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title="Refresh summary"
         >
           <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-          <span className="tracking-wide">Refresh</span>
         </button>
       </div>
 
-      {/* Day selector tabs */}
-      {hasTomorrow && (
-        <div className="flex items-center gap-1.5 p-1 bg-black/20 rounded-lg border border-white/5">
-          <button
-            onClick={() => setActiveDay('today')}
-            className={`flex-1 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-200 ${
-              activeDay === 'today'
-                ? 'bg-white/10 text-white shadow-sm border border-white/10'
-                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
-            }`}
-          >
-            Today
-          </button>
-          <button
-            onClick={() => setActiveDay('tomorrow')}
-            className={`flex-1 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-200 ${
-              activeDay === 'tomorrow'
-                ? 'bg-white/10 text-white shadow-sm border border-white/10'
-                : 'text-white/50 hover:text-white/70 hover:bg-white/5'
-            }`}
-          >
-            Tomorrow
-          </button>
-        </div>
-      )}
-
-      <div className="text-[13px] text-white/85 leading-[1.8] tracking-wide font-light whitespace-pre-wrap">
+      {/* Content */}
+      <div className="text-[12px] text-white/85 leading-[1.5] tracking-wide font-light">
         {displayContent ? (
           displayContent.split('\n').map((line, i) => {
             if (line.startsWith('**') && line.includes('**')) {
               return (
-                <div key={i} className="font-semibold text-white mt-4 first:mt-0 text-sm tracking-tight">
+                <div key={i} className="font-semibold text-white mt-3 first:mt-0 text-[12px] tracking-tight">
                   {line.replace(/\*\*/g, '')}
                 </div>
               );
             }
             if (line.startsWith('•') || line.startsWith('-')) {
               return (
-                <div key={i} className="flex gap-2.5 ml-1 mt-2">
-                  <span className="text-violet-400 mt-0.5">•</span>
+                <div key={i} className="flex gap-2 ml-0.5 mt-1.5">
+                  <span className="text-violet-400">•</span>
                   <span>{line.replace(/^[•-]\s*/, '')}</span>
                 </div>
               );
             }
             if (line.trim()) {
-              return <div key={i} className="mt-2 first:mt-0">{line}</div>;
+              return <div key={i} className="mt-1.5 first:mt-0">{line}</div>;
             }
-            return <div key={i} className="h-3" />;
+            return <div key={i} className="h-2" />;
           })
         ) : (
-          <p className="text-white/40 italic text-center py-4">No summary available</p>
+          <p className="text-white/40 italic text-center py-4 text-xs">No summary available</p>
         )}
       </div>
 
-      <div className="pt-4 mt-2 border-t border-white/5">
-        <p className="text-[10px] text-white/35 font-light leading-relaxed tracking-wide">
-          Generated by AI from NWS forecast discussion. Verify key data points.
+      {/* Compact footer */}
+      <div className="pt-2 border-t border-white/5">
+        <p className="text-[9px] text-white/30 font-light tracking-wide">
+          AI-generated from NWS discussion. Verify key data.
         </p>
       </div>
     </div>
@@ -690,7 +708,7 @@ function ExpandedDiscussionInline({
   const CurrentIcon = currentTabIcon;
 
   return (
-    <div className="glass-widget h-full flex flex-col rounded-2xl overflow-hidden animate-[glass-scale-in_300ms_cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl">
+    <div className="glass-widget h-full max-h-[480px] flex flex-col rounded-2xl overflow-hidden animate-[glass-scale-in_300ms_cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl">
       {/* Refined Header */}
       <div className="px-5 pt-4 pb-3 border-b border-white/10 flex-shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
         <div className="flex items-start justify-between mb-3">
