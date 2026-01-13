@@ -1035,14 +1035,16 @@ export default function NWSDiscussionWidget({
         <div className="flex flex-col h-full gap-3 overflow-hidden">
           {/* AI Summary (if available) */}
           {shortSummary && (
-            <div className="flex-1 min-h-0">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                <span className="text-[10px] font-medium text-violet-300/90 uppercase tracking-widest">
-                  AI Forecast
-                </span>
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-violet-400" />
+                  <h3 className="text-sm font-semibold text-white tracking-tight">
+                    AI Forecast Summary
+                  </h3>
+                </div>
               </div>
-              <p className="text-[13px] leading-[1.65] text-white/95 font-light tracking-wide line-clamp-4">
+              <p className="text-[13px] leading-[1.65] text-white/90 font-light tracking-wide line-clamp-4">
                 {shortSummary}
               </p>
             </div>
@@ -1060,7 +1062,15 @@ export default function NWSDiscussionWidget({
 
           {/* Fallback to synopsis if no AI summary */}
           {!shortSummary && !summaryLoading && synopsisExcerpt && (
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-sm font-semibold text-white tracking-tight">
+                    Synopsis
+                  </h3>
+                </div>
+              </div>
               <p className="text-[13px] leading-[1.65] text-white/85 font-light tracking-wide line-clamp-4">
                 {synopsisExcerpt}
               </p>
