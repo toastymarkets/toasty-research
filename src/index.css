@@ -335,3 +335,28 @@ html {
 .resizing-cursor * {
   cursor: col-resize !important;
 }
+
+/* ===== NEARBY STATIONS MAP MARKERS ===== */
+
+/* Temperature marker styles for NearbyStations widget */
+.temp-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.temp-marker-label {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.temp-marker-label:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  z-index: 1000 !important;
+}
+
+/* Hide default leaflet marker styles */
+.leaflet-marker-icon.temp-marker {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
