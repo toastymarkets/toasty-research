@@ -8,8 +8,9 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
  */
 export function useToastySummary({ citySlug, cityName, discussion, weather, markets, models }) {
   const [summary, setSummary] = useState(null); // Will contain { today, tomorrow }
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start true to prevent flickering
   const [error, setError] = useState(null);
+  const [initialized, setInitialized] = useState(false);
 
   // Generate cache key based on city and AFD issuance time
   const getCacheKey = useCallback(() => {
@@ -177,15 +178,22 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
 
   // On mount or discussion change, check cache first
   useEffect(() => {
-    if (!discussion) return;
+    if (!discussion) {
+      setLoading(false);
+      setInitialized(true);
+      return;
+    }
 
     const cached = getCachedSummary();
     if (cached) {
       setSummary(cached);
+      setLoading(false);
+      setInitialized(true);
       return;
     }
 
-    // No cache, fetch fresh
+    // No cache, fetch fresh (loading already true)
+    setInitialized(true);
     fetchSummary();
   }, [discussion?.issuanceTime, getCachedSummary, fetchSummary]);
 
@@ -195,6 +203,8 @@ export function useToastySummary({ citySlug, cityName, discussion, weather, mark
     if (cacheKey) {
       localStorage.removeItem(cacheKey);
     }
+    // Set loading first to prevent flash of empty state
+    setLoading(true);
     setSummary(null);
     fetchSummary();
   }, [getCacheKey, fetchSummary]);
