@@ -22,16 +22,19 @@ Analyze the code for:
 - **Accessibility**: Keyboard navigation, ARIA labels, focus states
 - **Edge cases**: Loading states, error states, empty states
 
-### 3. Visual Testing (requires Playwright MCP)
-If Playwright MCP is available:
-1. Navigate to `http://localhost:5173` using `browser_navigate`
-2. Navigate to a city dashboard that includes the widget
-3. Take a screenshot using `browser_screenshot`
-4. Test interactive elements (hover, click, scroll)
-5. Take additional screenshots of different states
+### 3. Visual Testing (uses Claude in Chrome)
+Use the Claude in Chrome MCP tools for browser automation:
+1. First call `mcp__claude-in-chrome__tabs_context_mcp` to get browser context
+2. Create a new tab with `mcp__claude-in-chrome__tabs_create_mcp`
+3. Navigate to `http://localhost:5173` (or current dev server port) using `mcp__claude-in-chrome__navigate`
+4. Navigate to a city dashboard that includes the widget
+5. Take a screenshot using `mcp__claude-in-chrome__computer` with action "screenshot"
+6. Test interactive elements using `mcp__claude-in-chrome__computer` (click, scroll) or `mcp__claude-in-chrome__find` to locate elements
+7. Take additional screenshots of different states (expanded, loading, error)
 
-If Playwright MCP is not available:
-- Ask the user to share a screenshot
+If Claude in Chrome is not available:
+- Fall back to Playwright MCP tools if available
+- Or ask the user to share a screenshot
 - Or provide instructions to manually test
 
 ### 4. Generate Review Report
@@ -74,3 +77,6 @@ Provide a structured report with:
 - For visual testing, ensure the dev server is running (`npm run dev`)
 - The widget should be added to a city dashboard to test in context
 - Test with real data when possible (requires network access to NWS/Kalshi APIs)
+- Claude in Chrome provides better interaction with the actual browser the user is using
+- Use `mcp__claude-in-chrome__read_page` to get accessibility tree for finding elements
+- Use `mcp__claude-in-chrome__find` for natural language element queries

@@ -429,19 +429,6 @@ function BulletinContent({ bulletin, loading, office }) {
 
   return (
     <div className="space-y-4">
-      {bulletin.headlines && bulletin.headlines.length > 0 && (
-        <div className="space-y-2">
-          {bulletin.headlines.map((headline, idx) => (
-            <div key={idx} className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-300 font-medium leading-snug">{headline}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {bulletin.body && (
         <div className="max-h-[400px] overflow-y-auto pr-2">
           <div className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
@@ -1054,26 +1041,27 @@ export default function NWSDiscussionWidget({
   }
 
   // Compact widget view
-  // Extract short summary (first sentence or ~150 chars) from AI summary (today only)
+  // Extract short summary from AI summary, stripping markdown formatting
   const getShortSummary = () => {
     if (!summary) return null;
 
-    // Use today's summary for compact view
     const todaySummary = summary.today || summary.raw || '';
     if (!todaySummary) return null;
 
-    // Get first sentence or first 150 characters
-    const firstSentence = todaySummary.split(/[.!?]\s/)[0];
-    if (firstSentence.length > 0 && firstSentence.length <= 150) {
-      return firstSentence + '.';
+    // Strip markdown markers and normalize whitespace
+    let cleaned = todaySummary
+      .replace(/\*\*/g, '')           // Remove bold markers
+      .replace(/^[•\-]\s*/gm, '')     // Remove bullet points
+      .replace(/\n+/g, ' ')           // Join lines with spaces
+      .replace(/\s+/g, ' ')           // Normalize whitespace
+      .trim();
+
+    // Truncate to ~150 chars at word boundary
+    if (cleaned.length > 150) {
+      cleaned = cleaned.substring(0, 147).replace(/\s+\S*$/, '') + '...';
     }
 
-    // Otherwise truncate at 150 chars
-    if (todaySummary.length > 150) {
-      return todaySummary.substring(0, 147) + '...';
-    }
-
-    return todaySummary;
+    return cleaned;
   };
 
   const shortSummary = getShortSummary();
@@ -1101,27 +1089,31 @@ export default function NWSDiscussionWidget({
         <div className="flex flex-col h-full gap-3 overflow-hidden">
           {/* AI Summary (if available) */}
           {shortSummary && (
-            <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-violet-400" />
-                  <h3 className="text-sm font-semibold text-white tracking-tight">
-                    AI Forecast Summary
-                  </h3>
-                </div>
+            <div className="flex-1 min-h-0 flex flex-col w-full">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+                <Sparkles className="w-4 h-4 text-violet-400" />
+                <h3 className="text-sm font-semibold text-white tracking-tight">
+                  AI Forecast Summary
+                </h3>
               </div>
-              <p className="text-[13px] leading-[1.65] text-white/90 font-light tracking-wide line-clamp-4">
+              <p className="text-[13px] leading-[1.7] text-white/90 font-light line-clamp-4">
                 {shortSummary}
               </p>
             </div>
           )}
 
-          {/* Loading state for AI summary */}
+          {/* Loading state for AI summary - skeleton loader */}
           {summaryLoading && !shortSummary && (
-            <div className="flex-1 flex items-center justify-center py-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-violet-400 animate-pulse" />
-                <span className="text-xs text-violet-300/70 font-light italic">Generating forecast...</span>
+            <div className="flex-1 min-h-0 flex flex-col animate-pulse">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+                <Sparkles className="w-4 h-4 text-violet-400" />
+                <div className="h-4 w-32 bg-white/10 rounded" />
+              </div>
+              <div className="space-y-2.5">
+                <div className="h-3.5 bg-white/10 rounded w-full" />
+                <div className="h-3.5 bg-white/10 rounded w-11/12" />
+                <div className="h-3.5 bg-white/10 rounded w-4/5" />
+                <div className="h-3.5 bg-white/10 rounded w-3/4" />
               </div>
             </div>
           )}
