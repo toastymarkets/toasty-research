@@ -45,8 +45,7 @@ export default defineConfig({
       'react-dom',
       'react-router-dom',
       'recharts',
-      'leaflet',
-      'react-leaflet',
+      // leaflet and react-leaflet removed - lazy loaded via manual chunks
     ],
   },
 })

@@ -1,7 +1,7 @@
 {
   "name": "toasty-research",
   "private": true,
-  "version": "1.10.0",
+  "version": "1.12.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -2,27 +2,24 @@ import { useState, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { CITY_BY_SLUG, CITY_BY_ID } from '../config/cities';
 import { getErrorMessage } from '../constants/errors';
+import { fetchWithDedup } from '../utils/fetchDedup';
+
+// NWS API headers
+const NWS_HEADERS = {
+  'User-Agent': 'Toasty Research (toasty-research.app)',
+  'Accept': 'application/geo+json',
+};
+
+// Cache TTL: 2 minutes (NWS updates every ~5 min)
+const OBSERVATION_CACHE_TTL = 2 * 60 * 1000;
 
 /**
- * Fetch current observations from NWS station
+ * Fetch current observations from NWS station with deduplication
  */
 const fetchStationObservation = async (stationId) => {
   try {
-    const response = await fetch(
-      `https://api.weather.gov/stations/${stationId}/observations/latest`,
-      {
-        headers: {
-          'User-Agent': 'Toasty Research (toasty-research.app)',
-          'Accept': 'application/geo+json',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
+    const url = `https://api.weather.gov/stations/${stationId}/observations/latest`;
+    const data = await fetchWithDedup(url, { headers: NWS_HEADERS }, OBSERVATION_CACHE_TTL);
     return data.properties || null;
   } catch (error) {
     logger.error(`[NWS] Error fetching ${stationId}:`, error);
@@ -164,19 +161,10 @@ export const useNWSForecastDiscussion = (cityId) => {
       setError(null);
 
       try {
-        const response = await fetch(
-          `https://api.weather.gov/products/types/AFD/locations/${cityConfig.forecastOffice}`,
-          {
-            headers: {
-              'User-Agent': 'Toasty Research (toasty-research.app)',
-              'Accept': 'application/json',
-            },
-          }
-        );
+        const listUrl = `https://api.weather.gov/products/types/AFD/locations/${cityConfig.forecastOffice}`;
+        const jsonHeaders = { ...NWS_HEADERS, 'Accept': 'application/json' };
 
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const data = await response.json();
+        const data = await fetchWithDedup(listUrl, { headers: jsonHeaders }, 5 * 60 * 1000);
         const products = data['@graph'] || [];
 
         if (products.length === 0) {
@@ -188,16 +176,7 @@ export const useNWSForecastDiscussion = (cityId) => {
         const latestProductRef = products[0];
         const productId = latestProductRef['@id'] || latestProductRef.id;
 
-        const productResponse = await fetch(productId, {
-          headers: {
-            'User-Agent': 'Toasty Research (toasty-research.app)',
-            'Accept': 'application/json',
-          },
-        });
-
-        if (!productResponse.ok) throw new Error(`HTTP ${productResponse.status}`);
-
-        const productData = await productResponse.json();
+        const productData = await fetchWithDedup(productId, { headers: jsonHeaders }, 5 * 60 * 1000);
         const parsed = parseAFDText(productData.productText);
         const summary = extractAFDSummary(parsed);
 

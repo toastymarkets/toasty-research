@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { fetchKalshiWithCache, isInBackoff } from '../utils/kalshiCache';
 
 /**
@@ -176,8 +176,16 @@ export function KalshiMarketsProvider({ children }) {
     return () => clearInterval(interval);
   }, [fetchAllMarkets]);
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    marketsData,
+    loading,
+    lastFetch,
+    refetch: fetchAllMarkets
+  }), [marketsData, loading, lastFetch, fetchAllMarkets]);
+
   return (
-    <KalshiMarketsContext.Provider value={{ marketsData, loading, lastFetch, refetch: fetchAllMarkets }}>
+    <KalshiMarketsContext.Provider value={contextValue}>
       {children}
     </KalshiMarketsContext.Provider>
   );

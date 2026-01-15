@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, createContext, useContext, useCallback } from 'react';
+import { useState, useEffect, useMemo, createContext, useContext, useCallback, lazy, Suspense } from 'react';
 import {
   FileText,
   ChevronLeft,
@@ -9,25 +9,31 @@ import {
   Trash2,
   ChevronDown,
   Clock,
-  X,
-  ExternalLink,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext.jsx';
 import { useNotesSidebar } from '../../context/NotesSidebarContext.jsx';
 import { CopilotProvider } from '../../context/CopilotContext.jsx';
-import NotepadEditor from '../notepad/NotepadEditor.jsx';
 import ConfirmPopover from '../ui/ConfirmPopover.jsx';
 import NotesDashboardSidebar from './NotesDashboardSidebar.jsx';
 import ExpandedNoteView from './ExpandedNoteView.jsx';
-import { DataChipNode } from '../notepad/extensions/DataChipNode.js';
 import { getAllResearchNotes } from '../../utils/researchLogUtils.js';
 import { NOTE_INSERTION_EVENT } from '../../utils/noteInsertionEvents.js';
 import { gatherCopilotContext } from '../../utils/copilotHelpers.js';
 import { formatRelativeTime, formatSaveTime } from '../../utils/timeFormatters.js';
+
+// Lazy load TipTap-dependent components to reduce initial bundle size (~100KB savings)
+const NotepadEditor = lazy(() => import('../notepad/NotepadEditor.jsx'));
+const NotePreviewModal = lazy(() => import('./NotePreviewModal.jsx'));
+
+// Loading fallback for lazy-loaded editor
+function EditorLoadingFallback() {
+  return (
+    <div className="h-full flex items-center justify-center">
+      <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  );
+}
 
 // Hook to detect mobile vs desktop
 function useIsMobile() {
@@ -166,104 +172,6 @@ function HeaderControls() {
 }
 
 // ============================================================================
-// Note Preview Modal
-// ============================================================================
-
-/**
- * NotePreviewModal - Shows saved note content in a popup
- */
-function NotePreviewModal({ note, onClose }) {
-  const [content, setContent] = useState(null);
-
-  useEffect(() => {
-    if (!note) return;
-
-    try {
-      const saved = localStorage.getItem(note.id);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setContent(parsed.document);
-      }
-    } catch (e) {
-      console.error('Failed to load note:', e);
-    }
-  }, [note]);
-
-  const editor = useEditor(
-    {
-      extensions: [
-        StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-        DataChipNode,
-      ],
-      content: content,
-      editable: false,
-    },
-    [content]
-  );
-
-  useEffect(() => {
-    if (editor && content) {
-      editor.commands.setContent(content);
-    }
-  }, [editor, content]);
-
-  if (!note) return null;
-
-  return (
-    <>
-      <div
-        className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      <div className="fixed inset-4 z-[70] flex items-center justify-center pointer-events-none">
-        <div className="glass-elevated relative w-full max-w-lg max-h-[80vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl pointer-events-auto animate-scale-in">
-          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[15px] font-semibold text-white truncate">
-                {note.topic}
-              </h3>
-              <p className="text-[11px] text-white/50 mt-0.5">
-                {note.location} - {formatRelativeTime(note.lastSaved)}
-                {note.isArchived && ' - archived'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 ml-3">
-              <Link
-                to={`/city/${note.slug}`}
-                onClick={onClose}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
-                title="Go to city"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 notepad-compact">
-            {content ? (
-              <div className="notepad-editor text-white/90">
-                <EditorContent editor={editor} />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-32 text-white/40">
-                Loading...
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ============================================================================
 // Research Log (History View)
 // ============================================================================
 
@@ -398,10 +306,12 @@ function ResearchLog() {
       </div>
 
       {selectedNote && (
-        <NotePreviewModal
-          note={selectedNote}
-          onClose={() => setSelectedNote(null)}
-        />
+        <Suspense fallback={null}>
+          <NotePreviewModal
+            note={selectedNote}
+            onClose={() => setSelectedNote(null)}
+          />
+        </Suspense>
       )}
     </div>
   );
@@ -420,7 +330,9 @@ function NotepadContent() {
   return (
     <div className="h-full flex flex-col notepad-compact">
       <div className="flex-1 overflow-auto">
-        <NotepadEditor context={copilotContext} />
+        <Suspense fallback={<EditorLoadingFallback />}>
+          <NotepadEditor context={copilotContext} />
+        </Suspense>
       </div>
     </div>
   );
