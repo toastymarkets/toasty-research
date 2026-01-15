@@ -132,7 +132,8 @@ export default function GlassSidebar() {
         onClick={isMobile ? closeMobile : undefined}
         className={`
           block px-3 py-3 rounded-2xl transition-all relative overflow-hidden
-          ${isActive ? 'ring-2 ring-white/30' : 'hover:scale-[1.02]'}
+          glass-border-premium
+          ${isActive ? 'active' : ''}
         `}
         style={{ background: weatherBg }}
       >

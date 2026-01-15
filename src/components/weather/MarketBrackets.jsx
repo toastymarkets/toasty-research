@@ -457,7 +457,7 @@ export default function MarketBrackets({
                   const sortedPayload = [...payload].sort((a, b) => (b.value || 0) - (a.value || 0));
 
                   return (
-                    <div className="bg-black/95 border border-white/15 rounded-lg px-3 py-2 shadow-xl">
+                    <div className="bg-black/95 glass-border-premium rounded-lg px-3 py-2 shadow-xl">
                       <div className="text-[10px] text-white/50 mb-1.5 border-b border-white/10 pb-1.5">
                         {timeStr}
                       </div>

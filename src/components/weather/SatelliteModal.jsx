@@ -249,7 +249,7 @@ export default function SatelliteModal({
         {/* Main content area */}
         <div className="flex-1 flex gap-4 px-4 pb-4 min-h-0">
           {/* Satellite image */}
-          <div className="flex-1 relative rounded-xl overflow-hidden bg-black border border-white/10">
+          <div className="flex-1 relative rounded-xl overflow-hidden bg-black glass-border-premium">
             {/* Loading state */}
             {isLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10">
@@ -406,7 +406,7 @@ export default function SatelliteModal({
           {/* Side panel - Controls */}
           <aside className="w-64 flex-shrink-0 flex flex-col gap-4">
             {/* Sector selector */}
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="p-4 rounded-xl bg-white/5 glass-border-premium">
               <h3 className="text-[10px] text-white/40 uppercase tracking-wider mb-3">Region</h3>
               <div className="space-y-1">
                 {availableSectors.map(({ id, label }) => (
@@ -426,7 +426,7 @@ export default function SatelliteModal({
             </div>
 
             {/* Band selector */}
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="p-4 rounded-xl bg-white/5 glass-border-premium">
               <h3 className="text-[10px] text-white/40 uppercase tracking-wider mb-3">Imagery Type</h3>
               <div className="space-y-1">
                 {BANDS.map(({ id, label }) => (
