@@ -2,7 +2,9 @@
 
 ## Overview
 
-Toasty Summary uses Claude AI to generate concise, trader-focused summaries of NWS Area Forecast Discussions (AFDs). This replaces the inconsistent "Synopsis" section as the default view, providing standardized, actionable intelligence for quantitative weather traders.
+Toasty Summary uses Claude AI to generate concise, **analysis-only** summaries of NWS Area Forecast Discussions (AFDs). This replaces the inconsistent "Synopsis" section as the default view, providing standardized meteorological analysis for quantitative weather traders.
+
+**Key Design Principle**: The AI provides **factual analysis only** - no trading advice, recommendations, or market positioning suggestions. This ensures objectivity and lets traders make their own decisions based on the extracted data.
 
 ## Purpose
 
@@ -12,7 +14,7 @@ NWS forecast discussions vary significantly by office:
 - Key trading signals (temperature, precipitation) are buried in technical jargon
 - Timing information is inconsistent
 
-Toasty Summary normalizes this data into a consistent, succinct format optimized for weather market trading decisions.
+Toasty Summary normalizes this data into a consistent, succinct format optimized for weather market analysis.
 
 ## Target Audience
 
@@ -139,9 +141,29 @@ const response = await fetch('/api/copilot', {
      ^default
 ```
 
+### Two-Day Forecast with Day Tabs
+
+The summary now supports **two-day forecasts** with inline day tabs for quick comparison:
+
+```
+┌─────────────────────────────────────┐
+│  [Today] [Tomorrow]  ← inline tabs  │
+├─────────────────────────────────────┤
+│  HIGH: 82°F | Confidence: HIGH      │
+│  Key Factors: ...                   │
+│  Trading Signals: ...               │
+└─────────────────────────────────────┘
+```
+
+**Benefits:**
+- Quick comparison between today and tomorrow forecasts
+- Compact layout fits within widget constraints
+- Tab state persists during session
+
 ### Visual Design
 - Toasty Summary tab has subtle AI indicator (sparkle icon)
 - Summary uses same glassmorphism styling as other content
+- Compact layout with inline day tabs
 - Temperature outlook prominently displayed
 - Color-coded confidence indicator (green/yellow/orange)
 - "Generated X min ago" timestamp
@@ -160,6 +182,7 @@ If Claude API unavailable:
 - Note timing-sensitive factors
 - Translate NWS jargon to plain language
 - Include wind direction in cardinal format (N, NW, etc.)
+- Extract facts objectively without interpretation
 
 ### DON'T:
 - Include lengthy explanations
@@ -167,6 +190,9 @@ If Claude API unavailable:
 - Speculate beyond the AFD content
 - Use hedging language excessively
 - Include aviation-specific content (TAF, ceiling heights)
+- **Provide trading advice or recommendations**
+- Suggest market positions (long/short, buy/sell)
+- Make predictions about market outcomes
 
 ## Future Enhancements
 
@@ -186,5 +212,11 @@ Track:
 
 ---
 
-*Document Version: 1.0*
-*Last Updated: January 2025*
+*Document Version: 1.2*
+*Last Updated: January 2026*
+
+## Changelog
+
+- **v1.2** (Jan 2026): Added two-day forecast with day tabs, made AI analysis-only (no trading advice)
+- **v1.1** (Jan 2026): Compact layout redesign
+- **v1.0** (Jan 2025): Initial implementation

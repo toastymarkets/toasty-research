@@ -115,46 +115,58 @@ Would need a Vercel serverless function to proxy requests (CORS).
 
 ## Design: Collapsed vs Expanded Widget
 
-### Collapsed (Current - 2x2 Grid)
+### Collapsed View (Default)
 
 **Purpose:** Quick glance at nearby temps and spread
 
 **Shows:**
-- 6 nearest NWS stations in table
-- Map with dot markers
+- 6 nearest NWS stations in compact table
+- Temperature spread indicator
 - Primary station highlighted
-- Temperature spread (±X°)
 - Time since update
 
 **User Actions:**
-- Hover to see station details
-- Click to expand
+- Click to expand for full view
 
-### Expanded (Planned - Full Width)
+### Expanded View (Implemented ✅)
 
 **Purpose:** Deep dive into microclimate data for trading decisions
 
-**Tab 1: NWS Stations** (enhanced)
+**Tab Structure:**
+```
+[Table] [Map]
+```
+
+**Table Tab:**
 | Feature | Description |
 |---------|-------------|
-| All stations | Show 10-15 stations, not just 6 |
-| Running high chart | Mini sparkline of today's temps |
-| Wind indicators | Show wind speed/direction |
-| Larger map | Interactive pan/zoom |
-| Station popups | Full observation data |
+| All stations | Show 10-15 stations in sortable table |
+| Temperature column | Current temp with running high |
+| Wind indicators | Speed and direction |
+| Distance | Miles from primary station |
+| Last update | Relative timestamp |
 
-**Tab 2: PWS Network** (Ambient Weather)
+**Map Tab:**
+| Feature | Description |
+|---------|-------------|
+| Full-size map | Interactive pan/zoom |
+| Temperature labels | Temp shown directly on markers |
+| Primary station | Highlighted with different color |
+| Station popups | Click for full observation data |
+
+### Future: PWS Integration (Phase 2)
+
+**Tab 3: PWS Network** (Ambient Weather - planned)
 | Feature | Description |
 |---------|-------------|
 | PWS stations | 20-50 nearby residential stations |
 | Real-time temps | Updates every few seconds |
 | Quality indicator | Station reliability score |
 | Dense map | Heat map overlay option |
-| Feels-like temps | Show apparent temperature |
 
-### Why Two Tabs?
+### Why Multiple Data Sources?
 
-| NWS Stations | PWS Network |
+| NWS Stations | PWS Network (future) |
 |--------------|-------------|
 | Official/calibrated | Citizen science |
 | Settlement relevance | Microclimate detail |
@@ -169,13 +181,14 @@ Traders need **both** perspectives:
 
 ## Implementation Plan
 
-### Phase 1: Enhanced Expanded View (NWS Only)
+### Phase 1: Enhanced Expanded View (NWS Only) ✅ COMPLETE
 
-1. Add expand/collapse toggle to widget
-2. Show all NWS stations when expanded
-3. Add wind direction indicators
-4. Larger, more interactive map
-5. Running high mini-charts
+1. ✅ Add expand/collapse toggle to widget
+2. ✅ Show all NWS stations when expanded (table view)
+3. ✅ Add wind direction indicators
+4. ✅ Larger, interactive map with temperature labels on markers
+5. ✅ Tab navigation between Table and Map views
+6. ✅ Running high temperature display
 
 ### Phase 2: PWS Integration (Ambient Weather)
 

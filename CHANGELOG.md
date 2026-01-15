@@ -2,6 +2,28 @@
 
 All notable changes to Toasty Weather Research Dashboard.
 
+## [1.12.0] - 2026-01-14
+
+### Added
+- **Premium glass border system** with subtle cyan glow for elevated UI surfaces
+- **Two-day AI Forecast Summary** with inline day tabs for quick comparison
+- **Nearby Stations expanded view** with tabs for table/map split layout
+- Temperature labels on station map markers
+- Skeleton loader for Discussion widget during fetch
+- Running high temperature display in station data
+
+### Changed
+- **AI Copilot now analysis-only** - removed trading advice for objectivity
+- Redesigned AI Forecast Summary with compact layout and inline day tabs
+- Redesigned Nearby Stations widget with table + map split view
+- Redesigned Models widget with polished glassmorphism aesthetic
+- Discussion widget polish: fixed markdown rendering, eliminated flickering
+- Quicknote data chip insertion now appears immediately
+
+### Fixed
+- Discussion widget flickering during section transitions
+- Markdown formatting issues in compact Discussion view
+
 ## [1.11.0] - 2026-01-09
 
 ### Added

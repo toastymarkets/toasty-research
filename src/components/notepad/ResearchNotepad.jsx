@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import PropTypes from 'prop-types';
 import { NotepadProvider, useNotepad } from '../../context/NotepadContext';
-import NotepadEditor from './NotepadEditor';
 import ConfirmPopover from '../ui/ConfirmPopover';
 import { FileText, Clock, Trash2, FilePlus } from 'lucide-react';
+
+// Lazy load TipTap editor to reduce initial bundle size
+const NotepadEditor = lazy(() => import('./NotepadEditor'));
+
+function EditorLoadingFallback() {
+  return (
+    <div className="h-full flex items-center justify-center">
+      <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  );
+}
 
 function NotepadContent({ compact = false }) {
   const { isLoading, lastSaved, isSaving, createNewNote, clearDocument } = useNotepad();
@@ -31,7 +41,9 @@ function NotepadContent({ compact = false }) {
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-auto notepad-compact">
-          <NotepadEditor />
+          <Suspense fallback={<EditorLoadingFallback />}>
+            <NotepadEditor />
+          </Suspense>
         </div>
       </div>
     );
@@ -109,7 +121,9 @@ function NotepadContent({ compact = false }) {
 
       {/* Editor */}
       <div className="flex-1 overflow-auto">
-        <NotepadEditor />
+        <Suspense fallback={<EditorLoadingFallback />}>
+          <NotepadEditor />
+        </Suspense>
       </div>
     </div>
   );

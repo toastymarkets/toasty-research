@@ -36,18 +36,14 @@ async function fetchCandlesticks(seriesTicker, ticker, periodInterval = 1, hours
   });
 
   const url = `${KALSHI_PROXY}?${params.toString()}`;
-  console.log('[useKalshiCandlesticks] Fetching:', url);
 
   const response = await fetch(url);
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[useKalshiCandlesticks] API Error:', response.status, errorText);
     throw new Error(`HTTP ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('[useKalshiCandlesticks] Response:', data);
   return data.candlesticks || [];
 }
 
@@ -83,7 +79,6 @@ export function useKalshiCandlesticks(seriesTicker, ticker, period = '1h', enabl
 
       // Ensure we have an array
       if (!Array.isArray(rawCandles)) {
-        console.warn('[useKalshiCandlesticks] Response is not an array:', rawCandles);
         setCandles([]);
         return;
       }
@@ -137,7 +132,6 @@ export function useKalshiCandlesticks(seriesTicker, ticker, period = '1h', enabl
 
       setCandles(validCandles);
     } catch (err) {
-      console.error('[useKalshiCandlesticks] Error:', err);
       setError(err.message);
       setCandles([]);
     } finally {
