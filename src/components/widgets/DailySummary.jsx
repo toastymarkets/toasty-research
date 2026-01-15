@@ -1,27 +1,28 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { FileText, RefreshCw, ChevronUp, ChevronDown, Thermometer, Calendar, Clock } from 'lucide-react';
+import { FileText, RefreshCw, ChevronUp, ChevronDown, Thermometer, Calendar, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import SelectableData from './SelectableData';
+import { useCLIReport } from '../../hooks/useCLIReport';
 
 /**
  * Map city slugs to IEM network and station IDs
  * IEM uses state-based ASOS networks
  */
 const CITY_IEM_CONFIG = {
-  'new-york': { network: 'NY_ASOS', station: 'NYC', name: 'Central Park' },
-  'chicago': { network: 'IL_ASOS', station: 'MDW', name: 'Midway' },
-  'los-angeles': { network: 'CA_ASOS', station: 'LAX', name: 'LAX Airport' },
-  'miami': { network: 'FL_ASOS', station: 'MIA', name: 'Miami Intl' },
-  'denver': { network: 'CO_ASOS', station: 'DEN', name: 'Denver Intl' },
-  'austin': { network: 'TX_ASOS', station: 'AUS', name: 'Austin Airport' },
-  'philadelphia': { network: 'PA_ASOS', station: 'PHL', name: 'Philadelphia Intl' },
-  'houston': { network: 'TX_ASOS', station: 'HOU', name: 'Hobby Airport' },
-  'seattle': { network: 'WA_ASOS', station: 'SEA', name: 'Seattle-Tacoma' },
-  'san-francisco': { network: 'CA_ASOS', station: 'SFO', name: 'SFO Airport' },
-  'boston': { network: 'MA_ASOS', station: 'BOS', name: 'Logan Airport' },
-  'washington-dc': { network: 'VA_ASOS', station: 'DCA', name: 'Reagan National' },
-  'dallas': { network: 'TX_ASOS', station: 'DFW', name: 'DFW Airport' },
-  'detroit': { network: 'MI_ASOS', station: 'DTW', name: 'Detroit Metro' },
-  'salt-lake-city': { network: 'UT_ASOS', station: 'SLC', name: 'Salt Lake City' },
+  'new-york': { network: 'NY_ASOS', station: 'NYC', cliStation: 'NYC', name: 'Central Park' },
+  'chicago': { network: 'IL_ASOS', station: 'MDW', cliStation: 'MDW', name: 'Midway' },
+  'los-angeles': { network: 'CA_ASOS', station: 'LAX', cliStation: 'LAX', name: 'LAX Airport' },
+  'miami': { network: 'FL_ASOS', station: 'MIA', cliStation: 'MIA', name: 'Miami Intl' },
+  'denver': { network: 'CO_ASOS', station: 'DEN', cliStation: 'DEN', name: 'Denver Intl' },
+  'austin': { network: 'TX_ASOS', station: 'AUS', cliStation: 'AUS', name: 'Austin Airport' },
+  'philadelphia': { network: 'PA_ASOS', station: 'PHL', cliStation: 'PHL', name: 'Philadelphia Intl' },
+  'houston': { network: 'TX_ASOS', station: 'HOU', cliStation: 'HOU', name: 'Hobby Airport' },
+  'seattle': { network: 'WA_ASOS', station: 'SEA', cliStation: 'SEA', name: 'Seattle-Tacoma' },
+  'san-francisco': { network: 'CA_ASOS', station: 'SFO', cliStation: 'SFO', name: 'SFO Airport' },
+  'boston': { network: 'MA_ASOS', station: 'BOS', cliStation: 'BOS', name: 'Logan Airport' },
+  'washington-dc': { network: 'VA_ASOS', station: 'DCA', cliStation: 'DCA', name: 'Reagan National' },
+  'dallas': { network: 'TX_ASOS', station: 'DFW', cliStation: 'DFW', name: 'DFW Airport' },
+  'detroit': { network: 'MI_ASOS', station: 'DTW', cliStation: 'DTW', name: 'Detroit Metro' },
+  'salt-lake-city': { network: 'UT_ASOS', station: 'SLC', cliStation: 'SLC', name: 'Salt Lake City' },
 };
 
 /**
@@ -123,6 +124,16 @@ export default function DailySummary({ citySlug, cityName, className = '' }) {
 
   const { data, loading, error, refetch, stationName, lastFetched } = useIEMDailySummary(citySlug, selectedDate);
 
+  // Fetch official CLI settlement data
+  const config = CITY_IEM_CONFIG[citySlug];
+  const { data: cliData, loading: cliLoading } = useCLIReport(config?.cliStation);
+
+  // Check if CLI data is for today
+  const today = new Date().toISOString().split('T')[0];
+  const cliIsForToday = cliData?.valid === today;
+  const cliHigh = cliData?.high;
+  const cliLow = cliData?.low;
+
   // Update countdown every minute
   useEffect(() => {
     const interval = setInterval(() => {
@@ -130,8 +141,6 @@ export default function DailySummary({ citySlug, cityName, className = '' }) {
     }, 60000);
     return () => clearInterval(interval);
   }, []);
-
-  const config = CITY_IEM_CONFIG[citySlug];
 
   const formatTemp = (temp) => {
     if (temp == null) return '--';
@@ -329,6 +338,89 @@ export default function DailySummary({ citySlug, cityName, className = '' }) {
                   </div>
                 )}
               </div>
+
+              {/* Settlement Data Card - Only show when viewing today */}
+              {isToday && (
+                <div className="p-4 rounded-xl bg-[var(--color-card-elevated)] border border-[var(--color-border)]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 size={16} className="text-green-500" />
+                      <span className="text-sm font-medium text-[var(--color-text-secondary)]">Settlement Data</span>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${cliIsForToday ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                      {cliIsForToday ? 'CLI' : 'DSM'}
+                    </span>
+                  </div>
+
+                  {cliLoading ? (
+                    <div className="h-12 bg-[var(--color-bg)] rounded animate-pulse" />
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs text-[var(--color-text-muted)] mb-1 flex items-center gap-1">
+                            Settlement High
+                            {cliIsForToday && <span className="text-green-400 text-[10px]">(Official)</span>}
+                          </div>
+                          {(cliIsForToday ? cliHigh : data.max_tmpf) != null ? (
+                            <SelectableData
+                              value={formatTemp(cliIsForToday ? cliHigh : data.max_tmpf)}
+                              label="Settlement High"
+                              source={cliIsForToday ? `CLI ${config?.cliStation}` : `DSM ${config?.station}`}
+                              type="temperature"
+                            >
+                              <div className="text-2xl font-bold text-green-500">
+                                {formatTemp(cliIsForToday ? cliHigh : data.max_tmpf)}
+                              </div>
+                            </SelectableData>
+                          ) : (
+                            <div className="text-2xl font-bold text-[var(--color-text-muted)]">--</div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-xs text-[var(--color-text-muted)] mb-1 flex items-center gap-1">
+                            Settlement Low
+                            {cliIsForToday && <span className="text-green-400 text-[10px]">(Official)</span>}
+                          </div>
+                          {(cliIsForToday ? cliLow : data.min_tmpf) != null ? (
+                            <SelectableData
+                              value={formatTemp(cliIsForToday ? cliLow : data.min_tmpf)}
+                              label="Settlement Low"
+                              source={cliIsForToday ? `CLI ${config?.cliStation}` : `DSM ${config?.station}`}
+                              type="temperature"
+                            >
+                              <div className="text-2xl font-bold text-green-500">
+                                {formatTemp(cliIsForToday ? cliLow : data.min_tmpf)}
+                              </div>
+                            </SelectableData>
+                          ) : (
+                            <div className="text-2xl font-bold text-[var(--color-text-muted)]">--</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Show comparison if CLI differs from DSM */}
+                      {cliIsForToday && data.max_tmpf != null && cliHigh !== Math.round(data.max_tmpf) && (
+                        <div className="mt-3 pt-3 border-t border-[var(--color-border)] text-xs">
+                          <div className="flex items-center gap-1 text-yellow-400">
+                            <AlertCircle size={12} />
+                            <span>DSM showed {formatTemp(data.max_tmpf)} high, CLI settled at {formatTemp(cliHigh)}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Explanation */}
+                      <div className="mt-3 pt-3 border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
+                        {cliIsForToday ? (
+                          <span>Official NWS Climate Report - final settlement value</span>
+                        ) : (
+                          <span>Using DSM (interim) data • CLI releases {countdown.inProgress ? 'now' : `in ${countdown.text}`}</span>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
