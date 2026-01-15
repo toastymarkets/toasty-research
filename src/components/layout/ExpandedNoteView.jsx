@@ -51,7 +51,7 @@ function EditorToolbar({ editor }) {
   );
 
   return (
-    <div className="flex items-center gap-0.5 px-2 py-1.5 mb-3 bg-white/5 rounded-lg border border-white/10">
+    <div className="flex items-center gap-0.5 px-2 py-1.5 mb-3 bg-white/5 rounded-lg glass-border-premium">
       {/* Text formatting */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}

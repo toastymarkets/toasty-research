@@ -185,14 +185,14 @@ const CommandList = forwardRef(({ items, command }, ref) => {
 
   if (items.length === 0) {
     return (
-      <div className="slash-command-menu bg-black/40 backdrop-blur-2xl rounded-xl border border-white/10 p-2 min-w-[200px] shadow-xl">
+      <div className="slash-command-menu bg-black/40 backdrop-blur-2xl rounded-xl glass-border-premium p-2 min-w-[200px] shadow-xl">
         <div className="text-sm text-white/50 px-2 py-1">No commands found</div>
       </div>
     );
   }
 
   return (
-    <div className="slash-command-menu bg-black/40 backdrop-blur-2xl rounded-xl border border-white/10 py-1.5 min-w-[220px] max-h-[300px] overflow-y-auto shadow-xl">
+    <div className="slash-command-menu bg-black/40 backdrop-blur-2xl rounded-xl glass-border-premium py-1.5 min-w-[220px] max-h-[300px] overflow-y-auto shadow-xl">
       {items.map((item, index) => {
         const Icon = item.icon;
         return (

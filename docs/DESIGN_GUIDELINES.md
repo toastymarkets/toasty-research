@@ -128,6 +128,53 @@ box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 | `--radius-lg` | `22px` | Cards, widgets |
 | `--radius-xl` | `28px` | Modals, large containers |
 
+### Premium Glass Borders
+
+For interactive cards and prominent UI elements, use the **premium glass border** pattern. This creates a subtle cyan glow effect using `box-shadow` instead of a traditional border, providing a refined, modern appearance.
+
+#### CSS Variables
+| Variable | Value | Usage |
+|----------|-------|-------|
+| `--glass-border-premium` | `rgba(100, 210, 255, 0.12)` | Default state |
+| `--glass-border-premium-hover` | `rgba(100, 210, 255, 0.25)` | Hover state |
+| `--glass-border-premium-active` | `rgba(100, 210, 255, 0.35)` | Active/selected state |
+
+#### Classes
+| Class | Usage |
+|-------|-------|
+| `.glass-border-premium` | Standard premium border (inset glow) |
+| `.glass-border-premium-elevated` | Premium border with outer shadow |
+
+#### Implementation
+```css
+/* Premium border using inset box-shadow */
+.glass-border-premium {
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--glass-border-premium);
+  transition: box-shadow 0.2s ease;
+}
+
+.glass-border-premium:hover {
+  box-shadow: inset 0 0 0 1px var(--glass-border-premium-hover);
+}
+
+.glass-border-premium.active {
+  box-shadow: inset 0 0 0 1px var(--glass-border-premium-active);
+}
+```
+
+#### When to Use
+- **City cards** in sidebars
+- **Note card previews**
+- **Interactive containers** that need subtle visual feedback
+- **Satellite/Map containers** in modals
+- **Chart tooltips** for refined appearance
+
+#### When NOT to Use
+- Internal dividers (use `border-b border-white/10` instead)
+- Elevated modals (use `.glass-elevated` which has no border)
+- Very small elements like chips or badges
+
 ---
 
 ## Components

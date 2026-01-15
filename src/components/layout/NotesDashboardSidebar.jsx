@@ -41,9 +41,9 @@ export default function NotesDashboardSidebar({
             placeholder="Search notes..."
             className="
               w-full pl-9 pr-3 py-2
-              bg-white/5 border border-white/10 rounded-lg
+              bg-white/5 glass-border-premium rounded-lg
               text-sm text-white placeholder:text-white/40
-              focus:outline-none focus:border-white/20 focus:bg-white/10
+              focus:outline-none focus:bg-white/10
               transition-colors
             "
           />

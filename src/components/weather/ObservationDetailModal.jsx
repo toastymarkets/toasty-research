@@ -266,7 +266,7 @@ export default function ObservationDetailModal({
     };
 
     return (
-      <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg text-xs border border-white/10">
+      <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg text-xs glass-border-premium">
         <div className="text-white/60 mb-1">{data.timeLabel} • {data.dateLabel}</div>
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
@@ -364,7 +364,7 @@ export default function ObservationDetailModal({
 
           {/* NWS Data Info Panel */}
           {showInfo && (
-            <div className="mt-3 p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white/70 space-y-2">
+            <div className="mt-3 p-3 bg-white/5 glass-border-premium rounded-xl text-xs text-white/70 space-y-2">
               <div className="font-medium text-white/90 text-sm mb-2">NWS Observation Data Types</div>
               <div>
                 <span className="text-blue-400 font-medium">Hourly METAR</span>

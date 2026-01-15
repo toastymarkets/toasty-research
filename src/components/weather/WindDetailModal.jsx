@@ -152,7 +152,7 @@ export default function WindDetailModal({
     if (!data) return null;
 
     return (
-      <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg text-xs border border-white/10">
+      <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg text-xs glass-border-premium">
         <div className="text-white/60 mb-1">
           {data.timestamp?.toLocaleTimeString('en-US', {
             timeZone: timezone,

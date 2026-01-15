@@ -537,7 +537,7 @@ function ExpandedModelsInline({ forecasts, onCollapse, citySlug, lat, lon }) {
             {/* Model cards in compact 2-column grid */}
             <div className="grid grid-cols-2 gap-2">
               {MODELS.map((model) => (
-                <div key={model.id} className="bg-white/5 rounded-lg p-2 border border-white/10">
+                <div key={model.id} className="bg-white/5 rounded-lg p-2 glass-border-premium">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: model.color }} />
                     <span className="text-xs font-medium text-white">{model.name}</span>
@@ -862,7 +862,7 @@ function ModelsDetailModal({ forecasts, onClose, citySlug }) {
               <div className="px-4 py-3 space-y-3">
                 <h3 className="text-xs text-white/50 uppercase tracking-wide">Models We Track</h3>
                 {MODELS.map((model) => (
-                  <div key={model.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <div key={model.id} className="bg-white/5 rounded-lg p-3 glass-border-premium">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: model.color }} />

@@ -210,7 +210,7 @@ export default function SatelliteModal({
             </div>
 
             {/* Status indicator */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded bg-white/5 border border-white/10">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded bg-white/5 glass-border-premium">
               <span className="text-[10px] text-white/40 uppercase tracking-wider">Status</span>
               <span className="text-xs text-emerald-400 font-mono">LIVE</span>
             </div>
@@ -249,7 +249,7 @@ export default function SatelliteModal({
         {/* Main content area */}
         <div className="flex-1 flex gap-4 px-4 pb-4 min-h-0">
           {/* Satellite image */}
-          <div className="flex-1 relative rounded-xl overflow-hidden bg-black border border-white/10">
+          <div className="flex-1 relative rounded-xl overflow-hidden bg-black glass-border-premium">
             {/* Loading state */}
             {isLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10">
@@ -290,14 +290,14 @@ export default function SatelliteModal({
 
             {/* Corner data overlays */}
             <div className="absolute top-3 left-3 flex flex-col gap-1">
-              <div className="px-2 py-1 rounded bg-black/70 backdrop-blur-sm border border-white/10">
+              <div className="px-2 py-1 rounded bg-black/70 backdrop-blur-sm glass-border-premium">
                 <span className="text-[10px] text-white/40 uppercase tracking-wider">Band</span>
                 <p className="text-sm text-white font-medium">{BANDS.find(b => b.id === band)?.label}</p>
               </div>
             </div>
 
             <div className="absolute top-3 right-3">
-              <div className="px-2 py-1 rounded bg-black/70 backdrop-blur-sm border border-white/10 text-right">
+              <div className="px-2 py-1 rounded bg-black/70 backdrop-blur-sm glass-border-premium text-right">
                 <span className="text-[10px] text-white/40 uppercase tracking-wider">Frame Time</span>
                 <p className="text-sm text-cyan-400 font-mono">{getFrameTimestamp(currentFrameIndex)}</p>
               </div>
@@ -305,7 +305,7 @@ export default function SatelliteModal({
 
             {/* Info panel overlay */}
             {showInfo && (
-              <div className="absolute bottom-16 left-3 right-3 p-4 rounded-lg bg-black/80 backdrop-blur-sm border border-white/10">
+              <div className="absolute bottom-16 left-3 right-3 p-4 rounded-lg bg-black/80 backdrop-blur-sm glass-border-premium">
                 <h4 className="text-sm font-semibold text-white mb-2">
                   {BANDS.find(b => b.id === band)?.label}
                 </h4>
@@ -406,7 +406,7 @@ export default function SatelliteModal({
           {/* Side panel - Controls */}
           <aside className="w-64 flex-shrink-0 flex flex-col gap-4">
             {/* Sector selector */}
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="p-4 rounded-xl bg-white/5 glass-border-premium">
               <h3 className="text-[10px] text-white/40 uppercase tracking-wider mb-3">Region</h3>
               <div className="space-y-1">
                 {availableSectors.map(({ id, label }) => (
@@ -426,7 +426,7 @@ export default function SatelliteModal({
             </div>
 
             {/* Band selector */}
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="p-4 rounded-xl bg-white/5 glass-border-premium">
               <h3 className="text-[10px] text-white/40 uppercase tracking-wider mb-3">Imagery Type</h3>
               <div className="space-y-1">
                 {BANDS.map(({ id, label }) => (
@@ -446,7 +446,7 @@ export default function SatelliteModal({
             </div>
 
             {/* Keyboard shortcuts */}
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 mt-auto">
+            <div className="p-4 rounded-xl bg-white/5 glass-border-premium mt-auto">
               <h3 className="text-[10px] text-white/40 uppercase tracking-wider mb-3">Shortcuts</h3>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">

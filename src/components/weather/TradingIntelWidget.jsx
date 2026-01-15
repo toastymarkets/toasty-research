@@ -216,7 +216,7 @@ export default function TradingIntelWidget({ citySlug, lat, lon, cityName, isExp
           <div className="space-y-2">
             {/* Model Summary */}
             {modelInfo && (
-              <div className="p-2.5 bg-white/5 rounded-lg border border-white/10">
+              <div className="p-2.5 bg-white/5 rounded-lg glass-border-premium">
                 <p className="text-[10px] text-white/40 uppercase tracking-wide">Model Consensus</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-lg font-bold text-white">{modelInfo.avg}°F</span>

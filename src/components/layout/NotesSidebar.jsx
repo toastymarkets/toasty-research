@@ -604,7 +604,7 @@ function SidebarToggleButton() {
         hidden lg:block
         fixed top-5 z-[85]
         p-2 rounded-lg
-        bg-black/30 backdrop-blur-xl border border-white/10
+        bg-black/30 backdrop-blur-xl glass-border-premium
         hover:bg-white/10 transition-all duration-300
         ${getButtonPosition(isCollapsed, isDashboard)}
       `}
@@ -783,7 +783,7 @@ export default function NotesSidebar({
           hidden lg:block
           fixed right-3 top-3 bottom-3 z-30
           bg-black/30 backdrop-blur-2xl
-          border border-white/10 rounded-2xl overflow-hidden
+          glass-border-premium rounded-2xl overflow-hidden
           transition-all duration-300 ease-in-out
           ${sidebarWidthClass}
           ${sidebarTransformClass}

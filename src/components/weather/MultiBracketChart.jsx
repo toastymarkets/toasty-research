@@ -96,7 +96,7 @@ export default function MultiBracketChart({
     const timeLabel = timeData?.timeLabel || '--';
 
     return (
-      <div className="bg-black/90 backdrop-blur-sm px-3 py-2 rounded-lg text-xs border border-white/10 shadow-xl">
+      <div className="bg-black/90 backdrop-blur-sm px-3 py-2 rounded-lg text-xs glass-border-premium shadow-xl">
         <div className="text-white/60 mb-1.5 font-medium">{timeLabel}</div>
         <div className="space-y-1">
           {payload.map((entry, idx) => (

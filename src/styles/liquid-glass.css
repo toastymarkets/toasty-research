@@ -41,6 +41,11 @@ body {
   --glass-border-subtle: rgba(255, 255, 255, 0.15);
   --glass-border-strong: rgba(255, 255, 255, 0.35);
 
+  /* Premium glass borders - subtle cyan glow */
+  --glass-border-premium: rgba(100, 210, 255, 0.12);
+  --glass-border-premium-hover: rgba(100, 210, 255, 0.25);
+  --glass-border-premium-active: rgba(100, 210, 255, 0.35);
+
   /* Glass shadows */
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   --glass-shadow-elevated: 0 12px 48px rgba(0, 0, 0, 0.2);
@@ -138,6 +143,39 @@ body {
   border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--glass-shadow-subtle);
+}
+
+/* ===== PREMIUM GLASS BORDER ===== */
+/* Refined border using inset box-shadow for subtle cyan glow effect */
+
+.glass-border-premium {
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--glass-border-premium);
+  transition: box-shadow 0.2s ease;
+}
+
+.glass-border-premium:hover {
+  box-shadow: inset 0 0 0 1px var(--glass-border-premium-hover);
+}
+
+.glass-border-premium.active,
+.glass-border-premium:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--glass-border-premium-active);
+}
+
+/* Premium border with outer shadow - for elevated cards */
+.glass-border-premium-elevated {
+  border: none;
+  box-shadow:
+    inset 0 0 0 1px var(--glass-border-premium),
+    0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.2s ease;
+}
+
+.glass-border-premium-elevated:hover {
+  box-shadow:
+    inset 0 0 0 1px var(--glass-border-premium-hover),
+    0 6px 24px rgba(0, 0, 0, 0.2);
 }
 
 /* ===== WIDGET GLASS ===== */

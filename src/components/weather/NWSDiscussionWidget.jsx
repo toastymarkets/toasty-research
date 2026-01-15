@@ -161,7 +161,7 @@ function HighlightedKeyword({ text, category, office }) {
       {showPopup && definition && (
         <span
           ref={popupRef}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 text-[11px] bg-black/95 text-white rounded-lg shadow-xl z-50 leading-relaxed border border-white/10"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 text-[11px] bg-black/95 text-white rounded-lg shadow-xl z-50 leading-relaxed glass-border-premium"
         >
           <span className="font-semibold text-white block mb-1.5 capitalize">{text}</span>
           <span className="text-white/80 block mb-3">{definition}</span>
@@ -753,7 +753,7 @@ function ExpandedDiscussionInline({
             onClick={() => setActiveTab('discussion')}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-200 ${
               activeTab === 'discussion'
-                ? 'bg-white/10 text-white shadow-sm border border-white/10'
+                ? 'bg-white/10 text-white shadow-sm glass-border-premium'
                 : 'text-white/50 hover:text-white/70 hover:bg-white/5'
             }`}
           >
@@ -764,7 +764,7 @@ function ExpandedDiscussionInline({
             onClick={() => setActiveTab('reports')}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-200 relative ${
               activeTab === 'reports'
-                ? 'bg-white/10 text-white shadow-sm border border-white/10'
+                ? 'bg-white/10 text-white shadow-sm glass-border-premium'
                 : 'text-white/50 hover:text-white/70 hover:bg-white/5'
             }`}
           >

@@ -79,12 +79,10 @@ const NoteCardPreview = forwardRef(function NoteCardPreview({ note, isSelected, 
       className={`
         break-inside-avoid mb-4
         bg-black/30 backdrop-blur-xl
-        border rounded-xl overflow-hidden
+        rounded-xl overflow-hidden
         transition-all duration-200
-        ${isSelected
-          ? 'border-blue-400/50 ring-2 ring-blue-400/20'
-          : 'border-white/10 hover:border-white/20'
-        }
+        glass-border-premium
+        ${isSelected ? 'active' : ''}
       `}
     >
       {/* Header */}
