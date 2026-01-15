@@ -2,9 +2,30 @@ import { useState, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine,
 } from 'recharts';
-import { ChevronDown, ChevronUp, RefreshCw, AlertTriangle, Thermometer, TrendingUp, TrendingDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, RefreshCw, AlertTriangle, Thermometer, TrendingUp, TrendingDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNWSHourlyForecast } from '../../hooks/useNWSHourlyForecast';
 import SelectableData from './SelectableData';
+
+/**
+ * ForecastChange indicator - shows temperature change from previous forecast
+ */
+function ForecastChangeIndicator({ change, hoursAgo }) {
+  if (change === null || change === 0) return null;
+
+  const isUp = change > 0;
+  const color = isUp ? 'text-red-400' : 'text-blue-400';
+  const Icon = isUp ? ArrowUp : ArrowDown;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-xs ${color}`}
+      title={`Changed ${isUp ? '+' : ''}${change}°F from ${hoursAgo}h ago`}
+    >
+      <Icon size={10} />
+      <span>{isUp ? '+' : ''}{change}°</span>
+    </span>
+  );
+}
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload || !payload.length) return null;
@@ -35,7 +56,7 @@ const PeakDot = ({ cx, cy, payload, peakHour }) => {
 export default function NWSHourlyForecast({ citySlug, className = '' }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [viewMode, setViewMode] = useState('today');
-  const { forecast, loading, error, refetch, updateTime } = useNWSHourlyForecast(citySlug);
+  const { forecast, loading, error, refetch, updateTime, forecastChanges } = useNWSHourlyForecast(citySlug);
 
   const formatUpdateTime = (date) => date?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) || '';
 
@@ -154,7 +175,7 @@ export default function NWSHourlyForecast({ citySlug, className = '' }) {
               )}
 
               {viewStats && chartData.length > 0 && (
-                <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a]">
+                <div className="p-3 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-[#2a2a2a]">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5">
                       <TrendingUp size={14} className="text-red-500" />
@@ -167,6 +188,18 @@ export default function NWSHourlyForecast({ citySlug, className = '' }) {
                       >
                         <span className="font-semibold text-gray-900 dark:text-white">{viewStats.high}°F</span>
                       </SelectableData>
+                      {viewMode === 'today' && forecastChanges?.todayHigh?.change != null && (
+                        <ForecastChangeIndicator
+                          change={forecastChanges.todayHigh.change}
+                          hoursAgo={forecastChanges.hoursAgo}
+                        />
+                      )}
+                      {viewMode === 'tomorrow' && forecastChanges?.tomorrowHigh?.change != null && (
+                        <ForecastChangeIndicator
+                          change={forecastChanges.tomorrowHigh.change}
+                          hoursAgo={forecastChanges.hoursAgo}
+                        />
+                      )}
                       <span className="text-xs text-gray-500">{viewStats.highTime}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -180,9 +213,28 @@ export default function NWSHourlyForecast({ citySlug, className = '' }) {
                       >
                         <span className="font-semibold text-gray-900 dark:text-white">{viewStats.low}°F</span>
                       </SelectableData>
+                      {viewMode === 'today' && forecastChanges?.todayLow?.change != null && (
+                        <ForecastChangeIndicator
+                          change={forecastChanges.todayLow.change}
+                          hoursAgo={forecastChanges.hoursAgo}
+                        />
+                      )}
+                      {viewMode === 'tomorrow' && forecastChanges?.tomorrowLow?.change != null && (
+                        <ForecastChangeIndicator
+                          change={forecastChanges.tomorrowLow.change}
+                          hoursAgo={forecastChanges.hoursAgo}
+                        />
+                      )}
                       <span className="text-xs text-gray-500">{viewStats.lowTime}</span>
                     </div>
                   </div>
+
+                  {/* Forecast drift summary */}
+                  {forecastChanges?.hasChanges && (viewMode === 'today' || viewMode === 'tomorrow') && (
+                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                      <span>Forecast changed from {forecastChanges.hoursAgo}h ago</span>
+                    </div>
+                  )}
                 </div>
               )}
 
