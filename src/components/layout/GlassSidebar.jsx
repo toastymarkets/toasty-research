@@ -258,7 +258,7 @@ export default function GlassSidebar() {
         </Link>
 
         {/* Cities Card */}
-        <aside className="flex-1 bg-black/30 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden min-h-0">
+        <aside className="flex-1 bg-black/30 backdrop-blur-2xl glass-border-premium rounded-2xl overflow-hidden min-h-0">
           {renderCitiesPanel(false)}
         </aside>
       </div>

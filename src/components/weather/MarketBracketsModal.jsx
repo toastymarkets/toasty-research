@@ -435,7 +435,7 @@ function PriceChart({ candles, currentPrice }) {
     const price = typeof data.price === 'number' ? data.price : 0;
 
     return (
-      <div className="bg-black/80 backdrop-blur-sm px-2 py-1.5 rounded-lg text-xs border border-white/10">
+      <div className="bg-black/80 backdrop-blur-sm px-2 py-1.5 rounded-lg text-xs glass-border-premium">
         <div className="text-white/60 mb-0.5">{timeLabel}</div>
         <div className="text-white font-medium">{price}¢</div>
       </div>

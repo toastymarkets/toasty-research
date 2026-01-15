@@ -101,7 +101,7 @@ export default function ResearchNotesDashboard() {
           className="
             w-full h-full flex
             bg-black/40 backdrop-blur-2xl
-            border border-white/10 rounded-2xl
+            glass-border-premium rounded-2xl
             overflow-hidden pointer-events-auto
             animate-[glass-scale-in_200ms_ease-out]
           "
