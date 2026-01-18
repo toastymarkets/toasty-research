@@ -19,7 +19,6 @@ import {
   MarketBrackets,
   NWSDiscussionWidget,
   ModelsWidget,
-  WidgetGridV2,
   WeatherMap,
   WindWidget,
   ResolutionWidget,
@@ -27,6 +26,7 @@ import {
   NearbyStations,
   AlertsWidget,
 } from '../weather';
+import CityWidgetGrid from './CityWidgetGrid';
 import RainWidget from '../widgets/RainWidget';
 import RainSnowBracketsWidget from '../widgets/RainSnowBracketsWidget';
 
@@ -274,11 +274,21 @@ function CityDashboardContent({ city, citySlug }) {
         />
       </div>
 
-      {/* Widget Grid V2 - CSS Grid with named areas */}
+      {/* Widget Grid - Draggable & Resizable */}
       <div className="w-full max-w-5xl mx-auto px-2 sm:px-3 mt-2 pb-4">
-        <WidgetGridV2 expandedWidgets={expandedWidgets} absentWidgets={absentWidgets}>
-          {/* Models Widget - 2x2 square */}
-          <WidgetGridV2.Area area="models" isExpanded={expandedWidgets.models}>
+        <CityWidgetGrid
+          citySlug={citySlug}
+          expandedWidgets={expandedWidgets}
+          onExpansionChange={(widgetId, shouldExpand) => {
+            setExpandedWidgets(prev => ({
+              ...prev,
+              [widgetId]: shouldExpand
+            }));
+          }}
+          absentWidgets={absentWidgets}
+        >
+          {/* Models Widget */}
+          <div key="models" area="models" className="h-full">
             <ModelsWidget
               citySlug={citySlug}
               lat={city.lat}
@@ -287,23 +297,10 @@ function CityDashboardContent({ city, citySlug }) {
               isExpanded={expandedWidgets.models}
               onToggleExpand={() => toggleExpansion('models')}
             />
-          </WidgetGridV2.Area>
-
-          {/* Alerts Widget - 1x1, conditionally shown */}
-          {alerts && alerts.length > 0 && (
-            <WidgetGridV2.Area area="alerts" isExpanded={expandedWidgets.alerts}>
-              <AlertsWidget
-                lat={city.lat}
-                lon={city.lon}
-                cityName={city.name}
-                isExpanded={expandedWidgets.alerts}
-                onToggleExpand={() => toggleExpansion('alerts')}
-              />
-            </WidgetGridV2.Area>
-          )}
+          </div>
 
           {/* Market Brackets */}
-          <WidgetGridV2.Area area="brackets" isExpanded={expandedWidgets.brackets} expansionSize="medium">
+          <div key="brackets" area="brackets" className="h-full">
             <MarketBrackets
               citySlug={citySlug}
               cityName={city.name}
@@ -312,10 +309,10 @@ function CityDashboardContent({ city, citySlug }) {
               isExpanded={expandedWidgets.brackets}
               onToggleExpand={() => toggleExpansion('brackets')}
             />
-          </WidgetGridV2.Area>
+          </div>
 
           {/* Weather Map / Satellite */}
-          <WidgetGridV2.Area area="map" isExpanded={expandedWidgets.map} expansionSize="large">
+          <div key="map" area="map" className="h-full">
             <WeatherMap
               lat={city.lat}
               lon={city.lon}
@@ -323,10 +320,10 @@ function CityDashboardContent({ city, citySlug }) {
               isExpanded={expandedWidgets.map}
               onToggleExpand={() => toggleExpansion('map')}
             />
-          </WidgetGridV2.Area>
+          </div>
 
           {/* NWS Forecast Discussion */}
-          <WidgetGridV2.Area area="discussion" isExpanded={expandedWidgets.discussion} expansionSize="large">
+          <div key="discussion" area="discussion" className="h-full">
             <NWSDiscussionWidget
               lat={city.lat}
               lon={city.lon}
@@ -338,20 +335,32 @@ function CityDashboardContent({ city, citySlug }) {
               isExpanded={expandedWidgets.discussion}
               onToggleExpand={() => toggleExpansion('discussion')}
             />
-          </WidgetGridV2.Area>
+          </div>
 
-          {/* Nearby Stations (2x1 collapsed, 4x2 expanded) */}
-          <WidgetGridV2.Area area="nearby" isExpanded={expandedWidgets.nearby}>
+          {/* Nearby Stations */}
+          <div key="nearby" area="nearby" className="h-full">
             <NearbyStations
               citySlug={citySlug}
               isExpanded={expandedWidgets.nearby}
               onToggleExpand={() => toggleExpansion('nearby')}
             />
-          </WidgetGridV2.Area>
+          </div>
 
+          {/* Alerts Widget - conditionally shown */}
+          {alerts && alerts.length > 0 && (
+            <div key="alerts" area="alerts" className="h-full">
+              <AlertsWidget
+                lat={city.lat}
+                lon={city.lon}
+                cityName={city.name}
+                isExpanded={expandedWidgets.alerts}
+                onToggleExpand={() => toggleExpansion('alerts')}
+              />
+            </div>
+          )}
 
-          {/* Wind + Resolution stacked */}
-          <WidgetGridV2.Area area="smallstack">
+          {/* Wind Widget */}
+          <div key="wind" area="wind" className="h-full">
             <WindWidget
               speed={weatherDetails.windSpeed}
               direction={weatherDetails.windDirection}
@@ -363,6 +372,10 @@ function CityDashboardContent({ city, citySlug }) {
               isExpanded={expandedWidgets.wind}
               onToggleExpand={() => toggleExpansion('wind')}
             />
+          </div>
+
+          {/* Resolution Widget */}
+          <div key="resolution" area="resolution" className="h-full">
             <ResolutionWidget
               stationId={city.stationId}
               citySlug={citySlug}
@@ -372,28 +385,28 @@ function CityDashboardContent({ city, citySlug }) {
               isExpanded={expandedWidgets.resolution}
               onToggleExpand={() => toggleExpansion('resolution')}
             />
-          </WidgetGridV2.Area>
+          </div>
 
           {/* Rain/Snow Trading */}
-          <WidgetGridV2.Area area="pressure">
+          <div key="pressure" area="pressure" className="h-full">
             <RainSnowBracketsWidget
               citySlug={citySlug}
               cityName={city.name}
             />
-          </WidgetGridV2.Area>
+          </div>
 
           {/* Rain Accumulation */}
-          <WidgetGridV2.Area area="visibility" isExpanded={expandedWidgets.rain}>
+          <div key="visibility" area="visibility" className="h-full">
             <RainWidget
               citySlug={citySlug}
               cityName={city.name}
               isExpanded={expandedWidgets.rain}
               onToggleExpand={() => toggleExpansion('rain')}
             />
-          </WidgetGridV2.Area>
+          </div>
 
           {/* Rounding Calculator */}
-          <WidgetGridV2.Area area="rounding" isExpanded={expandedWidgets.rounding}>
+          <div key="rounding" area="rounding" className="h-full">
             <RoundingWidget
               currentTemp={currentTempF}
               runningHigh={runningHigh}
@@ -402,8 +415,8 @@ function CityDashboardContent({ city, citySlug }) {
               isExpanded={expandedWidgets.rounding}
               onToggleExpand={() => toggleExpansion('rounding')}
             />
-          </WidgetGridV2.Area>
-        </WidgetGridV2>
+          </div>
+        </CityWidgetGrid>
       </div>
       </div>
     </>
