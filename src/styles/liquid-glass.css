@@ -962,3 +962,155 @@ body {
 .widget-grid-v2 .widget-area-transition {
   transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
+
+/* ===== CITY WIDGET GRID - React Grid Layout ===== */
+/* Draggable and resizable widget grid for city dashboards */
+
+.city-widget-grid {
+  width: 100%;
+  position: relative;
+}
+
+/* Grid item styling */
+.city-widget-grid-item {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.city-widget-grid-item > * {
+  height: 100%;
+  width: 100%;
+}
+
+/* Drag handle - invisible overlay at top of widget */
+.widget-drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  z-index: 10;
+  cursor: grab;
+  background: transparent;
+}
+
+.widget-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* React Grid Layout overrides */
+.city-widget-grid .react-grid-layout {
+  position: relative;
+}
+
+/* Placeholder during drag */
+.city-widget-grid .react-grid-placeholder {
+  background: rgba(0, 122, 255, 0.15) !important;
+  border: 2px dashed rgba(0, 122, 255, 0.4) !important;
+  border-radius: var(--radius-lg) !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Item being dragged */
+.city-widget-grid .react-grid-item.react-draggable-dragging {
+  z-index: 100;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 2px rgba(0, 122, 255, 0.5);
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+/* Item being resized */
+.city-widget-grid .react-grid-item.resizing {
+  z-index: 100;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.25),
+    0 0 0 2px rgba(0, 122, 255, 0.4);
+}
+
+/* Resize handle styling - corner dot */
+.city-widget-grid .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 4px;
+  right: 4px;
+  cursor: se-resize;
+  z-index: 20;
+}
+
+.city-widget-grid .react-resizable-handle::before {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.15s ease;
+}
+
+.city-widget-grid .react-resizable-handle:hover::before {
+  background: rgba(0, 122, 255, 0.6);
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(0, 122, 255, 0.4);
+}
+
+.city-widget-grid .react-resizable-handle:active::before {
+  background: rgba(0, 122, 255, 0.8);
+  transform: scale(1.4);
+}
+
+/* Alternative: L-shaped resize handle */
+.city-widget-grid .react-resizable-handle-se {
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+
+/* Smooth transitions for grid items */
+.city-widget-grid .react-grid-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.city-widget-grid .react-grid-item:not(.react-draggable-dragging):not(.resizing) {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hover effect on grid items */
+.city-widget-grid .react-grid-item:hover:not(.react-draggable-dragging):not(.resizing) {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Widget content inside grid items */
+.city-widget-grid .glass-widget {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile: disable drag/resize for better touch experience */
+@media (max-width: 640px) {
+  .widget-drag-handle {
+    display: none;
+  }
+
+  .city-widget-grid .react-resizable-handle {
+    display: none;
+  }
+
+  .city-widget-grid .react-grid-item {
+    cursor: default;
+  }
+}
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .city-widget-grid .react-grid-item,
+  .city-widget-grid .react-grid-placeholder {
+    transition: none !important;
+  }
+}

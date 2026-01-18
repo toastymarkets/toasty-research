@@ -10,6 +10,11 @@ import RainWidget from '../components/widgets/RainWidget';
 /**
  * Widget Registry
  * Central registry of all available widgets with metadata
+ *
+ * Grid constraints (for 4-column city dashboard grid):
+ * - minW/minH: Minimum size in grid units
+ * - maxW/maxH: Maximum size in grid units
+ * - defaultW/defaultH: Default size for workspace dashboard (12-column)
  */
 export const WIDGET_REGISTRY = {
   'live-market-brackets': {
@@ -20,11 +25,13 @@ export const WIDGET_REGISTRY = {
     component: LiveMarketBrackets,
     category: 'market',
     requiredProps: ['citySlug', 'cityName'],
-    // Grid layout properties (12-column grid, rowHeight: 80px)
+    // Grid layout properties (12-column grid for workspace, rowHeight: 80px)
     defaultW: 4,   // 1/3 width - fits 3 per row
     defaultH: 5,
-    minW: 3,
-    minH: 4,
+    minW: 1,
+    minH: 2,
+    maxW: 2,
+    maxH: 3,
   },
   'live-station-data': {
     id: 'live-station-data',
@@ -36,8 +43,10 @@ export const WIDGET_REGISTRY = {
     requiredProps: ['stationId', 'cityName', 'timezone'],
     defaultW: 6,  // Half width (6/12 columns)
     defaultH: 5,
-    minW: 4,
-    minH: 4,
+    minW: 2,
+    minH: 1,
+    maxW: 4,
+    maxH: 2,
   },
   'nearby-stations-map': {
     id: 'nearby-stations-map',
@@ -49,8 +58,10 @@ export const WIDGET_REGISTRY = {
     requiredProps: ['citySlug', 'cityName'],
     defaultW: 4,
     defaultH: 5,
-    minW: 3,
-    minH: 4,
+    minW: 2,
+    minH: 1,
+    maxW: 4,
+    maxH: 2,
   },
   'forecast-models': {
     id: 'forecast-models',
@@ -62,8 +73,10 @@ export const WIDGET_REGISTRY = {
     requiredProps: ['citySlug'],
     defaultW: 4,
     defaultH: 5,
-    minW: 3,
-    minH: 4,
+    minW: 1,
+    minH: 1,
+    maxW: 4,
+    maxH: 2,
   },
   'forecast-discussion': {
     id: 'forecast-discussion',
@@ -75,8 +88,10 @@ export const WIDGET_REGISTRY = {
     requiredProps: ['cityId'],
     defaultW: 4,
     defaultH: 4,
-    minW: 3,
-    minH: 3,
+    minW: 1,
+    minH: 1,
+    maxW: 4,
+    maxH: 4,
   },
   'nws-hourly-forecast': {
     id: 'nws-hourly-forecast',
@@ -88,8 +103,10 @@ export const WIDGET_REGISTRY = {
     requiredProps: ['citySlug'],
     defaultW: 4,
     defaultH: 5,
-    minW: 3,
-    minH: 4,
+    minW: 2,
+    minH: 1,
+    maxW: 4,
+    maxH: 2,
   },
   'daily-summary': {
     id: 'daily-summary',
@@ -101,8 +118,10 @@ export const WIDGET_REGISTRY = {
     requiredProps: ['citySlug', 'cityName'],
     defaultW: 4,
     defaultH: 4,
-    minW: 3,
-    minH: 3,
+    minW: 1,
+    minH: 1,
+    maxW: 2,
+    maxH: 2,
   },
   'rain-accumulation': {
     id: 'rain-accumulation',
@@ -114,8 +133,10 @@ export const WIDGET_REGISTRY = {
     requiredProps: ['citySlug', 'cityName'],
     defaultW: 4,
     defaultH: 5,
-    minW: 3,
-    minH: 4,
+    minW: 1,
+    minH: 1,
+    maxW: 2,
+    maxH: 2,
   },
 };
 
